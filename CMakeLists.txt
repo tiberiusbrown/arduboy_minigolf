@@ -47,6 +47,10 @@ add_executable(
     ${PROJECT_NAME} ${WINFLAG}
     README.md
     .editorconfig
+    game.hpp
+    game.cpp
+    draw.cpp
+    sincos.cpp
     main_emscripten.cpp
     main_win32.cpp
     ${MINIGOLF_SOURCES}
@@ -54,6 +58,10 @@ add_executable(
 
 target_link_libraries(${PROJECT_NAME} PUBLIC git)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED 11)
+
+if(NOT EMSCRIPTEN)
+    add_executable(gen_sincos tools/gen_sincos.cpp)
+endif()
 
 if(MSVC)
     set_property(TARGET ${PROJECT_NAME} PROPERTY

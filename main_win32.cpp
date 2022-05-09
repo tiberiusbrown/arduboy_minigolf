@@ -23,7 +23,7 @@ static HWND hwnd;
 static uint8_t* pixels;
 static HDC hdc;
 static HDC hdc_mem;
-static PAINTSTRUCT paint{};
+static PAINTSTRUCT gpaint{};
 static int ww, wh;
 static HBRUSH brush_black = NULL;
 
@@ -31,8 +31,6 @@ static DWORD const dwStyle = WS_VISIBLE | WS_OVERLAPPEDWINDOW;
 static DWORD const dwExStyle = WS_EX_CLIENTEDGE;
 
 static constexpr int ZOOM = 6;
-static constexpr int FBW = 128;
-static constexpr int FBH = 64;
 
 static constexpr int SZOOM = 2; // screenshot zoom
 
@@ -79,17 +77,16 @@ void flush_persistent()
     }
 }
 
-void seed()
-{
-    rand_seed = (uint16_t)__rdtsc();
-    if(rand_seed == 0) rand_seed = 0xbabe;
-}
-
 static uint64_t perf_counter()
 {
     LARGE_INTEGER t;
     QueryPerformanceCounter(&t);
     return (uint64_t)t.QuadPart;
+}
+
+uint16_t time_ms()
+{
+    return uint16_t(perf_counter() * 1000 / freq);
 }
 
 static void screenshot()
@@ -148,24 +145,9 @@ static void screen_recording_toggle()
     }
 }
 
-static void wait_ms(int ms)
+uint8_t poll_btn()
 {
-    MSG msg{};
-    btn_states = 0;
-    SetTimer(hwnd, TIMER_ID, (UINT)ms, (TIMERPROC)NULL);
-    while(GetMessage(&msg, NULL, 0, 0))
-    {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-        if(msg.hwnd == hwnd && msg.message == WM_TIMER && msg.wParam == TIMER_ID)
-            return;
-    }
-
-}
-
-void wait()
-{
-    wait_ms(50);
+    return btn_states;
 }
 
 static uint8_t translate_button(WPARAM wParam)
@@ -182,101 +164,26 @@ static uint8_t translate_button(WPARAM wParam)
     }
 }
 
-static uint8_t const BTNS[8] =
-{
-    BTN_UP, BTN_DOWN, BTN_LEFT, BTN_RIGHT, BTN_A, BTN_B, 0, 0
-};
-static int button_index(uint8_t btn)
-{
-    switch(btn)
-    {
-    case BTN_UP:    return 0;
-    case BTN_DOWN:  return 1;
-    case BTN_LEFT:  return 2;
-    case BTN_RIGHT: return 3;
-    case BTN_A:     return 4;
-    case BTN_B:     return 5;
-    default:        return 6;
-    }
-}
-
 static constexpr uint8_t BTN_ARROWS = BTN_UP | BTN_DOWN | BTN_LEFT | BTN_RIGHT;
-
-uint8_t wait_btn()
-{
-    MSG msg{};
-    SetTimer(hwnd, TIMER_ID, 10, (TIMERPROC)NULL);
-    while(GetMessage(&msg, NULL, 0, 0))
-    {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-        if(msg.hwnd == hwnd && msg.message == WM_KEYDOWN)
-        {
-            if(msg.wParam == VK_F2)
-                screenshot();
-            else if(msg.wParam == VK_F3)
-                screen_recording_toggle();
-            else if(msg.wParam == VK_ESCAPE)
-                ExitProcess(0);
-            else
-            {
-                uint8_t btn = translate_button(msg.wParam);
-                int btni = button_index(btn);
-                bool first_pressed = !(btn_states & btn);
-                btn_states |= btn;
-                uint64_t t = perf_counter();
-                if(first_pressed)
-                {
-                    btn_reptimes[btni] = t + uint64_t(REP_INIT_TIME * freq);
-                    return btn;
-                }
-            }
-        }
-        if(msg.hwnd == hwnd && msg.message == WM_KEYUP)
-        {
-            uint8_t btn = translate_button(msg.wParam);
-            btn_states &= ~btn;
-        }
-
-        // check for repeats
-        uint64_t t = perf_counter();
-        uint64_t minv = UINT64_MAX;
-        int mini = 0;
-        for(int i = 0; i < 8; ++i)
-        {
-            if((btn_states & BTNS[i] & BTN_ARROWS) && btn_reptimes[i] < minv)
-            {
-                minv = btn_reptimes[i];
-                mini = i;
-            }
-        }
-        if((btn_states & BTNS[mini] & BTN_ARROWS) && btn_reptimes[mini] <= t)
-        {
-            btn_reptimes[mini] += uint64_t(REP_REPEAT_TIME * freq);
-            return BTNS[mini];
-        }
-    }
-    ExitProcess(0);
-}
 
 static void refresh()
 {
     InvalidateRect(hwnd, NULL, FALSE);
 }
 
-void paint_offset(uint8_t offset, bool clear)
+static void paint()
 {
     if(perf_counter() - gif_frame_time > 0.05 * freq)
         send_gif_frame();
-    for(int i = 0; i < 512; ++i)
+    for(int i = 0; i < 1024; ++i)
     {
-        int x = i % 64;
-        int y = (i / 64) * 8;
+        int x = i % 128;
+        int y = (i / 128) * 8;
         uint8_t b = buf[i];
         for(int j = 0; j < 8; ++j, b >>= 1)
         {
             uint8_t color = (b & 1) ? 0xff : 0x00;
-            uint8_t* p = &pixels[((y + j) * 128 + x + offset) * 4];
+            uint8_t* p = &pixels[((y + j) * 128 + x) * 4];
             *p++ = color;
             *p++ = color;
             *p++ = color;
@@ -284,8 +191,7 @@ void paint_offset(uint8_t offset, bool clear)
         }
     }
     refresh();
-    if(clear)
-        for(auto& b : buf) b = 0;
+    for(auto& b : buf) b = 0;
 }
 
 static constexpr int RESIZE_SNAP_PIXELS = 32;
@@ -394,7 +300,7 @@ static LRESULT CALLBACK window_proc(HWND w, UINT msg, WPARAM wParam, LPARAM lPar
         PostQuitMessage(0);
         break;
     case WM_PAINT:
-        BeginPaint(w, &paint);
+        BeginPaint(w, &gpaint);
         if(ww == FBW && wh == FBH)
             BitBlt(hdc, 0, 0, FBW, FBH, hdc_mem, 0, 0, SRCCOPY);
         else
@@ -411,7 +317,14 @@ static LRESULT CALLBACK window_proc(HWND w, UINT msg, WPARAM wParam, LPARAM lPar
             }
             StretchBlt(hdc, imx, imy, imw, imh, hdc_mem, 0, 0, FBW, FBH, SRCCOPY);
         }
-        EndPaint(w, &paint);
+        EndPaint(w, &gpaint);
+        break;
+    case WM_KEYDOWN:
+        btn_states |= translate_button(wParam);
+        break;
+    case WM_KEYUP:
+        btn_states &= ~translate_button(wParam);
+        break;
     default:
         return DefWindowProcA(w, msg, wParam, lParam);
     }
@@ -437,11 +350,12 @@ int WINAPI WinMain(
     HINSTANCE hInstance = GetModuleHandleA(NULL);
 #endif{
 
+    MSG msg{};
     WNDCLASS wc{};
     BITMAPINFO bmi{};
     RECT wr;
     HBITMAP hbitmap;
-    static char const* const CLASS_NAME = "ArduRogue";
+    static char const* const CLASS_NAME = "minigolf";
 
     {
         LARGE_INTEGER t;
@@ -451,7 +365,7 @@ int WINAPI WinMain(
 
     if(SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, persistent_path)))
     {
-        StringCchCatA(persistent_path, sizeof(persistent_path), "\\ardurogue_save");
+        StringCchCatA(persistent_path, sizeof(persistent_path), "\\minigolf_save");
         HANDLE f = CreateFile(
             persistent_path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
             FILE_ATTRIBUTE_NORMAL, NULL);
@@ -510,7 +424,18 @@ int WINAPI WinMain(
 
     ShowWindow(hwnd, SW_NORMAL);
 
-    run();
+    btn_states = 0;
+    SetTimer(hwnd, TIMER_ID, (UINT)33, (TIMERPROC)NULL);
+    while(GetMessage(&msg, NULL, 0, 0))
+    {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+        if(msg.hwnd == hwnd && msg.message == WM_TIMER && msg.wParam == TIMER_ID)
+        {
+            game_loop();
+            paint();
+        }
+    }
 
 byebye:
     (void)0;
