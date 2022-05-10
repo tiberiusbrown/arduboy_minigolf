@@ -19,6 +19,10 @@
 #include "gif.h"
 #endif
 
+#ifdef _MSC_VER
+extern "C" int _fltused = 0;
+#endif
+
 static HWND hwnd;
 static uint8_t* pixels;
 static HDC hdc;
@@ -30,7 +34,7 @@ static HBRUSH brush_black = NULL;
 static DWORD const dwStyle = WS_VISIBLE | WS_OVERLAPPEDWINDOW;
 static DWORD const dwExStyle = WS_EX_CLIENTEDGE;
 
-static constexpr int ZOOM = 6;
+static constexpr int ZOOM = 6 * 128 / FBW;
 
 static constexpr int SZOOM = 2; // screenshot zoom
 
@@ -50,8 +54,10 @@ static double const REP_REPEAT_TIME = 0.16;
 
 static constexpr UINT_PTR TIMER_ID = 0x1001;
 
+#ifndef NDEBUG
 static GifWriter gif;
 static bool gif_recording = false;
+#endif
 static uint64_t gif_frame_time = 0;
 
 uint8_t read_persistent(uint16_t addr)
@@ -112,6 +118,7 @@ static void screenshot()
 
 static void send_gif_frame()
 {
+#ifndef NDEBUG
     if(gif_recording)
     {
         uint64_t t = perf_counter();
@@ -119,10 +126,12 @@ static void send_gif_frame()
         gif_frame_time = t;
         GifWriteFrame(&gif, pixels, FBW, FBH, int(dt * 100 + 1.5));
     }
+#endif
 }
 
 static void screen_recording_toggle()
 {
+#ifndef NDEBUG
     if(gif_recording)
     {
         GifEnd(&gif);
@@ -143,6 +152,7 @@ static void screen_recording_toggle()
         gif_recording = true;
         send_gif_frame();
     }
+#endif
 }
 
 uint8_t poll_btn()
@@ -175,19 +185,19 @@ static void paint()
 {
     if(perf_counter() - gif_frame_time > 0.05 * freq)
         send_gif_frame();
-    for(int i = 0; i < 1024; ++i)
+    for(int i = 0; i < BUF_BYTES; ++i)
     {
-        int x = i % 128;
-        int y = (i / 128) * 8;
+        int x = i % FBW;
+        int y = (i / FBW) * 8;
         uint8_t b = buf[i];
         for(int j = 0; j < 8; ++j, b >>= 1)
         {
             uint8_t color = (b & 1) ? 0xff : 0x00;
-            uint8_t* p = &pixels[((y + j) * 128 + x) * 4];
-            *p++ = color;
-            *p++ = color;
-            *p++ = color;
-            *p++ = 0xff;
+            uint8_t* p = &pixels[((y + j) * FBW + x) * 4];
+            p[0] = color;
+            p[1] = color;
+            p[2] = color;
+            p[3] = 0xff;
         }
     }
     refresh();

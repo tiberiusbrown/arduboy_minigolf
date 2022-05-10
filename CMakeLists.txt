@@ -47,10 +47,12 @@ add_executable(
     ${PROJECT_NAME} ${WINFLAG}
     README.md
     .editorconfig
+    div.cpp
     game.hpp
     game.cpp
     draw.cpp
     sincos.cpp
+    mat.cpp
     main_emscripten.cpp
     main_win32.cpp
     ${MINIGOLF_SOURCES}

@@ -54,19 +54,21 @@ void setup()
         for(;;) Arduboy2Core::idle();
     }
 
+    a.setFrameRate(30);
     uint16_t pt = time_ms();
     uint16_t dt = 0;
-    uint8_t fps = 0;
+    uint16_t fps = 0;
     uint16_t nf = 0;
     for(;;)
     {
+        while(!a.nextFrame())
+            ;
         game_loop();
         uint16_t t = time_ms();
-        dt += t - pt;
-        ++nf;
+        uint16_t tdt = t - pt;
         pt = t;
-        //if(dt < 33)
-        //    Arduboy2::delayShort(33 - dt);
+        dt += tdt;
+        ++nf;
         if(dt >= 250)
         {
             fps = 1000 * nf / dt;
@@ -75,9 +77,12 @@ void setup()
         }
 
         a.setCursor(0, 0);
-        if(fps >= 100) a.write('0' + fps / 100);
-        if(fps >= 10) a.write('0' + fps / 10);
-        a.write('0' + fps % 10);
+        uint16_t f = fps;
+        a.write('0' + f / 100);
+        f %= 100;
+        a.write('0' + f /  10);
+        f %=  10;
+        a.write('0' + f);
         Arduboy2Base::display(true);
     }
   

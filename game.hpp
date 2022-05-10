@@ -4,8 +4,8 @@
 #include <stddef.h>
 #include <stdarg.h>
 
-static constexpr uint8_t FBW = 128;
-static constexpr uint8_t FBH = 64;
+static constexpr int FBW = 1 * 128;
+static constexpr int FBH = 1 * 64;
 
 //8-bit grayscale buffer
 #define BUFFER_8BIT 0
@@ -143,6 +143,16 @@ static FORCEINLINE int16_t fmuls(int8_t x, int8_t y)
 #endif
 }
 
+// 1.7 x 1.7 -> 1.7
+static FORCEINLINE int8_t fmuls8(int8_t x, int8_t y)
+{
+#ifdef ARDUINO
+    return int8_t((uint16_t)__builtin_avr_fmuls(x, y) >> 8);
+#else
+    return int8_t((x * y) >> 7);
+#endif
+}
+
 static constexpr uint8_t BTN_UP    = 0x80;
 static constexpr uint8_t BTN_DOWN  = 0x10;
 static constexpr uint8_t BTN_LEFT  = 0x20;
@@ -157,21 +167,52 @@ extern uint8_t* const buf;
 extern array<uint8_t, BUF_BYTES> buf;
 #endif
 
+static constexpr uint8_t MAX_VERTS = 100;
+static constexpr uint8_t MAX_FACES = 200;
+struct face_sorting_data
+{
+    array<uint8_t, MAX_FACES> order;
+    array<int16_t, MAX_VERTS> vz;
+    array<int16_t, MAX_FACES> fz;
+};
+static_assert(sizeof(face_sorting_data) <= BUF_BYTES, "");
+static face_sorting_data& fd = *((face_sorting_data*)&buf[0]);
+
+#ifdef ARDUINO
+using s24 = __int24;
+using u24 = __uint24;
+#else
+using s24 = int32_t;
+using u24 = uint32_t;
+#endif
+
 struct vec2  { int8_t  x, y; };
 struct dvec2 { int16_t x, y; };
 struct dvec3 { int16_t x, y, z; };
 struct vec3  { int8_t  x, y, z; };
+using mat3 = array<int8_t, 9>;
+
+// game.cpp
+void clear_buf();
 
 // draw.cpp
-void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2);
-void draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1);
+void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati);
 
 // sincos.cpp
 int8_t fsin(uint8_t angle); // output is signed 1.7
 int8_t fcos(uint8_t angle); // output is signed 1.7
+int16_t fsin16(uint16_t angle);
+int16_t fcos16(uint16_t angle);
 
-int16_t fsin16(uint16_t angle); // output is signed 1.15
-int16_t fcos16(uint16_t angle); // output is signed 1.15
+// mat.cpp
+void rotation(mat3& m, uint8_t yaw, uint8_t pitch);
+dvec3 matvec(mat3 m, vec3 v);
+
+// div.cpp
+uint16_t divlut(uint16_t x, uint8_t y);
+int16_t divlut(int16_t x, uint8_t y);
+uint16_t divlut(u24 x, uint8_t y);
+int16_t divlut(s24 x, uint8_t y);
 
 static inline dvec2 frotate(dvec2 v, uint8_t angle)
 {
@@ -183,22 +224,36 @@ static inline dvec2 frotate(dvec2 v, uint8_t angle)
     return r;
 }
 
+static inline int16_t div8s(int16_t x)
+{
+    uint16_t y = uint16_t(x) >> 3;
+    if(x < 0) y |= 0xe000;
+    return y;
+}
+
 static inline dvec2 frotate(vec2 v, uint8_t angle)
 {
     int8_t fs = fsin(angle);
     int8_t fc = fcos(angle);
     dvec2 r;
-    r.x = (v.x * fc - v.y * fs) / 8;
-    r.y = (v.y * fc + v.x * fs) / 8;
+    r.x = div8s(v.x * fc - v.y * fs);
+    r.y = div8s(v.y * fc + v.x * fs);
     return r;
 }
 
-static inline dvec2 frotate16(dvec2 v, uint16_t angle)
+static inline int16_t div64s(int16_t x)
+{
+    uint16_t y = uint16_t(x) >> 6;
+    if(x < 0) y |= 0xfc00;
+    return y;
+}
+
+static inline dvec2 frotate16(vec2 v, uint16_t angle)
 {
     int16_t fs = fsin16(angle);
     int16_t fc = fcos16(angle);
     dvec2 r;
-    r.x = ((int32_t)v.x * fc - (int32_t)v.y * fs) / 32767;
-    r.y = ((int32_t)v.y * fc + (int32_t)v.x * fs) / 32767;
+    r.x = div64s(v.x * s24(fc) - v.y * s24(fs));
+    r.y = div64s(v.y * s24(fc) + v.x * s24(fs));
     return r;
 }
