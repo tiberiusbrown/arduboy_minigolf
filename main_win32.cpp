@@ -155,7 +155,7 @@ static void screen_recording_toggle()
 #endif
 }
 
-uint8_t poll_btn()
+uint8_t poll_btns()
 {
     return btn_states;
 }
@@ -341,6 +341,12 @@ static LRESULT CALLBACK window_proc(HWND w, UINT msg, WPARAM wParam, LPARAM lPar
     return 0;
 }
 
+static void timer_callback(HWND, UINT, UINT_PTR, DWORD)
+{
+    game_loop();
+    paint();
+}
+
 #ifdef NDEBUG
 void main(void)
 #else
@@ -435,16 +441,11 @@ int WINAPI WinMain(
     ShowWindow(hwnd, SW_NORMAL);
 
     btn_states = 0;
-    SetTimer(hwnd, TIMER_ID, (UINT)33, (TIMERPROC)NULL);
+    SetTimer(hwnd, TIMER_ID, (UINT)16, timer_callback);
     while(GetMessage(&msg, NULL, 0, 0))
     {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
-        if(msg.hwnd == hwnd && msg.message == WM_TIMER && msg.wParam == TIMER_ID)
-        {
-            game_loop();
-            paint();
-        }
     }
 
 byebye:

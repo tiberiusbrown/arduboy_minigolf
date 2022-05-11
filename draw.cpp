@@ -36,13 +36,13 @@ static constexpr uint16_t PATTERNS[5] PROGMEM =
 
 static void draw_tri_vline(uint8_t x, int16_t y0, int16_t y1, uint16_t pat)
 {
-    if(x >= FBW) return;
     if(y0 > y1) return;
     if(y1 < 0) return;
     if(y0 >= FBH) return;
+    if(x >= FBW) return;
 
-    uint8_t ty0 = (uint8_t)tclamp<int16_t>(y0, 0, FBH - 1);
-    uint8_t ty1 = (uint8_t)tclamp<int16_t>(y1, 0, FBH - 1);
+    uint8_t ty0 = (uint8_t)tmax<int16_t>(y0, 0);
+    uint8_t ty1 = (uint8_t)tmin<int16_t>(y1, FBH - 1);
 
     uint8_t t0 = ty0 & 0xf8;
     uint8_t t1 = ty1 & 0xf8;
@@ -52,12 +52,12 @@ static void draw_tri_vline(uint8_t x, int16_t y0, int16_t y1, uint16_t pat)
     uint8_t pattern = (x & 1) ? uint8_t(pat) : uint8_t(pat >> 8);
 
     uint8_t* p = &buf[t0 * (FBW / 8) + x];
+    uint8_t m0 = pgm_read_byte(&YMASK0[ty0]);
+    uint8_t m1 = pgm_read_byte(&YMASK1[ty1]);
 
     if(t0 == t1)
     {
-        uint8_t m =
-            pgm_read_byte(&YMASK0[ty0]) &
-            pgm_read_byte(&YMASK1[ty1]);
+        uint8_t m = m0 & m1;
         uint8_t tp = *p;
         tp |= (pattern & m);
         tp &= (pattern | ~m);
@@ -66,7 +66,7 @@ static void draw_tri_vline(uint8_t x, int16_t y0, int16_t y1, uint16_t pat)
     }
 
     {
-        uint8_t m = pgm_read_byte(&YMASK0[ty0]);
+        uint8_t m = m0;
         uint8_t tp = *p;
         tp |= (pattern & m);
         tp &= (pattern | ~m);
@@ -81,7 +81,7 @@ static void draw_tri_vline(uint8_t x, int16_t y0, int16_t y1, uint16_t pat)
     }
 
     {
-        uint8_t m = pgm_read_byte(&YMASK1[ty1]);
+        uint8_t m = m1;
         uint8_t tp = *p;
         tp |= (pattern & m);
         tp &= (pattern | ~m);
@@ -99,6 +99,8 @@ static void draw_tri_segment(
     int16_t by1,
     uint16_t pat)
 {
+    if(ax >= bx) return;
+
     if(ay0 > ay1 || by0 > by1)
     {
         swap(ay0, ay1);
@@ -155,9 +157,10 @@ static int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z)
 {
     // x + (z-x) * (b-a)/(c-a)
 
+    if(a == c) return x;
 #if 0
 
-    s24 t = s24(z - x) * uint16_t(b - a);
+    uint32_t t = uint32_t(z - x) * uint16_t(b - a);
 
     uint16_t ac = uint16_t(c - a);
     uint8_t n = 0;
@@ -170,16 +173,28 @@ static int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z)
 
 #elif 1
     uint16_t xz = (x < z ? uint16_t(z - x) : uint16_t(x - z));
-    u24 p = u24(xz) * uint16_t(b - a);
-    u24 ac = u24(c - a) << 7;
-    int16_t t = 0;
-    uint8_t j = 0x80;
-    do
+    uint32_t p = uint32_t(xz) * uint16_t(b - a);
+    uint16_t ac = uint16_t(c - a);
+    int16_t t;
+#if 1
+    t = (int16_t)(p / ac);
+#else
+    if(p >= (1 << 16))
     {
-        while(p >= ac) t += j, p -= ac;
-        ac >>= 1;
-        j >>= 1;
-    } while(j != 0);
+        t = (int16_t)divlut(uint16_t(p >> 16), uint8_t(ac >> 8)) << 8;
+    }
+    else
+    {
+        uint16_t j = 0x8000;
+        t = 0;
+        do
+        {
+            while(p >= ac) t += j, p -= ac;
+            ac >>= 1;
+            j >>= 1;
+        } while(j != 0 && ac != 0);
+    }
+#endif
     if(x > z) t = -t;
     return x + t;
 #else
@@ -190,18 +205,40 @@ static int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z)
 #endif
 }
 
+static inline int8_t to8(int16_t x)
+{
+    return int8_t(uint16_t(x) >> 8);
+}
+
 void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati)
 {
     // backface culling
-
+#if 0
     int16_t t = 0;
-    t += int8_t(v0.x >> 4) * int8_t(v1.y >> 4);
-    t += int8_t(v1.x >> 4) * int8_t(v2.y >> 4);
-    t += int8_t(v2.x >> 4) * int8_t(v0.y >> 4);
-    t -= int8_t(v1.x >> 4) * int8_t(v0.y >> 4);
-    t -= int8_t(v2.x >> 4) * int8_t(v1.y >> 4);
-    t -= int8_t(v0.x >> 4) * int8_t(v2.y >> 4);
-    if(t > 0) return;
+    t += int8_t(to8(v1.x) - to8(v0.x)) * int8_t(to8(v2.y) - to8(v0.y));
+    t -= int8_t(to8(v2.x) - to8(v0.x)) * int8_t(to8(v1.y) - to8(v0.y));
+#elif 1
+    int32_t t = 0;
+    t += int32_t(v1.x - v0.x) * (v2.y - v0.y);
+    t -= int32_t(v2.x - v0.x) * (v1.y - v0.y);
+#elif 0
+    int32_t t = 0;
+    t += int32_t(v0.x) * v1.y;
+    t += int32_t(v1.x) * v2.y;
+    t += int32_t(v2.x) * v0.y;
+    t -= int32_t(v1.x) * v0.y;
+    t -= int32_t(v2.x) * v1.y;
+    t -= int32_t(v0.x) * v2.y;
+#else
+    int16_t t = 0;
+    t += int8_t(v0.x >> 8) * int8_t(v1.y >> 8);
+    t += int8_t(v1.x >> 8) * int8_t(v2.y >> 8);
+    t += int8_t(v2.x >> 8) * int8_t(v0.y >> 8);
+    t -= int8_t(v1.x >> 8) * int8_t(v0.y >> 8);
+    t -= int8_t(v2.x >> 8) * int8_t(v1.y >> 8);
+    t -= int8_t(v0.x >> 8) * int8_t(v2.y >> 8);
+#endif
+    if(t < 0) return;
 
     // sort by x coord
     if(v0.x > v1.x) swap(v0, v1);
@@ -215,6 +252,49 @@ void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati)
 
     uint16_t pat = pgm_read_word(&PATTERNS[pati]);
 
-    draw_tri_segment(v0.x, v0.y, v0.y, v1.x, v1.y, ty, pat);
-    draw_tri_segment(v1.x, v1.y, ty, v2.x, v2.y, v2.y, pat);
+    // left segment
+    {
+        int16_t ax  = v0.x;
+        int16_t bx  = v1.x;
+        int16_t ay0 = v0.y;
+        int16_t ay1 = v0.y;
+        int16_t by0 = v1.y;
+        int16_t by1 = ty;
+        if(ax < 0)
+        {
+            ay0 = interp(ax, 0, bx, ay0, by0);
+            ay1 = interp(ax, 0, bx, ay1, by1);
+            ax = 0;
+        }
+        if(bx > FBW * 16)
+        {
+            by0 = interp(ax, FBW * 16, bx, ay0, by0);
+            by1 = interp(ax, FBW * 16, bx, ay1, by1);
+            bx = FBW * 16;
+        }
+        draw_tri_segment(ax, ay0, ay1, bx, by0, by1, pat);
+    }
+
+    // right segment
+    {
+        int16_t ax  = v1.x;
+        int16_t bx  = v2.x;
+        int16_t ay0 = v1.y;
+        int16_t ay1 = ty;
+        int16_t by0 = v2.y;
+        int16_t by1 = v2.y;
+        if(ax < 0)
+        {
+            ay0 = interp(ax, 0, bx, ay0, by0);
+            ay1 = interp(ax, 0, bx, ay1, by1);
+            ax = 0;
+        }
+        if(bx > FBW * 16)
+        {
+            by0 = interp(ax, FBW * 16, bx, ay0, by0);
+            by1 = interp(ax, FBW * 16, bx, ay1, by1);
+            bx = FBW * 16;
+        }
+        draw_tri_segment(ax, ay0, ay1, bx, by0, by1, pat);
+    }
 }

@@ -25,7 +25,7 @@ void update_persistent(uint16_t addr, uint8_t data)
 
 void flush_persistent() {}
 
-uint8_t poll_btn()
+uint8_t poll_btns()
 {
     return Arduboy2::buttonsState();
 }
@@ -54,14 +54,14 @@ void setup()
         for(;;) Arduboy2Core::idle();
     }
 
-    a.setFrameRate(30);
+    a.setFrameRate(60);
     uint16_t pt = time_ms();
     uint16_t dt = 0;
     uint16_t fps = 0;
     uint16_t nf = 0;
     for(;;)
     {
-        while(!a.nextFrame())
+        //while(!a.nextFrame())
             ;
         game_loop();
         uint16_t t = time_ms();
@@ -71,7 +71,7 @@ void setup()
         ++nf;
         if(dt >= 250)
         {
-            fps = 1000 * nf / dt;
+            fps = uint32_t(1000) * nf / dt;
             nf = 0;
             dt = 0;
         }

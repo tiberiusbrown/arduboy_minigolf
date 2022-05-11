@@ -14,7 +14,7 @@ static constexpr uint16_t SAVE_VERSION = 1;
 
 // platform functionality
 uint16_t time_ms();
-uint8_t poll_btn();
+uint8_t poll_btns();
 uint8_t read_persistent(uint16_t addr);
 void update_persistent(uint16_t addr, uint8_t data);
 void flush_persistent(); // (does nothing for Arduino)
@@ -188,8 +188,8 @@ using u24 = uint32_t;
 
 struct vec2  { int8_t  x, y; };
 struct dvec2 { int16_t x, y; };
-struct dvec3 { int16_t x, y, z; };
 struct vec3  { int8_t  x, y, z; };
+struct dvec3 { int16_t x, y, z; };
 using mat3 = array<int8_t, 9>;
 
 // game.cpp
@@ -207,8 +207,10 @@ int16_t fcos16(uint16_t angle);
 // mat.cpp
 void rotation(mat3& m, uint8_t yaw, uint8_t pitch);
 dvec3 matvec(mat3 m, vec3 v);
+dvec3 matvec(mat3 m, dvec3 v);
 
 // div.cpp
+uint16_t inv8(uint8_t x);
 uint16_t divlut(uint16_t x, uint8_t y);
 int16_t divlut(int16_t x, uint8_t y);
 uint16_t divlut(u24 x, uint8_t y);

@@ -34,6 +34,8 @@ add_library(git INTERFACE ${POST_CONFIGURE_FILE})
 target_include_directories(git INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 add_dependencies(git check_git)
 
+add_executable(convert_obj tools/convert_obj.cpp)
+
 set(WINFLAG)
 if(WIN32)
     set(WINFLAG WIN32)
