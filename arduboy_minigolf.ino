@@ -54,7 +54,7 @@ void setup()
         for(;;) Arduboy2Core::idle();
     }
 
-    a.setFrameRate(60);
+    a.setFrameRate(30);
     uint16_t pt = time_ms();
     uint16_t dt = 0;
     uint16_t fps = 0;

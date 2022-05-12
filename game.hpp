@@ -171,9 +171,9 @@ static constexpr uint8_t MAX_VERTS = 100;
 static constexpr uint8_t MAX_FACES = 200;
 struct face_sorting_data
 {
-    array<uint8_t, MAX_FACES> order;
-    array<int16_t, MAX_VERTS> vz;
-    array<int16_t, MAX_FACES> fz;
+    array<int16_t, MAX_VERTS> vz; // local space z
+    array<uint16_t, MAX_VERTS> vdist; // world vertex distance
+    array<uint16_t, MAX_FACES> fdist; // world face distance
 };
 static_assert(sizeof(face_sorting_data) <= BUF_BYTES, "");
 static face_sorting_data& fd = *((face_sorting_data*)&buf[0]);

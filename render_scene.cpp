@@ -60,6 +60,9 @@ void render_scene(
         dv.y -= cy;
         dv.z -= cz;
 
+        // vertex distance
+        fd.vdist[nv] = tabs(dv.x) + tabs(dv.y) + tabs(dv.z);
+
         // rotate
         dv = matvec(m, dv);
 
@@ -87,45 +90,38 @@ void render_scene(
         // discard if fully behind near plane
         if(behind == 7) continue;
 
+        // face distance
+        uint16_t fdist = fd.vdist[i0] + fd.vdist[i1] + fd.vdist[i2];
+
         // clip: exactly two vertices behind near plane
         if((behind & (behind - 1)) != 0)
         {
             dvec2 newv0, newv1;
-            int16_t splitz = ZNEAR * 2;
+            int16_t splitz;
             uint8_t ibase;
 
             // adjust the two near vertices.
             if(!(behind & 1))
             {
                 ibase = i0;
-                splitz += z0;
+                splitz = z0;
                 newv0 = interpz(vs[i1], z1, vs[i0], z0);
                 newv1 = interpz(vs[i2], z2, vs[i0], z0);
             }
             else if(!(behind & 2))
             {
                 ibase = i1;
-                splitz += z1;
+                splitz = z1;
                 newv0 = interpz(vs[i0], z0, vs[i1], z1);
                 newv1 = interpz(vs[i2], z2, vs[i1], z1);
             }
             else
             {
                 ibase = i2;
-                splitz += z2;
+                splitz = z2;
                 newv0 = interpz(vs[i0], z0, vs[i2], z2);
                 newv1 = interpz(vs[i1], z1, vs[i2], z2);
             }
-
-            // add clip face
-            face_order[nf] = MAX_FACES + (nclipf >> 2);
-            fd.fz[nf] = splitz;
-            ++nf;
-            clip_faces[nclipf + 0] = ibase;
-            clip_faces[nclipf + 1] = nv + 1;
-            clip_faces[nclipf + 2] = nv;
-            clip_faces[nclipf + 3] = pgm_read_byte(&faces[j + 3]);
-            nclipf += 4;
 
             // add vertices
             vs[nv] = newv0;
@@ -135,6 +131,16 @@ void render_scene(
             fd.vz[nv] = ZNEAR;
             ++nv;
 
+            // add clip face
+            face_order[nf] = MAX_FACES + (nclipf >> 2);
+            fd.fdist[nf] = fdist;
+            ++nf;
+            clip_faces[nclipf + 0] = ibase;
+            clip_faces[nclipf + 1] = nv - 1;
+            clip_faces[nclipf + 2] = nv - 2;
+            clip_faces[nclipf + 3] = pgm_read_byte(&faces[j + 3]);
+            nclipf += 4;
+
             continue;
         }
 
@@ -143,55 +149,32 @@ void render_scene(
         {
             uint8_t ia, ib, ic; // winding order indices
             dvec2 newv0, newv1;
-            int16_t splitz0 = ZNEAR * 2;
-            int16_t splitz1 = ZNEAR * 2;
+            int16_t splitz0;
+            int16_t splitz1;
             if(behind & 1)
             {
                 ia = i0, ib = i1, ic = i2;
                 newv0 = interpz(vs[i0], z0, vs[i1], z1);
                 newv1 = interpz(vs[i0], z0, vs[i2], z2);
-                splitz0 += z1;
-                splitz1 += z2;
+                splitz0 = z1;
+                splitz1 = z2;
             }
             else if(behind & 2)
             {
                 ia = i1, ib = i2, ic = i0;
                 newv0 = interpz(vs[i1], z1, vs[i2], z2);
                 newv1 = interpz(vs[i1], z1, vs[i0], z0);
-                splitz0 += z2;
-                splitz1 += z0;
+                splitz0 = z2;
+                splitz1 = z0;
             }
             else
             {
                 ia = i2, ib = i0, ic = i1;
                 newv0 = interpz(vs[i2], z2, vs[i0], z0);
                 newv1 = interpz(vs[i2], z2, vs[i1], z1);
-                splitz0 += z0;
-                splitz1 += z1;
+                splitz0 = z0;
+                splitz1 = z1;
             }
-
-            face_order[nf] = MAX_FACES + (nclipf >> 2);
-            fd.fz[nf] = splitz0;
-            ++nf;
-            face_order[nf] = MAX_FACES + (nclipf >> 2) + 1;
-            fd.fz[nf] = splitz1;
-            ++nf;
-
-            uint8_t pat = pgm_read_byte(&faces[j + 3]);
-
-            // TODO: backface culling issue here!
-
-            clip_faces[nclipf + 0] = nv;
-            clip_faces[nclipf + 1] = ib;
-            clip_faces[nclipf + 2] = ic;
-            clip_faces[nclipf + 3] = pat;
-            nclipf += 4;
-
-            clip_faces[nclipf + 0] = nv;
-            clip_faces[nclipf + 1] = ic;
-            clip_faces[nclipf + 2] = nv + 1;
-            clip_faces[nclipf + 3] = pat;
-            nclipf += 4;
 
             // add new vertices
             vs[nv] = newv0;
@@ -201,11 +184,34 @@ void render_scene(
             fd.vz[nv] = ZNEAR;
             ++nv;
 
+            face_order[nf] = MAX_FACES + (nclipf >> 2);
+            fd.fdist[nf] = fdist;
+            ++nf;
+            face_order[nf] = MAX_FACES + (nclipf >> 2) + 1;
+            fd.fdist[nf] = fdist;
+            ++nf;
+
+            uint8_t pat = pgm_read_byte(&faces[j + 3]);
+
+            // TODO: backface culling issue here!
+
+            clip_faces[nclipf + 0] = nv - 2;
+            clip_faces[nclipf + 1] = ib;
+            clip_faces[nclipf + 2] = ic;
+            clip_faces[nclipf + 3] = pat;
+            nclipf += 4;
+
+            clip_faces[nclipf + 0] = nv - 2;
+            clip_faces[nclipf + 1] = ic;
+            clip_faces[nclipf + 2] = nv - 1;
+            clip_faces[nclipf + 3] = pat;
+            nclipf += 4;
+
             continue;
         }
 
         face_order[nf] = i;
-        fd.fz[nf] = z0 + z1 + z2;
+        fd.fdist[nf] = fdist;
         ++nf;
     }
 
@@ -244,16 +250,16 @@ void render_scene(
         uint8_t i = 1;
         while(i < nf)
         {
-            int16_t z = fd.fz[i];
+            int16_t d = fd.fdist[i];
             uint8_t f = face_order[i];
             uint8_t j = i;
-            while(j > 0 && fd.fz[j - 1] < z)
+            while(j > 0 && fd.fdist[j - 1] < d)
             {
-                fd.fz[j] = fd.fz[j - 1];
+                fd.fdist[j] = fd.fdist[j - 1];
                 face_order[j] = face_order[j - 1];
                 j -= 1;
             }
-            fd.fz[j] = z;
+            fd.fdist[j] = d;
             face_order[j] = f;
             i += 1;
         }

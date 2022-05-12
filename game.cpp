@@ -94,13 +94,7 @@ void game_loop()
             if(btns & BTN_RIGHT) cx += cosA, cz += sinA;
         }
 
-
-        //if(btns & BTN_LEFT ) if(btns & BTN_A) yaw += 1; else cx -= 8;
-        //if(btns & BTN_RIGHT) if(btns & BTN_A) yaw -= 1; else cx += 8;
-        //if(btns & BTN_UP   ) if(btns & BTN_A) cy += 8; else if(btns & BTN_B) pitch += 1; else cz += 8;
-        //if(btns & BTN_DOWN ) if(btns & BTN_A) cy -= 8; else if(btns & BTN_B) pitch -= 1; else cz -= 8;
     }
 
     render_scene(VERTS, NUM_VERTS, FACES, NUM_FACES);
-    //render_scene(VERTS, NUM_VERTS, FACES + 4 * 4, 2);
 }

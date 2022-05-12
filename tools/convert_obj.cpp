@@ -12,6 +12,8 @@ int main()
     FILE* f = fopen("E:\\Projects\\arduboy_minigolf\\levels\\level_00.obj", "r");
     if(!f)
         return 1;
+    
+    uint8_t pat = 0;
 
     std::vector<vert> verts;
     std::vector<face> faces;
@@ -26,7 +28,7 @@ int main()
             int n = fscanf(f, " %f %f %f\n", &x, &y, &z);
             if(n != 3)
                 goto fail;
-            int8_t ix = int8_t(roundf(x));
+            int8_t ix = -int8_t(roundf(x));
             int8_t iy = int8_t(roundf(y));
             int8_t iz = int8_t(roundf(z));
             verts.push_back({ ix, iy, iz });
@@ -46,10 +48,13 @@ int main()
             auto const& v0 = verts[i0];
             auto const& v1 = verts[i1];
             auto const& v2 = verts[i2];
-            if(v0.x == v1.x && v1.x == v2.x) pt = 2;
-            if(v0.y == v1.y && v1.y == v2.y) pt = 1;
-            if(v0.z == v1.z && v1.z == v2.z) pt = 3;
-            faces.push_back({ uint8_t(i0), uint8_t(i1), uint8_t(i2), pt });
+            faces.push_back({ uint8_t(i0), uint8_t(i1), uint8_t(i2), pat });
+        }
+        else if(c == 'u')
+        {
+            while((c = fgetc(f)) != '\n')
+                if(c >= '0' && c <= '5')
+                    pat = uint8_t(c - '0');
         }
         else
         {
