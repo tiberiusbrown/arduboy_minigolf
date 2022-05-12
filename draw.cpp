@@ -158,7 +158,15 @@ int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z)
     // x + (z-x) * (b-a)/(c-a)
 
     if(a == c) return x;
+
 #if 0
+
+    int32_t t = uint16_t(b - a);
+    t *= (z - x);
+    t /= uint16_t(c - a);
+    return x + (int16_t)t;
+
+#elif 0
 
     uint32_t t = uint32_t(z - x) * uint16_t(b - a);
 
@@ -171,37 +179,15 @@ int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z)
         n -= 1, r /= 2;
     return x + r;
 
-#elif 1
+#else
     uint16_t xz = (x < z ? uint16_t(z - x) : uint16_t(x - z));
     uint32_t p = uint32_t(xz) * uint16_t(b - a);
     uint16_t ac = uint16_t(c - a);
     int16_t t;
-#if 1
     t = (int16_t)(p / ac);
-#else
-    if(p >= (1 << 16))
-    {
-        t = (int16_t)divlut(uint16_t(p >> 16), uint8_t(ac >> 8)) << 8;
-    }
-    else
-    {
-        uint16_t j = 0x8000;
-        t = 0;
-        do
-        {
-            while(p >= ac) t += j, p -= ac;
-            ac >>= 1;
-            j >>= 1;
-        } while(j != 0 && ac != 0);
-    }
-#endif
+
     if(x > z) t = -t;
     return x + t;
-#else
-    int32_t t = uint16_t(b - a);
-    t *= (z - x);
-    t /= uint16_t(c - a);
-    return x + (int16_t)t;
 #endif
 }
 
