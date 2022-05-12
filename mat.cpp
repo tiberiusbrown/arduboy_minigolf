@@ -7,14 +7,14 @@ A = pitch, B = yaw
 
      cosB      0       sinB
  sinAsinB   cosA  -sinAcosB
--cosAsinB  -sinA   cosAcosB
+-cosAsinB   sinA   cosAcosB
 
 */
 
-void rotation(mat3& m, uint8_t yaw, uint8_t pitch)
+void rotation(mat3& m, uint8_t yaw, int8_t pitch)
 {
-    int8_t sinA = fsin(pitch);
-    int8_t cosA = fcos(pitch);
+    int8_t sinA = fsin((uint8_t)pitch);
+    int8_t cosA = fcos((uint8_t)pitch);
     int8_t sinB = fsin(yaw);
     int8_t cosB = fcos(yaw);
 
@@ -27,7 +27,7 @@ void rotation(mat3& m, uint8_t yaw, uint8_t pitch)
     m[5] = -fmuls8(sinA, cosB);
 
     m[6] = -fmuls8(cosA, sinB);
-    m[7] = -sinA;
+    m[7] = sinA;
     m[8] = fmuls8(cosA, cosB);
 }
 

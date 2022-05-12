@@ -12,11 +12,11 @@ static array<dvec2, MAX_VERTS> vs;
 
 // camera look angle (roll not supported)
 uint8_t yaw = 0;
-uint8_t pitch = 0;
+int8_t pitch = 0;
 
 // camera position
 int16_t cx = 0;
-int16_t cy = 256 * 1;
+int16_t cy = 256 * 2;
 int16_t cz = -256 * 8;
 
 static dvec2 interpz(dvec2 a, int16_t az, dvec2 b, int16_t bz)
@@ -33,9 +33,6 @@ void render_scene(
     uint8_t const* faces,
     uint8_t num_faces)
 {
-
-    pitch = (uint8_t)tclamp<int8_t>(int8_t(pitch), -64, 64);
-
     mat3 m;
     rotation(m, yaw, pitch);
 

@@ -201,7 +201,7 @@ void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati);
 
 // render_scene.cpp
 extern uint8_t yaw;
-extern uint8_t pitch; // TODO: make int8
+extern int8_t  pitch;
 extern int16_t cx;
 extern int16_t cy;
 extern int16_t cz;
@@ -218,7 +218,7 @@ int16_t fsin16(uint16_t angle);
 int16_t fcos16(uint16_t angle);
 
 // mat.cpp
-void rotation(mat3& m, uint8_t yaw, uint8_t pitch);
+void rotation(mat3& m, uint8_t yaw, int8_t pitch);
 dvec3 matvec(mat3 m, vec3 v);
 dvec3 matvec(mat3 m, dvec3 v);
 

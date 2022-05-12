@@ -12,7 +12,7 @@ void clear_buf()
 }
 
 #if 1
-#include "levels/level_00.hpp"
+#include <level_00.hpp>
 static int8_t const* const VERTS = LEVEL_00_VERTS;
 static constexpr size_t NUM_VERTS = sizeof(LEVEL_00_VERTS) / 3;
 static uint8_t const* const FACES = LEVEL_00_FACES;
@@ -76,6 +76,8 @@ void game_loop()
             if(btns & BTN_DOWN ) pitch -= 1;
             if(btns & BTN_LEFT ) yaw   += 1;
             if(btns & BTN_RIGHT) yaw   -= 1;
+
+            pitch = tclamp<int8_t>(int8_t(pitch), -64, 64);
         }
         else if(btns & BTN_B)
         {
