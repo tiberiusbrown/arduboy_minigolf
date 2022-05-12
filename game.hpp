@@ -196,7 +196,20 @@ using mat3 = array<int8_t, 9>;
 void clear_buf();
 
 // draw.cpp
+int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z);
 void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati);
+
+// render_scene.cpp
+extern uint8_t yaw;
+extern uint8_t pitch; // TODO: make int8
+extern int16_t cx;
+extern int16_t cy;
+extern int16_t cz;
+void render_scene(
+    int8_t const* verts,
+    uint8_t num_verts,
+    uint8_t const* faces,
+    uint8_t num_faces);
 
 // sincos.cpp
 int8_t fsin(uint8_t angle); // output is signed 1.7

@@ -37,14 +37,17 @@ int main()
             int i1 = 0;
             int i2 = 0;
             int n = fscanf(f, " %d %d %d\n", &i0, &i1, &i2);
+            i0 -= 1;
+            i1 -= 1;
+            i2 -= 1;
             if(n != 3)
                 goto fail;
             uint8_t pt = 0;
             auto const& v0 = verts[i0];
             auto const& v1 = verts[i1];
             auto const& v2 = verts[i2];
-            if(v0.x == v1.x && v1.x == v2.x) pt = 1;
-            if(v0.y == v1.y && v1.y == v2.y) pt = 2;
+            if(v0.x == v1.x && v1.x == v2.x) pt = 2;
+            if(v0.y == v1.y && v1.y == v2.y) pt = 1;
             if(v0.z == v1.z && v1.z == v2.z) pt = 3;
             faces.push_back({ uint8_t(i0), uint8_t(i1), uint8_t(i2), pt });
         }

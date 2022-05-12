@@ -61,7 +61,16 @@ void setup()
     uint16_t nf = 0;
     for(;;)
     {
-        //while(!a.nextFrame())
+        if (WDTCSR & _BV(WDE))
+        {
+            // disable ints and set magic key
+            cli();
+            *(volatile uint8_t*)0x800 = 0x77;
+            *(volatile uint8_t*)0x801 = 0x77;
+            for(;;);
+        }
+      
+        while(!a.nextFrame())
             ;
         game_loop();
         uint16_t t = time_ms();

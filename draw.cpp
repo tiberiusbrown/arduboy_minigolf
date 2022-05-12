@@ -153,7 +153,7 @@ static void draw_tri_segment(
     }
 }
 
-static int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z)
+int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z)
 {
     // x + (z-x) * (b-a)/(c-a)
 
@@ -212,6 +212,7 @@ static inline int8_t to8(int16_t x)
 
 void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati)
 {
+#if 0
     // backface culling
 #if 0
     int16_t t = 0;
@@ -239,6 +240,7 @@ void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati)
     t -= int8_t(v0.x >> 8) * int8_t(v2.y >> 8);
 #endif
     if(t < 0) return;
+#endif
 
     // sort by x coord
     if(v0.x > v1.x) swap(v0, v1);
