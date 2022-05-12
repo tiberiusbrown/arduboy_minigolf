@@ -34,8 +34,6 @@ add_library(git INTERFACE ${POST_CONFIGURE_FILE})
 target_include_directories(git INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 add_dependencies(git check_git)
 
-add_executable(convert_obj tools/convert_obj.cpp)
-
 set(WINFLAG)
 if(WIN32)
     set(WINFLAG WIN32)
@@ -54,11 +52,26 @@ add_executable(
     game.cpp
     draw.cpp
     sincos.cpp
+    render_scene.cpp
     mat.cpp
     main_emscripten.cpp
     main_win32.cpp
     ${MINIGOLF_SOURCES}
 )
+
+add_executable(convert_obj tools/convert_obj.cpp)
+set(LEVELN 00)
+foreach(N ${LEVELN})
+    set(LEVEL_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}.obj")
+    set(LEVEL_HPP "${CMAKE_CURRENT_BINARY_DIR}/level_${N}.hpp")
+    add_custom_command(
+        OUTPUT "${LEVEL_HPP}"
+        COMMAND convert_obj "${LEVEL_OBJ}" "${LEVEL_HPP}"
+        DEPENDS "${LEVEL_OBJ}"
+    )
+    target_sources(${PROJECT_NAME} PUBLIC "${LEVEL_HPP}")
+endforeach()
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 
 target_link_libraries(${PROJECT_NAME} PUBLIC git)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED 11)

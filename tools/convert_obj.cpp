@@ -7,9 +7,11 @@
 struct vert { int8_t x, y, z; };
 struct face { uint8_t i0, i1, i2, pt; };
 
-int main()
+int main(int argc, char** argv)
 {
-    FILE* f = fopen("E:\\Projects\\arduboy_minigolf\\levels\\level_00.obj", "r");
+    if(argc < 3) return 1;
+
+    FILE* f = fopen(argv[1], "r");
     if(!f)
         return 1;
     
@@ -65,7 +67,8 @@ int main()
 
     fclose(f);
 
-    f = fopen("E:\\Projects\\arduboy_minigolf\\levels\\level_00.hpp", "w");
+    f = fopen(argv[2], "w");
+    if(!f) return 1;
     fprintf(f, "#pragma once\n\n");
     fprintf(f, "static constexpr int8_t LEVEL_00_VERTS[%d] PROGMEM =\n{\n",
         (int)verts.size() * 3);
