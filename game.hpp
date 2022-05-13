@@ -20,6 +20,7 @@ void update_persistent(uint16_t addr, uint8_t data);
 void flush_persistent(); // (does nothing for Arduino)
 
 // game logic
+void game_setup();
 void game_loop();
 
 #if !(__cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1900))
@@ -198,6 +199,15 @@ struct dvec2 { int16_t x, y; };
 struct vec3  { int8_t  x, y, z; };
 struct dvec3 { int16_t x, y, z; };
 using mat3 = array<int8_t, 9>;
+
+static FORCEINLINE dvec3 vec_add(dvec3 a, dvec3 b)
+{
+    dvec3 r;
+    r.x = a.x + b.x;
+    r.y = a.y + b.y;
+    r.z = a.z + b.z;
+    return r;
+}
 
 // levels.cpp
 struct level_info

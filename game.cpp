@@ -11,6 +11,19 @@ void clear_buf()
     while(pa < pb) *pa++ = 0;
 }
 
+void game_setup()
+{
+    ball.x = 256 * 15;
+    ball.y = 256 * 5;
+    ball.z = 256 * -1;
+
+    yaw = 0;
+    pitch = 0;
+    cam.x = 256 * 15;
+    cam.y = 2 * 256;
+    cam.z = 256 * -12;
+}
+
 void game_loop()
 {
     {
@@ -45,9 +58,7 @@ void game_loop()
 
     }
 
-    ball.x = 256 * 15;
-    ball.y = 256 * 0.5;
-    ball.z = 256 * -1;
+    physics_step();
 
     current_level = &LEVELS[0];
     render_scene();

@@ -9,11 +9,11 @@ static array<uint8_t, MAX_CLIP_FACES * 4> clip_faces;
 static array<dvec2, MAX_VERTS> vs;
 
 // camera look angle (roll not supported)
-uint8_t yaw = 0;
-int8_t pitch = 0;
+uint8_t yaw;
+int8_t pitch;
 
 // camera position
-dvec3 cam = { 0, 2 * 256, -8 * 256 };
+dvec3 cam;
 
 static dvec2 interpz(dvec2 a, int16_t az, dvec2 b, int16_t bz)
 {

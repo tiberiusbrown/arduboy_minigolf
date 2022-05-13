@@ -53,6 +53,8 @@ void setup()
         power_timer0_disable();
         for(;;) Arduboy2Core::idle();
     }
+    
+    game_setup();
 
     a.setFrameRate(30);
     uint16_t pt = time_ms();

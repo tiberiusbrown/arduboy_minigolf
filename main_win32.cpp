@@ -434,6 +434,8 @@ int WINAPI WinMain(
 
     ShowWindow(hwnd, SW_NORMAL);
 
+    game_setup();
+
     btn_states = 0;
     SetTimer(hwnd, TIMER_ID, (UINT)16, (TIMERPROC)NULL);
     while(GetMessage(&msg, NULL, 0, 0))
