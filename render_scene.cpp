@@ -23,10 +23,19 @@ static dvec2 interpz(dvec2 a, int16_t az, dvec2 b, int16_t bz)
     return r;
 }
 
+void render_scene()
+{
+    render_scene(
+        pgmptr(&current_level->verts),
+        pgmptr(&current_level->faces),
+        pgm_read_byte(&current_level->num_verts),
+        pgm_read_byte(&current_level->num_faces));
+}
+
 void render_scene(
     int8_t const* verts,
-    uint8_t num_verts,
     uint8_t const* faces,
+    uint8_t num_verts,
     uint8_t num_faces)
 {
     mat3 m;

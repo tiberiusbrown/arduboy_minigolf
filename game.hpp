@@ -199,11 +199,23 @@ struct vec3  { int8_t  x, y, z; };
 struct dvec3 { int16_t x, y, z; };
 using mat3 = array<int8_t, 9>;
 
+// levels.cpp
+struct level_info
+{
+    int8_t const*  verts;
+    uint8_t const* faces;
+    uint8_t        num_verts;
+    uint8_t        num_faces;
+};
+extern level_info const LEVELS[1] PROGMEM;
+extern level_info const* current_level;
+
 // game.cpp
 void clear_buf();
 
 // physics.cpp
 extern dvec3 ball; // position
+void physics_step();
 
 // draw.cpp
 int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z);
@@ -214,10 +226,11 @@ void draw_ball(dvec2 c, uint16_t r);
 extern uint8_t yaw;
 extern int8_t  pitch;
 extern dvec3 cam;
+void render_scene();
 void render_scene(
     int8_t const* verts,
-    uint8_t num_verts,
     uint8_t const* faces,
+    uint8_t num_verts,
     uint8_t num_faces);
 
 // sincos.cpp
