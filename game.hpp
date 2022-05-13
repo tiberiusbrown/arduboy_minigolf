@@ -64,6 +64,8 @@ void game_loop();
 #define PSTR2(str_) \
     (__extension__({ static char const PROGSTR_[] PROGMEM = str_; PROGSTR_; }))
 
+#define myassert(...)
+
 #else
 #define PSTR(str_) str_
 #define PSTR2(str_) str_
@@ -71,6 +73,10 @@ void game_loop();
 inline uint8_t pgm_read_byte(void const* p) { return *(uint8_t*)p; }
 inline uint16_t pgm_read_word(void const* p) { return *(uint16_t*)p; }
 inline void const* pgm_read_ptr(void const* p) { return *(void const**)p; }
+
+#include <assert.h>
+#define myassert assert
+
 #endif
 
 // useful when T is a pointer type, like function pointer or char const*
@@ -169,7 +175,7 @@ extern array<uint8_t, BUF_BYTES> buf;
 
 static constexpr uint8_t MAX_VERTS = 150;
 static constexpr uint8_t MAX_FACES = 150;
-static constexpr uint8_t MAX_CLIP_FACES = 64;
+static constexpr uint8_t MAX_CLIP_FACES = 48;
 struct face_sorting_data
 {
     array<int16_t, MAX_VERTS> vz; // local space z

@@ -70,6 +70,7 @@ void render_scene(
 
     // ball vertices (center and right side) and face
     uint8_t balli0, balli1; // ball face indices
+    bool ball_valid = false;
     {
         dvec3 dv = ball;
         dv.x -= cam.x;
@@ -84,12 +85,14 @@ void render_scene(
         dv = matvec(m, dv);
         if(dv.z >= ZNEAR)
         {
+            myassert(nv + 1 <= MAX_VERTS);
             vs[nv] = { dv.x, dv.y };
             vs[nv + 1] = { int16_t(dv.x + 128), dv.y };
             fd.vz[nv] = dv.z;
             fd.vz[nv + 1] = dv.z;
             balli0 = nv;
             balli1 = nv + 1;
+            ball_valid = true;
             face_order[nf] = 255;
             fd.fdist[nf] = uint16_t(uint32_t(fdist) >> 16);
             nv += 2;
@@ -100,10 +103,13 @@ void render_scene(
     // assemble faces and clip them to near plane
     for(uint8_t i = 0; i < num_faces; ++i)
     {
-        uint8_t j = i << 2;
-        uint8_t i0 = pgm_read_byte(&faces[j + 0]);
-        uint8_t i1 = pgm_read_byte(&faces[j + 1]);
-        uint8_t i2 = pgm_read_byte(&faces[j + 2]);
+        if(nf + 1 > MAX_FACES)
+            break;
+
+        uint8_t const* fptr = &faces[i * 4];
+        uint8_t i0 = pgm_read_byte(fptr + 0);
+        uint8_t i1 = pgm_read_byte(fptr + 1);
+        uint8_t i2 = pgm_read_byte(fptr + 2);
         int16_t z0 = fd.vz[i0];
         int16_t z1 = fd.vz[i1];
         int16_t z2 = fd.vz[i2];
@@ -122,6 +128,13 @@ void render_scene(
         // clip: exactly two vertices behind near plane
         if((behind & (behind - 1)) != 0)
         {
+            if(nv + 2 > MAX_VERTS)
+                continue;
+            if(nf + 1 > MAX_FACES)
+                continue;
+            if(nclipf + 4 > MAX_CLIP_FACES * 4)
+                continue;
+
             dvec2 newv0, newv1;
             int16_t splitz;
             uint8_t ibase;
@@ -164,7 +177,7 @@ void render_scene(
             clip_faces[nclipf + 0] = ibase;
             clip_faces[nclipf + 1] = nv - 1;
             clip_faces[nclipf + 2] = nv - 2;
-            clip_faces[nclipf + 3] = pgm_read_byte(&faces[j + 3]);
+            clip_faces[nclipf + 3] = pgm_read_byte(fptr + 3);
             nclipf += 4;
 
             continue;
@@ -173,6 +186,11 @@ void render_scene(
         // clip: exactly one vertex behind near plane
         else if(behind != 0)
         {
+            if(nv + 2 > MAX_VERTS)
+                continue;
+            if(nclipf + 8 > MAX_CLIP_FACES * 4)
+                continue;
+
             uint8_t ia, ib, ic; // winding order indices
             dvec2 newv0, newv1;
             int16_t splitz0;
@@ -217,7 +235,7 @@ void render_scene(
             fd.fdist[nf] = fdist;
             ++nf;
 
-            uint8_t pat = pgm_read_byte(&faces[j + 3]);
+            uint8_t pat = pgm_read_byte(fptr + 3);
 
             // TODO: backface culling issue here!
 
@@ -247,6 +265,8 @@ void render_scene(
         dvec3 dv = { vs[i].x, vs[i].y, fd.vz[i] };
 
         // multiply x and y by 4/z
+        //myassert(dv.z >= ZNEAR);
+        if(dv.z >= ZNEAR)
         {
             uint16_t zs = uint16_t(dv.z) >> 4;
             uint16_t f;
@@ -293,6 +313,8 @@ void render_scene(
 #endif
 
     // finally, render
+    if(ball_valid)
+        ball_valid = fd.vz[balli0] >= ZNEAR;
     clear_buf(); // buf mem was used during setup
     for(uint8_t i = 0; i < nf; ++i)
     {
@@ -310,9 +332,12 @@ void render_scene(
         else if(t == 255)
         {
             // ball
-            dvec2 c = vs[balli0];
-            uint16_t r = uint16_t(vs[balli1].x - c.x);
-            draw_ball(vs[balli0], r);
+            if(ball_valid)
+            {
+                dvec2 c = vs[balli0];
+                uint16_t r = uint16_t(vs[balli1].x - c.x);
+                draw_ball(vs[balli0], r);
+            }
             continue;
         }
         else
