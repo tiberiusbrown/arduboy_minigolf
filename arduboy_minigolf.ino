@@ -70,7 +70,7 @@ void setup()
             for(;;);
         }
       
-        while(!a.nextFrame())
+        //while(!a.nextFrame())
             ;
         game_loop();
         uint16_t t = time_ms();

@@ -98,9 +98,9 @@ void game_loop()
 
     }
 
-    ball.x = 256 * 2;
+    ball.x = 256 * 15;
     ball.y = 256 * 0.5;
-    ball.z = 256 * 3;
+    ball.z = 256 * -1;
 
     render_scene(VERTS, NUM_VERTS, FACES, NUM_FACES);
 }
