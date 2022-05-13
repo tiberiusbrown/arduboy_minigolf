@@ -15,9 +15,7 @@ uint8_t yaw = 0;
 int8_t pitch = 0;
 
 // camera position
-int16_t cx = 0;
-int16_t cy = 256 * 2;
-int16_t cz = -256 * 8;
+dvec3 cam = { 0, 2 * 256, -8 * 256 };
 
 static dvec2 interpz(dvec2 a, int16_t az, dvec2 b, int16_t bz)
 {
@@ -53,12 +51,16 @@ void render_scene(
         dv.z = (int8_t)pgm_read_byte(&verts[j + 2]) << 8;
 
         // translate
-        dv.x -= cx;
-        dv.y -= cy;
-        dv.z -= cz;
+        dv.x -= cam.x;
+        dv.y -= cam.y;
+        dv.z -= cam.z;
 
         // vertex distance
-        fd.vdist[nv] = tabs(dv.x) + tabs(dv.y) + tabs(dv.z);
+        //fd.vdist[nv] = uint16_t(tabs(dv.x) + tabs(dv.y) + tabs(dv.z));
+        fd.vdist[nv] = uint16_t(uint32_t(
+            int32_t(dv.x) * dv.x +
+            int32_t(dv.y) * dv.y +
+            int32_t(dv.z) * dv.z) >> 16);
 
         // rotate
         dv = matvec(m, dv);
@@ -66,6 +68,35 @@ void render_scene(
         // save vertex
         vs[nv] = { dv.x, dv.y };
         fd.vz[nv] = dv.z;
+    }
+
+    // ball vertices (center and right side) and face
+    uint8_t balli0, balli1; // ball face indices
+    {
+        dvec3 dv = ball;
+        dv.x -= cam.x;
+        dv.y -= cam.y;
+        dv.z -= cam.z;
+        int32_t fdist = 0;
+        fdist += int32_t(dv.x) * dv.x;
+        fdist += int32_t(dv.y) * dv.y;
+        fdist += int32_t(dv.z) * dv.z;
+        fdist *= 3;
+        //fdist += (uint32_t(32) << 16); // small bias
+        dv = matvec(m, dv);
+        if(dv.z >= ZNEAR)
+        {
+            vs[nv] = { dv.x, dv.y };
+            vs[nv + 1] = { int16_t(dv.x + 128), dv.y };
+            fd.vz[nv] = dv.z;
+            fd.vz[nv + 1] = dv.z;
+            balli0 = nv;
+            balli1 = nv + 1;
+            face_order[nf] = 255;
+            fd.fdist[nf] = uint16_t(uint32_t(fdist) >> 16);
+            nv += 2;
+            nf += 1;
+        }
     }
 
     // assemble faces and clip them to near plane
@@ -272,13 +303,23 @@ void render_scene(
         uint16_t j = uint16_t(t) * 4;
         if(t < MAX_FACES)
         {
+            // normal face
             i0 = pgm_read_byte(&faces[j + 0]);
             i1 = pgm_read_byte(&faces[j + 1]);
             i2 = pgm_read_byte(&faces[j + 2]);
             pt = pgm_read_byte(&faces[j + 3]);
         }
+        else if(t == 255)
+        {
+            // ball
+            dvec2 c = vs[balli0];
+            uint16_t r = uint16_t(vs[balli1].x - c.x);
+            draw_ball(vs[balli0], r);
+            continue;
+        }
         else
         {
+            // clip face
             i0 = clip_faces[j - MAX_FACES * 4 + 0];
             i1 = clip_faces[j - MAX_FACES * 4 + 1];
             i2 = clip_faces[j - MAX_FACES * 4 + 2];

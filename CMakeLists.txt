@@ -51,6 +51,7 @@ add_executable(
     game.hpp
     game.cpp
     draw.cpp
+    physics.cpp
     sincos.cpp
     render_scene.cpp
     mat.cpp

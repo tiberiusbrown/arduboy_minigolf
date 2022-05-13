@@ -82,21 +82,25 @@ void game_loop()
         else if(btns & BTN_B)
         {
             // rise and fall
-            if(btns & BTN_UP  ) cy += 24;
-            if(btns & BTN_DOWN) cy -= 24;
+            if(btns & BTN_UP  ) cam.y += 24;
+            if(btns & BTN_DOWN) cam.y -= 24;
         }
         else
         {
             // move and strafe
             int8_t sinA = fsin(yaw) / 4;
             int8_t cosA = fcos(yaw) / 4;
-            if(btns & BTN_UP   ) cx -= sinA, cz += cosA;
-            if(btns & BTN_DOWN ) cx += sinA, cz -= cosA;
-            if(btns & BTN_LEFT ) cx -= cosA, cz -= sinA;
-            if(btns & BTN_RIGHT) cx += cosA, cz += sinA;
+            if(btns & BTN_UP   ) cam.x -= sinA, cam.z += cosA;
+            if(btns & BTN_DOWN ) cam.x += sinA, cam.z -= cosA;
+            if(btns & BTN_LEFT ) cam.x -= cosA, cam.z -= sinA;
+            if(btns & BTN_RIGHT) cam.x += cosA, cam.z += sinA;
         }
 
     }
+
+    ball.x = 256 * 2;
+    ball.y = 256 * 0.5;
+    ball.z = 256 * 3;
 
     render_scene(VERTS, NUM_VERTS, FACES, NUM_FACES);
 }

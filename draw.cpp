@@ -34,7 +34,7 @@ static constexpr uint16_t PATTERNS[5] PROGMEM =
     0xffff,
 };
 
-static void draw_tri_vline(uint8_t x, int16_t y0, int16_t y1, uint16_t pat)
+static void draw_vline(uint8_t x, int16_t y0, int16_t y1, uint16_t pat)
 {
     if(y0 > y1) return;
     if(y1 < 0) return;
@@ -144,12 +144,107 @@ static void draw_tri_segment(
             py1 += sy1;
             e1 -= dx;
         }
-        draw_tri_vline((uint8_t)pxa, py0, py1, pat);
+        draw_vline((uint8_t)pxa, py0, py1, pat);
         //set_pixel((uint8_t)pxa, (uint8_t)py0);
         //set_pixel((uint8_t)pxa, (uint8_t)py1);
         pxa += 1;
         e0 += dy0;
         e1 += dy1;
+    }
+}
+
+static void draw_circle_bresenham_segment(
+    int16_t cx, int16_t cy, int16_t x, int16_t y, uint16_t pat)
+{
+    // all inputs in pixels
+    draw_vline(uint8_t(cx + x), cy - y, cy + y, pat);
+    draw_vline(uint8_t(cx - x), cy - y, cy + y, pat);
+    draw_vline(uint8_t(cx + y), cy - x, cy + x, pat);
+    draw_vline(uint8_t(cx - y), cy - x, cy + x, pat);
+}
+
+static void draw_ball_bresenham(dvec2 c, uint16_t r, uint16_t pat)
+{
+#if 1
+
+    c.x = div16s(c.x);
+    c.y = div16s(c.y);
+    r >>= 4;
+
+    int16_t dx = 12;
+    int16_t dy = 8 - r * 8;
+    int16_t e = 5 - r * 4;
+    int16_t y = (int16_t)r;
+
+    for(int16_t x = 0; x <= y; ++x)
+    {
+        draw_circle_bresenham_segment(c.x, c.y, x, y, pat);
+        if(e >= 0)
+        {
+            e += dy;
+            dy += 8;
+            y -= 1;
+        }
+        e += dx;
+        dx += 8;
+    }
+#else
+    int16_t x = 0;
+    int16_t y = (int16_t)r;
+    int16_t e = 3 - r * 2;
+    draw_circle_segment(c.x, c.y, x, y, pat);
+    while(y >= x)
+    {
+        ++x;
+        if(e > 0)
+        {
+            --y;
+            e += (x - y) * 4 + 10;
+        }
+        else
+        {
+            e += x * 4 + 6;
+        }
+        draw_circle_segment(c.x, c.y, x, y, pat);
+    }
+#endif
+}
+
+static void draw_ball_tri(dvec2 c, uint8_t r, uint8_t pati)
+{
+    // approximate ball as N-gon with triangles
+    constexpr uint8_t N = 16;
+    constexpr uint8_t INVN = 256 / N;
+    uint8_t angle = 0;
+    dvec2 c0;
+    c0.x = c.x;
+    c0.y = c.y + int8_t(uint16_t(fmuls(127, r)) >> 8);
+    for(uint8_t n = 0, angle = 0; n < N; ++n)
+    {
+        angle += INVN;
+        int8_t sin_angle = int8_t(uint16_t(fmuls(fsin(angle), r)) >> 8);
+        int8_t cos_angle = int8_t(uint16_t(fmuls(fcos(angle), r)) >> 8);
+        dvec2 c1;
+        c1.x = c.x + cos_angle;
+        c1.y = c.y + sin_angle;
+        draw_tri(c, c0, c1, pati);
+        c0 = c1;
+    }
+}
+
+void draw_ball(dvec2 c, uint16_t r)
+{
+    if(c.x < -(int16_t)r || c.y < -(int16_t)r) return;
+    if(c.x > FBW * 16 + r || c.y > FBW * 16 + r) return;
+    //if(r < 16 * 8)
+    //{
+    //    draw_ball_tri(c, (uint8_t)r + 16, 0);
+    //    draw_ball_tri(c, (uint8_t)r     , 4);
+    //}
+    //else
+    {
+        draw_ball_bresenham(c, r + 16, 0x0000);
+        draw_ball_bresenham(c, r     , 0xffff);
     }
 }
 

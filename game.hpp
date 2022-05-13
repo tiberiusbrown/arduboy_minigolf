@@ -195,16 +195,18 @@ using mat3 = array<int8_t, 9>;
 // game.cpp
 void clear_buf();
 
+// physics.cpp
+extern dvec3 ball; // position
+
 // draw.cpp
 int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z);
 void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati);
+void draw_ball(dvec2 c, uint16_t r);
 
 // render_scene.cpp
 extern uint8_t yaw;
 extern int8_t  pitch;
-extern int16_t cx;
-extern int16_t cy;
-extern int16_t cz;
+extern dvec3 cam;
 void render_scene(
     int8_t const* verts,
     uint8_t num_verts,
