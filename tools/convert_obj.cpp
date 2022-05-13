@@ -54,13 +54,13 @@ int main(int argc, char** argv)
         }
         else if(c == 'u')
         {
-            while((c = fgetc(f)) != '\n')
+            while(!feof(f) && (c = fgetc(f)) != '\n')
                 if(c >= '0' && c <= '5')
                     pat = uint8_t(c - '0');
         }
         else
         {
-            while(fgetc(f) != '\n')
+            while(!feof(f) && fgetc(f) != '\n')
                 ;
         }
     }

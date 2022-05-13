@@ -2,8 +2,6 @@
 
 #define PERFDOOM 0
 
-static constexpr uint8_t MAX_CLIP_FACES = 32;
-
 static constexpr int16_t ZNEAR = 256 * 0.5;  // near
 
 static array<uint8_t, MAX_FACES> face_order;

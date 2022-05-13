@@ -167,8 +167,9 @@ extern uint8_t* const buf;
 extern array<uint8_t, BUF_BYTES> buf;
 #endif
 
-static constexpr uint8_t MAX_VERTS = 100;
-static constexpr uint8_t MAX_FACES = 200;
+static constexpr uint8_t MAX_VERTS = 150;
+static constexpr uint8_t MAX_FACES = 150;
+static constexpr uint8_t MAX_CLIP_FACES = 64;
 struct face_sorting_data
 {
     array<int16_t, MAX_VERTS> vz; // local space z
