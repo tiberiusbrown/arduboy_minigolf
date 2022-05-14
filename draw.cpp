@@ -323,6 +323,9 @@ void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati)
     if(t < 0) return;
 #endif
 
+    if(tmax(v0.y, v1.y, v2.y) < 0) return;
+    if(tmin(v0.y, v1.y, v2.y) > FBH * 16) return;
+
     // sort by x coord
     if(v0.x > v1.x) swap(v0, v1);
     if(v1.x > v2.x) swap(v1, v2);

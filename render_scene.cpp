@@ -68,6 +68,7 @@ void render_scene(
             int32_t(dv.x) * dv.x +
             int32_t(dv.y) * dv.y +
             int32_t(dv.z) * dv.z) >> 16);
+        //fd.vdist[nv] = tabs(dv.y) + (uint16_t(tabs(dv.x) + tabs(dv.z)) >> 4);
 
         // rotate
         dv = matvec(m, dv);
@@ -85,18 +86,23 @@ void render_scene(
         dv.x -= cam.x;
         dv.y -= cam.y;
         dv.z -= cam.z;
+        //fdist -= (uint32_t(32) << 16); // small bias
+        //fdist += (uint32_t(32) << 16); // small bias
+        dv = matvec(m, dv);
+
+        dv.y += 32;
+        dv.z -= 96;
         int32_t fdist = 0;
         fdist += int32_t(dv.x) * dv.x;
         fdist += int32_t(dv.y) * dv.y;
         fdist += int32_t(dv.z) * dv.z;
         fdist *= 3;
-        //fdist += (uint32_t(32) << 16); // small bias
-        dv = matvec(m, dv);
+
         if(dv.z >= ZNEAR)
         {
             myassert(nv + 1 <= MAX_VERTS);
             vs[nv] = { dv.x, dv.y };
-            vs[nv + 1] = { int16_t(dv.x + 128), dv.y };
+            vs[nv + 1] = { int16_t(dv.x + 144), dv.y };
             fd.vz[nv] = dv.z;
             fd.vz[nv + 1] = dv.z;
             balli0 = nv;
@@ -104,6 +110,7 @@ void render_scene(
             ball_valid = true;
             face_order[nf] = 255;
             fd.fdist[nf] = uint16_t(uint32_t(fdist) >> 16);
+            //fd.fdist[nf] = tabs(dv.y) + (uint16_t(tabs(dv.x) + tabs(dv.z)) >> 4);;
             nv += 2;
             nf += 1;
         }

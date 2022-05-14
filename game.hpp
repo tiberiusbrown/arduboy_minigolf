@@ -209,22 +209,37 @@ static FORCEINLINE dvec3 vec_add(dvec3 a, dvec3 b)
     return r;
 }
 
-// levels.cpp
+struct phys_box
+{
+    dvec3 size; // half extents
+    dvec3 pos;
+    uint8_t yaw;
+    int8_t pitch;
+};
+
 struct level_info
 {
-    int8_t const*  verts;
-    uint8_t const* faces;
-    uint8_t        num_verts;
-    uint8_t        num_faces;
+    int8_t const*   verts;
+    uint8_t const*  faces;
+    phys_box const* boxes;
+    uint8_t         num_verts;
+    uint8_t         num_faces;
+    uint8_t         num_boxes;
 };
+
+// levels.cpp
 extern level_info const LEVELS[1] PROGMEM;
 extern level_info const* current_level;
 
 // game.cpp
 void clear_buf();
+#ifndef ARDUINO
+void* memcpy_P(void* dst, const void* src, size_t n);
+#endif
 
 // physics.cpp
-extern dvec3 ball; // position
+extern dvec3 ball;     // position
+extern dvec3 ball_vel; // velocity
 void physics_step();
 
 // draw.cpp
@@ -251,8 +266,12 @@ int16_t fcos16(uint16_t angle);
 
 // mat.cpp
 void rotation(mat3& m, uint8_t yaw, int8_t pitch);
-dvec3 matvec(mat3 m, vec3 v);
-dvec3 matvec(mat3 m, dvec3 v);
+dvec3 matvec  (mat3 m, vec3  v);
+dvec3 matvec_t(mat3 m, vec3  v); // transpose
+dvec3 matvec  (mat3 m, dvec3 v);
+dvec3 matvec_t(mat3 m, dvec3 v); // transpose
+dvec3 normalized(dvec3 v);       // normalize to 8.8
+int16_t dot(dvec3 a, dvec3 b);
 
 // div.cpp
 uint16_t inv8(uint8_t x);
