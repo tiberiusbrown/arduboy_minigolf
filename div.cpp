@@ -77,14 +77,14 @@ int16_t divlut(int16_t x, uint8_t y)
     return x < 0 ? -divlut(uint16_t(-x), y) : divlut(uint16_t(x), y);
 }
 
-uint16_t divlut(u24 x, uint8_t y)
+uint16_t divlut(uint24_t x, uint8_t y)
 {
     uint16_t t = pgm_read_word(&DIVISORS[y]);
     uint32_t p = uint32_t(x) * t;
     return uint16_t(p >> 16);
 }
 
-int16_t divlut(s24 x, uint8_t y)
+int16_t divlut(int24_t x, uint8_t y)
 {
     return x < 0 ? -divlut(u24(-x), y) : divlut(u24(x), y);
 }

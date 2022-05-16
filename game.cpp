@@ -6,8 +6,9 @@ static void reset_ball()
     ball.y = 256 * 1;
     ball.z = 256 * -7;
 
+    ball_vel_ang = {};
     ball_vel = {};
-    ball_vel.x = 256 * -40;
+    ball_vel.x = 256 * -30;
 
     //ball_vel.x = -256 * 6;
 }
@@ -18,15 +19,9 @@ void game_setup()
 
     reset_ball();
 
+    cam = { 1327, 1048, 1024 };
     yaw = 0;
-    pitch = -64;
-    cam.x = 256 * 15;
-    cam.y = 256 * 20;
-    cam.z = 256 * -5;
-
-    cam = { 256 * -5, 1048, 449 };
-    yaw = 0;
-    pitch = 21;
+    pitch = 16;
 }
 
 void move_forward(int16_t amount)

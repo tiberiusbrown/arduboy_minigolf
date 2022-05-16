@@ -103,14 +103,14 @@ static uint16_t inv_sqrt(uint16_t a)
 {
     uint16_t x = 0x100; // 1
 
-    for(int i = 0; i < 8; ++i)
+    for(uint8_t i = 0; i < 8; ++i)
     {
         uint16_t t;
         t = uint16_t((u24(x) * x) >> 8); // x*x
         t = uint16_t((u24(a) * t) >> 8); // a*x*x
         t >>= 1;                         // 0.5 * a*x*x
 
-        x = uint16_t(u24(u24(x) * int16_t(0x180 - t)) >> 8);
+        x = uint16_t(u24(s24(int16_t(0x180) - int16_t(t)) * x) >> 8);
     }
 
     return x;
@@ -118,10 +118,18 @@ static uint16_t inv_sqrt(uint16_t a)
 
 dvec3 normalized(dvec3 v)
 {
-    u24 d2 = 0;
-    d2 += u24(v.x) * v.x;
-    d2 += u24(v.y) * v.y;
-    d2 += u24(v.z) * v.z;
+    // TODO: fit v.x into int8_t and propagate precision?
+    //       would save a lot of ops
+    while(tmax(tabs(v.x), tabs(v.y), tabs(v.z)) >= (1 << 8))
+    {
+        v.x /= 2;
+        v.y /= 2;
+        v.z /= 2;
+    }
+    uint24_t d2 = 0;
+    d2 += u24(s24(v.x) * v.x);
+    d2 += u24(s24(v.y) * v.y);
+    d2 += u24(s24(v.z) * v.z);
     uint16_t d = inv_sqrt(uint16_t(d2 >> 8));
     v.x = int16_t(u24(s24(v.x) * d) >> 8);
     v.y = int16_t(u24(s24(v.y) * d) >> 8);
@@ -131,7 +139,7 @@ dvec3 normalized(dvec3 v)
 
 int16_t dot(dvec3 a, dvec3 b)
 {
-    s24 r = 0;
+    int24_t r = 0;
     r += s24(a.x) * b.x;
     r += s24(a.y) * b.y;
     r += s24(a.z) * b.z;

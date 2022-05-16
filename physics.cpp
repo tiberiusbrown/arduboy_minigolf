@@ -8,6 +8,9 @@ static constexpr int16_t BALL_RADIUS = 256 * 0.5;
 // range is OK since the ball should never be moving 0.5 units per step anyway
 dvec3 ball_vel;
 
+dvec3 ball_vel_ang;
+
+// 0.25 units per step
 static constexpr int16_t MAX_VEL = 256 * 64;
 
 // gravity acceleration: y vel units per step
@@ -79,12 +82,22 @@ Equations:
 
 If m = 1, I = 1/8, en = 1/2, et = 1, rp = -(1/2)n, and t is orthogonal to rp:
 
-    vp = v1 + 1/2cross(w1, n)
-    Jv = -(3/2*dot(vp, n) + 1/3*dot(vp, t))    [note: factors are adjustable]
+    vp = v1 - 1/2cross(w1, n)
+    Jv = -3/2*dot(vp, n)*n -1/3*dot(vp, t)*t    [note: factors are adjustable]
     v2 = v1 + Jv
-    w2 = w1 + 8*cross(rp, Jv)
+    w2 = w1 - 4*cross(n, Jv)
 
 */
+
+static dvec3 cross(dvec3 a, dvec3 b)
+{
+    // function designed to be used with at least one near unit-length arg
+    dvec3 r;
+    r.x = int16_t(u24(s24(a.y) * b.z - s24(a.z) * b.y) >> 8);
+    r.y = int16_t(u24(s24(a.z) * b.x - s24(a.x) * b.z) >> 8);
+    r.z = int16_t(u24(s24(a.x) * b.y - s24(a.y) * b.x) >> 8);
+    return r;
+}
 
 static void physics_collision(phys_box b)
 {
@@ -107,17 +120,11 @@ static void physics_collision(phys_box b)
     if(d > BALL_RADIUS_SQ)
         return;
 
-    //if(b.pitch != 0) __debugbreak();
-
-#if 1
-
     // find contact point on box
     dvec3 cpt;
     cpt.x = tclamp<int16_t>(pt.x, -b.size.x, b.size.x);
     cpt.y = tclamp<int16_t>(pt.y, -b.size.y, b.size.y);
     cpt.z = tclamp<int16_t>(pt.z, -b.size.z, b.size.z);
-
-    //if(b.pitch != 0) __debugbreak();
 
     // collision normal is difference between contact point and ball center
     dvec3 normal;
@@ -138,51 +145,48 @@ static void physics_collision(phys_box b)
     if(normdot > 0)
         return;
 
-    dvec3 absnormal;
-    absnormal.x = tabs(normal.x);
-    absnormal.y = tabs(normal.y);
-    absnormal.z = tabs(normal.z);
+    // tangent vector is rejection of velocity from normal
+    dvec3 tangent;
+    tangent.x = ball_vel.x - int16_t(u24(s24(normdot) * normal.x) >> 8);
+    tangent.y = ball_vel.y - int16_t(u24(s24(normdot) * normal.y) >> 8);
+    tangent.z = ball_vel.z - int16_t(u24(s24(normdot) * normal.z) >> 8);
+    tangent = normalized(tangent);
 
-    // hack: resolve penetration by moving ball back by velocity
-    //       (assumption is that ball did not penetrate at previous step)
-    ball.x -= int8_t(u24(s24(ball_vel.x + 128) * absnormal.x) >> 16);
-    ball.y -= int8_t(u24(s24(ball_vel.y + 128) * absnormal.y) >> 16);
-    ball.z -= int8_t(u24(s24(ball_vel.z + 128) * absnormal.z) >> 16);
-
-    // reflect velocity across normal and apply restitution
-    // v = v - (2*dot(v, n)) * n
-    //if(0)
+    // contact point velocity
+    dvec3 vp;
     {
-        s24 d = s24(normdot) * 2;
-#if 0
-        // hack: to enable rolling up hills without angular velocity,
-        //       retain full horizontal velocity
-        ball_vel.x -= int16_t(u24(d * normal.x) >> 8);
-        ball_vel.y -= int16_t(u24(d * normal.y) >> 8);
-        ball_vel.z -= int16_t(u24(d * normal.z) >> 8);
-        uint8_t restx = 255;
-        uint8_t resty = int8_t(uint16_t(absnormal.y * REST_MINUS_ONE) >> 8) + 255;
-        uint8_t restz = 255;
-#else
-        ball_vel.x -= int16_t(u24(d * normal.x) >> 8);
-        ball_vel.y -= int16_t(u24(d * normal.y) >> 8);
-        ball_vel.z -= int16_t(u24(d * normal.z) >> 8);
-        uint8_t restx = int8_t(uint16_t(absnormal.x * REST_MINUS_ONE) >> 8) + 255;
-        uint8_t resty = int8_t(uint16_t(absnormal.y * REST_MINUS_ONE) >> 8) + 255;
-        uint8_t restz = int8_t(uint16_t(absnormal.z * REST_MINUS_ONE) >> 8) + 255;
-#endif
-
-        // apply restitution via absnormal: an*(R-1) + 1
-        ball_vel.x = int16_t(u24(s24(ball_vel.x) * restx) >> 8);
-        ball_vel.y = int16_t(u24(s24(ball_vel.y) * resty) >> 8);
-        ball_vel.z = int16_t(u24(s24(ball_vel.z) * restz) >> 8);
+        dvec3 t = cross(ball_vel_ang, normal);
+        vp.x = ball_vel.x - t.x / 2;
+        vp.y = ball_vel.y - t.y / 2;
+        vp.z = ball_vel.z - t.z / 2;
     }
 
-#else
-    ball_vel.x = int16_t(u24(s24(-ball_vel.x) * RESTITUTION) >> 8);
-    ball_vel.y = int16_t(u24(s24(-ball_vel.y) * RESTITUTION) >> 8);
-    ball_vel.z = int16_t(u24(s24(-ball_vel.z) * RESTITUTION) >> 8);
-#endif
+    // impulse factor
+    dvec3 Jv;
+    {
+        int16_t t0 = -dot(vp, normal) * 3 / 2;
+        int16_t t1 = -dot(vp, tangent);
+        t1 = int16_t(u24(s24(t1) * (256 / 3)) >> 8);
+        Jv.x  = int16_t(u24(s24(t0) *  normal.x) >> 8);
+        Jv.y  = int16_t(u24(s24(t0) *  normal.y) >> 8);
+        Jv.z  = int16_t(u24(s24(t0) *  normal.z) >> 8);
+        Jv.x += int16_t(u24(s24(t1) * tangent.x) >> 8);
+        Jv.y += int16_t(u24(s24(t1) * tangent.y) >> 8);
+        Jv.z += int16_t(u24(s24(t1) * tangent.z) >> 8);
+    }
+
+    // velocity update
+    ball_vel.x += Jv.x;
+    ball_vel.y += Jv.y;
+    ball_vel.z += Jv.z;
+
+    // angular velocity update
+    {
+        dvec3 t = cross(Jv, normal);
+        ball_vel_ang.x += t.x * 4;
+        ball_vel_ang.y += t.y * 4;
+        ball_vel_ang.z += t.z * 4;
+    }
 }
 
 void physics_step()
@@ -208,4 +212,9 @@ void physics_step()
     ball.x += int8_t(uint16_t(ball_vel.x + 128) >> 8);
     ball.y += int8_t(uint16_t(ball_vel.y + 128) >> 8);
     ball.z += int8_t(uint16_t(ball_vel.z + 128) >> 8);
+
+    // angular damping
+    ball_vel_ang.x = int16_t(u24(s24(ball_vel_ang.x) * 255) >> 8);
+    ball_vel_ang.y = int16_t(u24(s24(ball_vel_ang.y) * 255) >> 8);
+    ball_vel_ang.z = int16_t(u24(s24(ball_vel_ang.z) * 255) >> 8);
 }

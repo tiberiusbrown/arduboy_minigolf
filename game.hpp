@@ -189,11 +189,53 @@ static_assert(sizeof(face_sorting_data) <= BUF_BYTES, "");
 static face_sorting_data& fd = *((face_sorting_data*)&buf[0]);
 
 #ifdef ARDUINO
-using s24 = __int24;
-using u24 = __uint24;
+using int24_t = __int24;
+using uint24_t = __uint24;
+using s24 = int24_t;
+using u24 = uint24_t;
 #else
-using s24 = int32_t;
-using u24 = uint32_t;
+using int24_t = int32_t;
+using uint24_t = uint32_t;
+
+template<class T>
+static int24_t s24(T x)
+{
+    return int24_t(x);
+}
+static int24_t s24(uint32_t x)
+{
+    myassert((x & 0xff800000) == 0);
+    return int24_t(x);
+}
+static int24_t s24(int32_t x)
+{
+    if(x & 0x800000)
+        myassert((x & 0xff000000) == 0xff000000);
+    else
+        myassert((x & 0xff000000) == 0);
+    return int24_t(x);
+}
+
+template<class T>
+static uint24_t u24(T x)
+{
+    return uint24_t(x);
+}
+static uint24_t u24(uint32_t x)
+{
+    myassert((x & 0xff000000) == 0);
+    return uint24_t(x);
+}
+static uint24_t u24(int32_t x)
+{
+    if(x & 0x800000)
+        myassert((x & 0xff000000) == 0xff000000);
+    else
+        myassert((x & 0xff000000) == 0);
+    return uint24_t(x);
+}
+static uint24_t u24(int16_t x) { return u24(int32_t(x)); }
+static uint24_t u24(int8_t x) { return u24(int32_t(x)); }
 #endif
 
 struct vec2  { int8_t  x, y; };
@@ -241,8 +283,9 @@ void look_up(int8_t amount);
 void look_right(int8_t amount);
 
 // physics.cpp
-extern dvec3 ball;     // position
-extern dvec3 ball_vel; // velocity
+extern dvec3 ball;         // position
+extern dvec3 ball_vel;     // velocity
+extern dvec3 ball_vel_ang; // angular velocity
 void physics_step();
 
 // draw.cpp
@@ -288,8 +331,8 @@ int16_t dot(dvec3 a, dvec3 b);
 uint16_t inv8(uint8_t x);
 uint16_t divlut(uint16_t x, uint8_t y);
 int16_t divlut(int16_t x, uint8_t y);
-uint16_t divlut(u24 x, uint8_t y);
-int16_t divlut(s24 x, uint8_t y);
+uint16_t divlut(uint24_t x, uint8_t y);
+int16_t divlut(int24_t x, uint8_t y);
 
 static inline dvec2 frotate(dvec2 v, uint8_t angle)
 {
