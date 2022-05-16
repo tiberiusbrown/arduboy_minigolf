@@ -4,9 +4,9 @@
 
 static constexpr int16_t ZNEAR = 256 * 0.5;  // near
 
-static array<uint8_t, MAX_FACES> face_order;
-static array<uint8_t, MAX_CLIP_FACES * 4> clip_faces;
-static array<dvec2, MAX_VERTS> vs;
+array<uint8_t, MAX_FACES> face_order;
+array<uint8_t, MAX_CLIP_FACES * 4> clip_faces;
+array<dvec2, MAX_VERTS> vs;
 
 // camera look angle (roll not supported)
 uint8_t yaw;
@@ -23,16 +23,23 @@ static dvec2 interpz(dvec2 a, int16_t az, dvec2 b, int16_t bz)
     return r;
 }
 
-void render_scene()
+void clear_buf()
 {
-    render_scene(
+    uint8_t* pa = &buf[0];
+    uint8_t* pb = pa + 1024;
+    while(pa < pb) *pa++ = 0;
+}
+
+uint8_t render_scene()
+{
+    return render_scene(
         pgmptr(&current_level->verts),
         pgmptr(&current_level->faces),
         pgm_read_byte(&current_level->num_verts),
         pgm_read_byte(&current_level->num_faces));
 }
 
-void render_scene(
+uint8_t render_scene(
     int8_t const* verts,
     uint8_t const* faces,
     uint8_t num_verts,
@@ -72,6 +79,7 @@ void render_scene(
 
         // rotate
         dv = matvec(m, dv);
+        dv.z = -dv.z;
 
         // save vertex
         vs[nv] = { dv.x, dv.y };
@@ -89,6 +97,7 @@ void render_scene(
         //fdist -= (uint32_t(32) << 16); // small bias
         //fdist += (uint32_t(32) << 16); // small bias
         dv = matvec(m, dv);
+        dv.z = -dv.z;
 
         dv.y += 32;
         dv.z -= 96;
@@ -102,7 +111,7 @@ void render_scene(
         {
             myassert(nv + 1 <= MAX_VERTS);
             vs[nv] = { dv.x, dv.y };
-            vs[nv + 1] = { int16_t(dv.x + 144), dv.y };
+            vs[nv + 1] = { int16_t(dv.x + 128), dv.y };
             fd.vz[nv] = dv.z;
             fd.vz[nv + 1] = dv.z;
             balli0 = nv;
@@ -284,6 +293,7 @@ void render_scene(
         //myassert(dv.z >= ZNEAR);
         if(dv.z >= ZNEAR)
         {
+            // TODO: quality of this divide is poor
             uint16_t zs = uint16_t(dv.z) >> 4;
             uint16_t f;
             if(zs >= 256)
@@ -332,6 +342,7 @@ void render_scene(
     if(ball_valid)
         ball_valid = fd.vz[balli0] >= ZNEAR;
     clear_buf(); // buf mem was used during setup
+    uint16_t ballr = 0;
     for(uint8_t i = 0; i < nf; ++i)
     {
         uint8_t t = face_order[i];
@@ -351,8 +362,8 @@ void render_scene(
             if(ball_valid)
             {
                 dvec2 c = vs[balli0];
-                uint16_t r = uint16_t(vs[balli1].x - c.x);
-                draw_ball(vs[balli0], r);
+                ballr = uint16_t(vs[balli1].x - c.x);
+                draw_ball_filled(vs[balli0], ballr);
             }
             continue;
         }
@@ -366,8 +377,38 @@ void render_scene(
         }
         draw_tri(vs[i0], vs[i1], vs[i2], pt);
     }
+    if(ball_valid)
+        draw_ball_outline(vs[balli0], ballr + 8);
 
 #if PERFDOOM
     }
 #endif
+
+    return nf;
 }
+
+#ifndef ARDUINO
+dvec3 transform_point(dvec3 dv)
+{
+    mat3 m;
+    rotation(m, yaw, pitch);
+
+    dv.x -= cam.x;
+    dv.y -= cam.y;
+    dv.z -= cam.z;
+
+    dv = matvec(m, dv);
+    dv.z = -dv.z;
+
+    if(dv.z >= ZNEAR)
+    {
+        dv.x = float(dv.x) * 4 / (float(dv.z) / 256);
+        dv.y = float(dv.y) * 4 / (float(dv.z) / 256);
+    }
+
+    dv.x += (FBW / 2 * 16);
+    dv.y = (FBH / 2 * 16) - dv.y;
+
+    return dv;
+}
+#endif

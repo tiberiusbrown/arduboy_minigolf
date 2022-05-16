@@ -78,6 +78,8 @@ inline void const* pgm_read_ptr(void const* p) { return *(void const**)p; }
 #include <assert.h>
 #define myassert assert
 
+#include <string.h>
+#define memcpy_P memcpy
 #endif
 
 // useful when T is a pointer type, like function pointer or char const*
@@ -232,10 +234,11 @@ extern level_info const LEVELS[1] PROGMEM;
 extern level_info const* current_level;
 
 // game.cpp
-void clear_buf();
-#ifndef ARDUINO
-void* memcpy_P(void* dst, const void* src, size_t n);
-#endif
+void move_forward(int16_t amount);
+void move_right(int16_t amount);
+void move_up(int16_t amount);
+void look_up(int8_t amount);
+void look_right(int8_t amount);
 
 // physics.cpp
 extern dvec3 ball;     // position
@@ -245,18 +248,25 @@ void physics_step();
 // draw.cpp
 int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z);
 void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati);
-void draw_ball(dvec2 c, uint16_t r);
+void draw_ball_filled(dvec2 c, uint16_t r);
+void draw_ball_outline(dvec2 c, uint16_t r);
 
 // render_scene.cpp
-extern uint8_t yaw;
+extern array<uint8_t, MAX_FACES> face_order;
+extern array<uint8_t, MAX_CLIP_FACES * 4> clip_faces;
+extern array<dvec2, MAX_VERTS> vs; extern uint8_t yaw;
 extern int8_t  pitch;
 extern dvec3 cam;
-void render_scene();
-void render_scene(
+void clear_buf();
+uint8_t render_scene();
+uint8_t render_scene(
     int8_t const* verts,
     uint8_t const* faces,
     uint8_t num_verts,
     uint8_t num_faces);
+#ifndef ARDUINO
+dvec3 transform_point(dvec3 pt);
+#endif
 
 // sincos.cpp
 int8_t fsin(uint8_t angle); // output is signed 1.7
@@ -266,6 +276,7 @@ int16_t fcos16(uint16_t angle);
 
 // mat.cpp
 void rotation(mat3& m, uint8_t yaw, int8_t pitch);
+void rotation_phys(mat3& m, uint8_t yaw, int8_t pitch);
 dvec3 matvec  (mat3 m, vec3  v);
 dvec3 matvec_t(mat3 m, vec3  v); // transpose
 dvec3 matvec  (mat3 m, dvec3 v);

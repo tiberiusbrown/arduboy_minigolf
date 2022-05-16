@@ -47,6 +47,45 @@ uint32_t sqdist_point_aabb(dvec3 size, dvec3 pt)
     return d;
 }
 
+/*
+
+Symbols:
+
+en = normal elasticity = 1/2
+et = frictional elasticity = 1
+m  = ball mass = 1
+I  = ball moment of inertia, I = about m/8 = 1/8
+
+w1 = ball pre collision angular velocity
+w2 = ball post collision angular velocity
+v1 = ball pre collision velocity
+v2 = ball post collision velocity
+vp = ball contact point pre collision velocity
+n  = collision normal
+t  = frictional direction (unit)
+rp = vector from ball center to collision point
+Jn = normal impulse
+Jt = frictional impulse
+Jv = total impulse vector
+
+Equations:
+
+    vp = v1 + cross(w1, rp)
+    Jn = -((1 + en) * dot(vp, n)) / (1/m + norm2(cross(rp, n))/I)
+    Jt = -((1 + et) * dot(vp, t)) / (1/m + norm2(cross(rp, t))/I)
+    Jv = Jn*n+Jt*t
+    v2 = v1 + Jv/m
+    w2 = w1 + cross(rp, Jv)/I
+
+If m = 1, I = 1/8, en = 1/2, et = 1, rp = -(1/2)n, and t is orthogonal to rp:
+
+    vp = v1 + 1/2cross(w1, n)
+    Jv = -(3/2*dot(vp, n) + 1/3*dot(vp, t))    [note: factors are adjustable]
+    v2 = v1 + Jv
+    w2 = w1 + 8*cross(rp, Jv)
+
+*/
+
 static void physics_collision(phys_box b)
 {
     mat3 m;
@@ -55,9 +94,10 @@ static void physics_collision(phys_box b)
     pt.x = ball.x - b.pos.x;
     pt.y = ball.y - b.pos.y;
     pt.z = ball.z - b.pos.z;
+
     if(b.yaw != 0 || b.pitch != 0)
     {
-        rotation(m, b.yaw, b.pitch);
+        rotation_phys(m, b.yaw, b.pitch);
         // rotate pt
         pt = matvec_t(m, pt);
     }
@@ -67,6 +107,8 @@ static void physics_collision(phys_box b)
     if(d > BALL_RADIUS_SQ)
         return;
 
+    //if(b.pitch != 0) __debugbreak();
+
 #if 1
 
     // find contact point on box
@@ -74,6 +116,8 @@ static void physics_collision(phys_box b)
     cpt.x = tclamp<int16_t>(pt.x, -b.size.x, b.size.x);
     cpt.y = tclamp<int16_t>(pt.y, -b.size.y, b.size.y);
     cpt.z = tclamp<int16_t>(pt.z, -b.size.z, b.size.z);
+
+    //if(b.pitch != 0) __debugbreak();
 
     // collision normal is difference between contact point and ball center
     dvec3 normal;
@@ -101,24 +145,34 @@ static void physics_collision(phys_box b)
 
     // hack: resolve penetration by moving ball back by velocity
     //       (assumption is that ball did not penetrate at previous step)
-    //ball.x -= int8_t(u24(s24(ball_vel.x + 128) * absnormal.x) >> 16);
-    //ball.y -= int8_t(u24(s24(ball_vel.y + 128) * absnormal.y) >> 16);
-    //ball.z -= int8_t(u24(s24(ball_vel.z + 128) * absnormal.z) >> 16);
+    ball.x -= int8_t(u24(s24(ball_vel.x + 128) * absnormal.x) >> 16);
+    ball.y -= int8_t(u24(s24(ball_vel.y + 128) * absnormal.y) >> 16);
+    ball.z -= int8_t(u24(s24(ball_vel.z + 128) * absnormal.z) >> 16);
 
     // reflect velocity across normal and apply restitution
     // v = v - (2*dot(v, n)) * n
     //if(0)
     {
         s24 d = s24(normdot) * 2;
+#if 0
+        // hack: to enable rolling up hills without angular velocity,
+        //       retain full horizontal velocity
         ball_vel.x -= int16_t(u24(d * normal.x) >> 8);
         ball_vel.y -= int16_t(u24(d * normal.y) >> 8);
         ball_vel.z -= int16_t(u24(d * normal.z) >> 8);
-
-        // apply restitution via absnormal: an*(R-1) + 1
-        // the 255/256 ratio also provides hacky friction for free :)
+        uint8_t restx = 255;
+        uint8_t resty = int8_t(uint16_t(absnormal.y * REST_MINUS_ONE) >> 8) + 255;
+        uint8_t restz = 255;
+#else
+        ball_vel.x -= int16_t(u24(d * normal.x) >> 8);
+        ball_vel.y -= int16_t(u24(d * normal.y) >> 8);
+        ball_vel.z -= int16_t(u24(d * normal.z) >> 8);
         uint8_t restx = int8_t(uint16_t(absnormal.x * REST_MINUS_ONE) >> 8) + 255;
         uint8_t resty = int8_t(uint16_t(absnormal.y * REST_MINUS_ONE) >> 8) + 255;
         uint8_t restz = int8_t(uint16_t(absnormal.z * REST_MINUS_ONE) >> 8) + 255;
+#endif
+
+        // apply restitution via absnormal: an*(R-1) + 1
         ball_vel.x = int16_t(u24(s24(ball_vel.x) * restx) >> 8);
         ball_vel.y = int16_t(u24(s24(ball_vel.y) * resty) >> 8);
         ball_vel.z = int16_t(u24(s24(ball_vel.z) * restz) >> 8);

@@ -31,6 +31,37 @@ void rotation(mat3& m, uint8_t yaw, int8_t pitch)
     m[8] = fmuls8(cosA, cosB);
 }
 
+/*
+Rotation matrix:
+
+A = pitch, B = yaw
+
+ cosB   sinAsinB   cosAsinB
+ 0      cosA      -sinA
+-sinB   sinAcosB   cosAcosB
+
+*/
+
+void rotation_phys(mat3& m, uint8_t yaw, int8_t pitch)
+{
+    int8_t sinA = fsin((uint8_t)pitch);
+    int8_t cosA = fcos((uint8_t)pitch);
+    int8_t sinB = fsin(yaw);
+    int8_t cosB = fcos(yaw);
+
+    m[0] = cosB;
+    m[1] = fmuls8(sinA, sinB);
+    m[2] = fmuls8(cosA, sinB);
+
+    m[3] = 0;
+    m[4] = cosA;
+    m[5] = -sinA;
+
+    m[6] = -sinB;
+    m[7] = fmuls8(sinA, cosB);
+    m[8] = fmuls8(cosA, cosB);
+}
+
 dvec3 matvec(mat3 m, vec3 v)
 {
     dvec3 r;

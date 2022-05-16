@@ -30,7 +30,7 @@ int main(int argc, char** argv)
             int n = fscanf(f, " %f %f %f\n", &x, &y, &z);
             if(n != 3)
                 goto fail;
-            int8_t ix = -int8_t(roundf(x));
+            int8_t ix = int8_t(roundf(x));
             int8_t iy = int8_t(roundf(y));
             int8_t iz = int8_t(roundf(z));
             verts.push_back({ ix, iy, iz });

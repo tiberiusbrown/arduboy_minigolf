@@ -1,7 +1,8 @@
 #include "game.hpp"
 
-// TODO: more efficient left-right tri clipping
-//       (interpolate segments)
+#ifndef ARDUINO
+array<uint8_t, BUF_BYTES> buf;
+#endif
 
 static void set_pixel(uint8_t x, uint8_t y)
 {
@@ -153,7 +154,7 @@ static void draw_tri_segment(
     }
 }
 
-static void draw_circle_bresenham_segment(
+static void draw_circle_bresenham_segment_filled(
     int16_t cx, int16_t cy, int16_t x, int16_t y, uint16_t pat)
 {
     // all inputs in pixels
@@ -163,53 +164,29 @@ static void draw_circle_bresenham_segment(
     draw_vline(uint8_t(cx - y), cy - x, cy + x, pat);
 }
 
-static void draw_ball_bresenham(dvec2 c, uint16_t r, uint16_t pat)
+static void draw_circle_set_pixel(uint8_t x, int16_t y)
 {
-#if 1
-
-    c.x = div16s(c.x);
-    c.y = div16s(c.y);
-    r >>= 4;
-
-    int16_t dx = 12;
-    int16_t dy = 8 - r * 8;
-    int16_t e = 5 - r * 4;
-    int16_t y = (int16_t)r;
-
-    for(int16_t x = 0; x <= y; ++x)
-    {
-        draw_circle_bresenham_segment(c.x, c.y, x, y, pat);
-        if(e >= 0)
-        {
-            e += dy;
-            dy += 8;
-            y -= 1;
-        }
-        e += dx;
-        dx += 8;
-    }
-#else
-    int16_t x = 0;
-    int16_t y = (int16_t)r;
-    int16_t e = 3 - r * 2;
-    draw_circle_segment(c.x, c.y, x, y, pat);
-    while(y >= x)
-    {
-        ++x;
-        if(e > 0)
-        {
-            --y;
-            e += (x - y) * 4 + 10;
-        }
-        else
-        {
-            e += x * 4 + 6;
-        }
-        draw_circle_segment(c.x, c.y, x, y, pat);
-    }
-#endif
+    if(x >= FBW) return;
+    if(y < 0 || y >= FBH) return;
+    uint8_t* p = &buf[(uint16_t(y & 0x38) << 4) + x];
+    *p &= ~(1 << (y & 0x7));
 }
 
+static void draw_circle_bresenham_segment_outline(
+    int16_t cx, int16_t cy, int16_t x, int16_t y)
+{
+    // all inputs in pixels
+    draw_circle_set_pixel(uint8_t(cx + x), cy - y);
+    draw_circle_set_pixel(uint8_t(cx + x), cy + y);
+    draw_circle_set_pixel(uint8_t(cx - x), cy - y);
+    draw_circle_set_pixel(uint8_t(cx - x), cy + y);
+    draw_circle_set_pixel(uint8_t(cx + y), cy - x);
+    draw_circle_set_pixel(uint8_t(cx + y), cy + x);
+    draw_circle_set_pixel(uint8_t(cx - y), cy - x);
+    draw_circle_set_pixel(uint8_t(cx - y), cy + x);
+}
+
+#if 0
 static void draw_ball_tri(dvec2 c, uint8_t r, uint8_t pati)
 {
     // approximate ball as N-gon with triangles
@@ -231,20 +208,61 @@ static void draw_ball_tri(dvec2 c, uint8_t r, uint8_t pati)
         c0 = c1;
     }
 }
+#endif
 
-void draw_ball(dvec2 c, uint16_t r)
+void draw_ball_outline(dvec2 c, uint16_t r)
 {
     if(c.x < -(int16_t)r || c.y < -(int16_t)r) return;
     if(c.x > FBW * 16 + r || c.y > FBW * 16 + r) return;
-    //if(r < 16 * 8)
-    //{
-    //    draw_ball_tri(c, (uint8_t)r + 16, 0);
-    //    draw_ball_tri(c, (uint8_t)r     , 4);
-    //}
-    //else
+
+    c.x = div16s(c.x);
+    c.y = div16s(c.y);
+    r >>= 4;
+
+    int16_t dx = 12;
+    int16_t dy = 8 - r * 8;
+    int16_t e = 5 - r * 4;
+    int16_t y = (int16_t)r;
+
+    for(int16_t x = 0; x <= y; ++x)
     {
-        draw_ball_bresenham(c, r + 16, 0x0000);
-        draw_ball_bresenham(c, r     , 0xffff);
+        draw_circle_bresenham_segment_outline(c.x, c.y, x, y);
+        if(e >= 0)
+        {
+            e += dy;
+            dy += 8;
+            y -= 1;
+        }
+        e += dx;
+        dx += 8;
+    }
+}
+
+void draw_ball_filled(dvec2 c, uint16_t r)
+{
+    if(c.x < -(int16_t)r || c.y < -(int16_t)r) return;
+    if(c.x > FBW * 16 + r || c.y > FBW * 16 + r) return;
+
+    c.x = div16s(c.x);
+    c.y = div16s(c.y);
+    r >>= 4;
+
+    int16_t dx = 12;
+    int16_t dy = 8 - r * 8;
+    int16_t e = 5 - r * 4;
+    int16_t y = (int16_t)r;
+
+    for(int16_t x = 0; x <= y; ++x)
+    {
+        draw_circle_bresenham_segment_filled(c.x, c.y, x, y, 0xffff);
+        if(e >= 0)
+        {
+            e += dy;
+            dy += 8;
+            y -= 1;
+        }
+        e += dx;
+        dx += 8;
     }
 }
 

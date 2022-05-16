@@ -41,37 +41,55 @@ endif()
 
 set(MINIGOLF_SOURCES
     game.hpp
-)
-
-add_executable(
-    ${PROJECT_NAME} ${WINFLAG}
-    README.md
-    .editorconfig
     div.cpp
     game.hpp
-    game.cpp
     draw.cpp
     levels.cpp
     physics.cpp
     sincos.cpp
     render_scene.cpp
     mat.cpp
+    game.cpp
+)
+
+add_executable(
+    ${PROJECT_NAME} ${WINFLAG}
+    README.md
+    .editorconfig
     main_emscripten.cpp
     main_win32.cpp
     ${MINIGOLF_SOURCES}
 )
+
+if(WIN32)
+    add_executable(
+        level_editor
+        tools/level_editor.cpp
+        tools/imgui/backends/imgui_impl_win32.cpp
+        tools/imgui/backends/imgui_impl_win32.h
+        tools/imgui/backends/imgui_impl_dx9.h
+        tools/imgui/backends/imgui_impl_dx9.cpp
+        ${MINIGOLF_SOURCES}
+    )
+    target_include_directories(level_editor PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/imgui"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/fmt/include"
+    )
+endif()
 
 add_executable(convert_obj tools/convert_obj.cpp)
 set(LEVELN 00)
 foreach(N ${LEVELN})
     set(LEVEL_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}.obj")
     set(LEVEL_HPP "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}.hpp")
+    set(LEVEL_INFO_HPP "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}_info.hpp")
     add_custom_command(
         OUTPUT "${LEVEL_HPP}"
         COMMAND convert_obj "${LEVEL_OBJ}" "${LEVEL_HPP}"
         DEPENDS "${LEVEL_OBJ}"
     )
     target_sources(${PROJECT_NAME} PUBLIC "${LEVEL_HPP}")
+    target_sources(${PROJECT_NAME} PUBLIC "${LEVEL_INFO_HPP}")
 endforeach()
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 
