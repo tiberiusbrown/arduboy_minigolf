@@ -75,6 +75,8 @@ if(WIN32)
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/imgui"
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/fmt/include"
     )
+    target_compile_definitions(level_editor PUBLIC
+        -DBASE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 endif()
 
 add_executable(convert_obj tools/convert_obj.cpp)
@@ -98,7 +100,7 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED 11)
 
 if(NOT EMSCRIPTEN)
     add_executable(gen_sincos tools/gen_sincos.cpp)
-    add_executable(test_div tools/test_div.cpp ${MINIGOLF_SOURCES})
+    add_executable(test_div_sin tools/test_div_sin.cpp ${MINIGOLF_SOURCES})
 endif()
 
 if(MSVC)

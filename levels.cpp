@@ -47,6 +47,8 @@ level_info const* current_level = 0;
     /* num_verts */ sizeof(LEVEL_##n__##_VERTS) / 3, \
     /* num_faces */ sizeof(LEVEL_##n__##_FACES) / 4, \
     /* num_boxes */ sizeof(LEVEL_##n__##_BOXES) / sizeof(phys_box), \
+    /* ball_pos  */ LEVEL_##n__##_BALL_POS, \
+    /* flag_pos  */ LEVEL_##n__##_FLAG_POS, \
     }
 
 level_info const LEVELS[1] PROGMEM =

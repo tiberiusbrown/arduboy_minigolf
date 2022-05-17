@@ -176,6 +176,8 @@ extern uint8_t* const buf;
 extern array<uint8_t, BUF_BYTES> buf;
 #endif
 
+static constexpr int16_t BALL_RADIUS = 256 * 0.5;
+
 static constexpr uint8_t MAX_VERTS = 150;
 static constexpr uint8_t MAX_FACES = 150;
 static constexpr uint8_t MAX_CLIP_FACES = 48;
@@ -270,6 +272,8 @@ struct level_info
     uint8_t         num_verts;
     uint8_t         num_faces;
     uint8_t         num_boxes;
+    dvec3           ball_pos;
+    dvec3           flag_pos;
 };
 
 // levels.cpp

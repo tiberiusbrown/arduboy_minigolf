@@ -31,7 +31,7 @@ int main()
         float fdiff = float(diff) / x;
         printf("x     = %d\n", (int)x);
         printf("y     = %d\n", (int)y);
-        printf("act y = %d\n", int((1 << 24) / x));
+        printf("act y = %d\n", act_y);
         printf("diff  = %d\n", (int)diff);
         printf("fdiff = %f\n", fdiff);
         printf("\n\n");

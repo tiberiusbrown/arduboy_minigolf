@@ -12,3 +12,5 @@ static constexpr phys_box LEVEL_00_BOXES[9] PROGMEM =
     { { 768, 256, 1024 }, { -3328, 256, 0 }, 0, 0 },
     { { 1086, 256, 256 }, { -3509, 512, -1973 }, 32, 0 },
 };
+static constexpr dvec3 LEVEL_00_BALL_POS = { 3840, 128, 256 };
+static constexpr dvec3 LEVEL_00_FLAG_POS = { -3328, 640, 0 };

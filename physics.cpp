@@ -2,8 +2,6 @@
 
 dvec3 ball;
 
-static constexpr int16_t BALL_RADIUS = 256 * 0.5;
-
 // velocity, scaled 256x unit: range is (-0.5, +0.5) units per step
 // range is OK since the ball should never be moving 0.5 units per step anyway
 dvec3 ball_vel;
