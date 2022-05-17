@@ -295,7 +295,7 @@ uint8_t render_scene(
         if(dv.z >= ZNEAR)
         {
 #if 0
-            // TODO: figure out how to make this divide better
+            // slightly cheaper divide
             uint16_t zs = uint16_t(dv.z) >> 4;
             uint16_t f;
             if(zs >= 256)

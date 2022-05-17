@@ -177,6 +177,7 @@ extern array<uint8_t, BUF_BYTES> buf;
 #endif
 
 static constexpr int16_t BALL_RADIUS = 256 * 0.5;
+static constexpr int16_t FLAG_RADIUS = 256 * 1.0;
 
 static constexpr uint8_t MAX_VERTS = 150;
 static constexpr uint8_t MAX_FACES = 150;

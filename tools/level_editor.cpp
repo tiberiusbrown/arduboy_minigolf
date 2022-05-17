@@ -458,7 +458,7 @@ int main(int, char**)
             {
                 auto flag = current_level->flag_pos;
                 editor_draw_box(
-                    { { 192, 192, 192 }, flag },
+                    { { FLAG_RADIUS, FLAG_RADIUS, FLAG_RADIUS }, flag },
                     ImGui::ColorConvertFloat4ToU32(ImVec4(1.f, 0.f, 1.f, 1.f)));
             }
         }
