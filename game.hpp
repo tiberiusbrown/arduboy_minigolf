@@ -280,8 +280,8 @@ extern level_info const* current_level;
 void move_forward(int16_t amount);
 void move_right(int16_t amount);
 void move_up(int16_t amount);
-void look_up(int8_t amount);
-void look_right(int8_t amount);
+void look_up(int16_t amount);
+void look_right(int16_t amount);
 
 // physics.cpp
 extern dvec3 ball;         // position
@@ -298,8 +298,9 @@ void draw_ball_outline(dvec2 c, uint16_t r);
 // render_scene.cpp
 extern array<uint8_t, MAX_FACES> face_order;
 extern array<uint8_t, MAX_CLIP_FACES * 4> clip_faces;
-extern array<dvec2, MAX_VERTS> vs; extern uint8_t yaw;
-extern int8_t  pitch;
+extern array<dvec2, MAX_VERTS> vs;
+extern uint16_t yaw;
+extern int16_t  pitch;
 extern dvec3 cam;
 void clear_buf();
 uint8_t render_scene();
@@ -326,6 +327,7 @@ dvec3 matvec  (mat3 m, vec3  v);
 dvec3 matvec_t(mat3 m, vec3  v); // transpose
 dvec3 matvec  (mat3 m, dvec3 v);
 dvec3 matvec_t(mat3 m, dvec3 v); // transpose
+dvec3 matvec (dmat3 m, dvec3 v);
 dvec3 normalized(dvec3 v);       // normalize to 8.8
 int16_t dot(dvec3 a, dvec3 b);
 int16_t fmuls16(int16_t x, int16_t y);

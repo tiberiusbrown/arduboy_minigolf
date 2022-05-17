@@ -9,8 +9,8 @@ array<uint8_t, MAX_CLIP_FACES * 4> clip_faces;
 array<dvec2, MAX_VERTS> vs;
 
 // camera look angle (roll not supported)
-uint8_t yaw;
-int8_t pitch;
+uint16_t yaw;
+int16_t pitch;
 
 // camera position
 dvec3 cam;
@@ -45,8 +45,8 @@ uint8_t render_scene(
     uint8_t num_verts,
     uint8_t num_faces)
 {
-    mat3 m;
-    rotation(m, yaw, pitch);
+    dmat3 m;
+    rotation16(m, yaw, pitch);
 
     inv16(256+128);
 
@@ -414,8 +414,8 @@ uint8_t render_scene(
 #ifndef ARDUINO
 dvec3 transform_point(dvec3 dv)
 {
-    mat3 m;
-    rotation(m, yaw, pitch);
+    dmat3 m;
+    rotation16(m, yaw, pitch);
 
     dv.x -= cam.x;
     dv.y -= cam.y;

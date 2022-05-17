@@ -324,10 +324,10 @@ int main(int, char**)
 
         if(ImGui::IsKeyDown(ImGuiKey_A))
         {
-            if(ImGui::IsKeyDown(ImGuiKey_UpArrow   )) look_up(1);
-            if(ImGui::IsKeyDown(ImGuiKey_DownArrow )) look_up(-1);
-            if(ImGui::IsKeyDown(ImGuiKey_LeftArrow )) look_right(-1);
-            if(ImGui::IsKeyDown(ImGuiKey_RightArrow)) look_right(1);
+            if(ImGui::IsKeyDown(ImGuiKey_UpArrow   )) look_up(256);
+            if(ImGui::IsKeyDown(ImGuiKey_DownArrow )) look_up(-256);
+            if(ImGui::IsKeyDown(ImGuiKey_LeftArrow )) look_right(-256);
+            if(ImGui::IsKeyDown(ImGuiKey_RightArrow)) look_right(256);
         }
         else if(ImGui::IsKeyDown(ImGuiKey_B))
         {

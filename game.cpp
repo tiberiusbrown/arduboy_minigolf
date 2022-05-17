@@ -26,16 +26,16 @@ void game_setup()
 
 void move_forward(int16_t amount)
 {
-    int16_t sinA = int16_t((s24(amount) * fsin(yaw)) >> 7);
-    int16_t cosA = int16_t((s24(amount) * fcos(yaw)) >> 7);
+    int16_t sinA = fmuls16(amount, fsin16(yaw));
+    int16_t cosA = fmuls16(amount, fcos16(yaw));
     cam.x += sinA;
     cam.z -= cosA;
 }
 
 void move_right(int16_t amount)
 {
-    int16_t sinA = int16_t((s24(amount) * fsin(yaw)) >> 7);
-    int16_t cosA = int16_t((s24(amount) * fcos(yaw)) >> 7);
+    int16_t sinA = fmuls16(amount, fsin16(yaw));
+    int16_t cosA = fmuls16(amount, fcos16(yaw));
     cam.x += cosA;
     cam.z += sinA;
 }
@@ -44,11 +44,11 @@ void move_up(int16_t amount)
     cam.y += amount;
 }
 
-void look_up(int8_t amount)
+void look_up(int16_t amount)
 {
     pitch -= amount;
 }
-void look_right(int8_t amount)
+void look_right(int16_t amount)
 {
     yaw += amount;
 }
@@ -61,12 +61,12 @@ void game_loop()
         if(btns & BTN_A)
         {
             // look
-            if(btns & BTN_UP   ) look_up(1);
-            if(btns & BTN_DOWN ) look_up(-1);
-            if(btns & BTN_LEFT ) look_right(-1);
-            if(btns & BTN_RIGHT) look_right(1);
+            if(btns & BTN_UP   ) look_up(256);
+            if(btns & BTN_DOWN ) look_up(-256);
+            if(btns & BTN_LEFT ) look_right(-256);
+            if(btns & BTN_RIGHT) look_right(256);
 
-            pitch = tclamp<int8_t>(int8_t(pitch), -64, 64);
+            pitch = tclamp<int16_t>(pitch, -64 * 256, 64 * 256);
         }
         else if(btns & BTN_B)
         {

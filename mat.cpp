@@ -110,20 +110,30 @@ dvec3 matvec_t(mat3 m, vec3 v)
 dvec3 matvec(mat3 m, dvec3 v)
 {
     dvec3 r;
-    r.x = ((s24(v.x) * m[0] + s24(v.y) * m[1] + s24(v.z) * m[2]) << 1) >> 8;
-    r.y = ((s24(v.x) * m[3] + s24(v.y) * m[4] + s24(v.z) * m[5]) << 1) >> 8;
-    r.z = ((s24(v.x) * m[6] + s24(v.y) * m[7] + s24(v.z) * m[8]) << 1) >> 8;
+    r.x = (u24(s24(v.x) * m[0] + s24(v.y) * m[1] + s24(v.z) * m[2]) << 1) >> 8;
+    r.y = (u24(s24(v.x) * m[3] + s24(v.y) * m[4] + s24(v.z) * m[5]) << 1) >> 8;
+    r.z = (u24(s24(v.x) * m[6] + s24(v.y) * m[7] + s24(v.z) * m[8]) << 1) >> 8;
     return r;
 }
 
 dvec3 matvec_t(mat3 m, dvec3 v)
 {
     dvec3 r;
-    r.x = ((s24(v.x) * m[0] + s24(v.y) * m[3] + s24(v.z) * m[6]) << 1) >> 8;
-    r.y = ((s24(v.x) * m[1] + s24(v.y) * m[4] + s24(v.z) * m[7]) << 1) >> 8;
-    r.z = ((s24(v.x) * m[2] + s24(v.y) * m[5] + s24(v.z) * m[8]) << 1) >> 8;
+    r.x = (u24(s24(v.x) * m[0] + s24(v.y) * m[3] + s24(v.z) * m[6]) << 1) >> 8;
+    r.y = (u24(s24(v.x) * m[1] + s24(v.y) * m[4] + s24(v.z) * m[7]) << 1) >> 8;
+    r.z = (u24(s24(v.x) * m[2] + s24(v.y) * m[5] + s24(v.z) * m[8]) << 1) >> 8;
     return r;
 }
+
+dvec3 matvec(dmat3 m, dvec3 v)
+{
+    dvec3 r;
+    r.x = (uint32_t(int32_t(v.x) * m[0] + int32_t(v.y) * m[1] + int32_t(v.z) * m[2]) << 1) >> 16;
+    r.y = (uint32_t(int32_t(v.x) * m[3] + int32_t(v.y) * m[4] + int32_t(v.z) * m[5]) << 1) >> 16;
+    r.z = (uint32_t(int32_t(v.x) * m[6] + int32_t(v.y) * m[7] + int32_t(v.z) * m[8]) << 1) >> 16;
+    return r;
+}
+
 
 // find x such that (a*x*x) == (1<<24)
 static uint16_t inv_sqrt(uint16_t a)
