@@ -322,24 +322,27 @@ int main(int, char**)
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
+        int look_speed = 32;
+        int move_speed = 64;
+
         if(ImGui::IsKeyDown(ImGuiKey_A))
         {
-            if(ImGui::IsKeyDown(ImGuiKey_UpArrow   )) look_up(256);
-            if(ImGui::IsKeyDown(ImGuiKey_DownArrow )) look_up(-256);
-            if(ImGui::IsKeyDown(ImGuiKey_LeftArrow )) look_right(-256);
-            if(ImGui::IsKeyDown(ImGuiKey_RightArrow)) look_right(256);
+            if(ImGui::IsKeyDown(ImGuiKey_UpArrow   )) look_up(look_speed);
+            if(ImGui::IsKeyDown(ImGuiKey_DownArrow )) look_up(-look_speed);
+            if(ImGui::IsKeyDown(ImGuiKey_LeftArrow )) look_right(-look_speed);
+            if(ImGui::IsKeyDown(ImGuiKey_RightArrow)) look_right(look_speed);
         }
         else if(ImGui::IsKeyDown(ImGuiKey_B))
         {
-            if(ImGui::IsKeyDown(ImGuiKey_UpArrow  )) move_up(64);
-            if(ImGui::IsKeyDown(ImGuiKey_DownArrow)) move_up(-64);
+            if(ImGui::IsKeyDown(ImGuiKey_UpArrow  )) move_up(move_speed);
+            if(ImGui::IsKeyDown(ImGuiKey_DownArrow)) move_up(-move_speed);
         }
         else
         {
-            if(ImGui::IsKeyDown(ImGuiKey_UpArrow   )) move_forward(64);
-            if(ImGui::IsKeyDown(ImGuiKey_DownArrow )) move_forward(-64);
-            if(ImGui::IsKeyDown(ImGuiKey_LeftArrow )) move_right(-64);
-            if(ImGui::IsKeyDown(ImGuiKey_RightArrow)) move_right(64);
+            if(ImGui::IsKeyDown(ImGuiKey_UpArrow   )) move_forward(move_speed);
+            if(ImGui::IsKeyDown(ImGuiKey_DownArrow )) move_forward(-move_speed);
+            if(ImGui::IsKeyDown(ImGuiKey_LeftArrow )) move_right(-move_speed);
+            if(ImGui::IsKeyDown(ImGuiKey_RightArrow)) move_right(move_speed);
         }
 
         ImGui::ShowDemoWindow(nullptr);

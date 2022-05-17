@@ -8,8 +8,15 @@ int main()
     for(int i = 0; i < 65; ++i)
     {
         double x = M_PI / 128 * i;
-        double x2 = double(i) / 64;
-        printf("%3d,%c", (int)floor((sin(x) - x2) * 1024), i % 8 < 7 ? ' ' : '\n');
+        printf("%3d,%c", (int)roundf(sin(x) * 127), i % 8 < 7 ? ' ' : '\n');
+    }
+
+    printf("\n\n");
+
+    for(int i = 0; i < 65; ++i)
+    {
+        double x = M_PI / 128 * i;
+        printf("%5d,%c", (int)roundf(sin(x) * 32767), i % 8 < 7 ? ' ' : '\n');
     }
 
     printf("\n\n");
