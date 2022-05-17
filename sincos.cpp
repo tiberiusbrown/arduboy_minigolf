@@ -56,7 +56,7 @@ int16_t fsin16(uint16_t angle)
     int16_t s1 = fsin16_helper(angle_hi + 1);
     uint8_t f1 = uint8_t(angle);
     uint8_t f0 = 255 - f1;
-    int16_t t = int16_t(u24(s24(s0) * f0 + s24(s1) * f1) >> 8);
+    int16_t t = int16_t(u24(s24(s0) * f0 + s24(s1) * f1 + s0) >> 8);
     return t;
 }
 
