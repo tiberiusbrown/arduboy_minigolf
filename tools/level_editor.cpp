@@ -322,7 +322,7 @@ int main(int, char**)
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        int look_speed = 32;
+        int look_speed = 128;
         int move_speed = 64;
 
         if(ImGui::IsKeyDown(ImGuiKey_A))
