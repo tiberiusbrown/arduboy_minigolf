@@ -48,6 +48,8 @@ uint8_t render_scene(
     mat3 m;
     rotation(m, yaw, pitch);
 
+    inv16(256+128);
+
 #if PERFDOOM
     for(int i = 0; i < PERFDOOM; ++i) {
 #endif
@@ -289,11 +291,11 @@ uint8_t render_scene(
     {
         dvec3 dv = { vs[i].x, vs[i].y, fd.vz[i] };
 
-        // multiply x and y by 4/z
-        //myassert(dv.z >= ZNEAR);
+        // multiply x and y by 4/z, i.e., multiply by 1/(64*dv.z)
         if(dv.z >= ZNEAR)
         {
-            // TODO: quality of this divide is poor
+#if 0
+            // TODO: figure out how to make this divide better
             uint16_t zs = uint16_t(dv.z) >> 4;
             uint16_t f;
             if(zs >= 256)
@@ -306,6 +308,28 @@ uint8_t render_scene(
             ny = tclamp<int32_t>(ny, (int32_t)INT16_MIN * 240, (int32_t)INT16_MAX * 240);
             dv.x = int16_t(nx >> 8);
             dv.y = int16_t(ny >> 8);
+#else
+            if(dv.z >= 256)
+            {
+                uint16_t invz = inv16(dv.z);
+                int32_t nx = int32_t(invz) * dv.x;
+                int32_t ny = int32_t(invz) * dv.y;
+                nx = tclamp<int32_t>(nx, (int32_t)INT16_MIN * 240 * 64, (int32_t)INT16_MAX * 240 * 64);
+                ny = tclamp<int32_t>(ny, (int32_t)INT16_MIN * 240 * 64, (int32_t)INT16_MAX * 240 * 64);
+                dv.x = int16_t(uint32_t(nx) >> 14);
+                dv.y = int16_t(uint32_t(ny) >> 14);
+            }
+            else
+            {
+                uint16_t invz = inv8(dv.z);
+                int32_t nx = int32_t(invz) * dv.x;
+                int32_t ny = int32_t(invz) * dv.y;
+                nx = tclamp<int32_t>(nx, (int32_t)INT16_MIN * 60, (int32_t)INT16_MAX * 60);
+                ny = tclamp<int32_t>(ny, (int32_t)INT16_MIN * 60, (int32_t)INT16_MAX * 60);
+                dv.x = int16_t(uint24_t(nx) >> 6);
+                dv.y = int16_t(uint24_t(ny) >> 6);
+            }
+#endif
         }
 
         // center in framebuffer
@@ -402,8 +426,26 @@ dvec3 transform_point(dvec3 dv)
 
     if(dv.z >= ZNEAR)
     {
-        dv.x = float(dv.x) * 4 / (float(dv.z) / 256);
-        dv.y = float(dv.y) * 4 / (float(dv.z) / 256);
+        if(dv.z >= 256)
+        {
+            uint16_t invz = inv16(dv.z);
+            int32_t nx = int32_t(invz) * dv.x;
+            int32_t ny = int32_t(invz) * dv.y;
+            nx = tclamp<int32_t>(nx, (int32_t)INT16_MIN * 240 * 64, (int32_t)INT16_MAX * 240 * 64);
+            ny = tclamp<int32_t>(ny, (int32_t)INT16_MIN * 240 * 64, (int32_t)INT16_MAX * 240 * 64);
+            dv.x = int16_t(uint32_t(nx) >> 14);
+            dv.y = int16_t(uint32_t(ny) >> 14);
+        }
+        else
+        {
+            uint16_t invz = inv8(dv.z);
+            int32_t nx = int32_t(invz) * dv.x;
+            int32_t ny = int32_t(invz) * dv.y;
+            nx = tclamp<int32_t>(nx, (int32_t)INT16_MIN * 60, (int32_t)INT16_MAX * 60);
+            ny = tclamp<int32_t>(ny, (int32_t)INT16_MIN * 60, (int32_t)INT16_MAX * 60);
+            dv.x = int16_t(uint24_t(nx) >> 6);
+            dv.y = int16_t(uint24_t(ny) >> 6);
+        }
     }
 
     dv.x += (FBW / 2 * 16);

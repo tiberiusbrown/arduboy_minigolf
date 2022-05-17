@@ -243,6 +243,7 @@ struct dvec2 { int16_t x, y; };
 struct vec3  { int8_t  x, y, z; };
 struct dvec3 { int16_t x, y, z; };
 using mat3 = array<int8_t, 9>;
+using dmat3 = array<int16_t, 9>;
 
 static FORCEINLINE dvec3 vec_add(dvec3 a, dvec3 b)
 {
@@ -319,6 +320,7 @@ int16_t fcos16(uint16_t angle);
 
 // mat.cpp
 void rotation(mat3& m, uint8_t yaw, int8_t pitch);
+void rotation16(dmat3& m, uint16_t yaw, int16_t pitch);
 void rotation_phys(mat3& m, uint8_t yaw, int8_t pitch);
 dvec3 matvec  (mat3 m, vec3  v);
 dvec3 matvec_t(mat3 m, vec3  v); // transpose
@@ -326,9 +328,11 @@ dvec3 matvec  (mat3 m, dvec3 v);
 dvec3 matvec_t(mat3 m, dvec3 v); // transpose
 dvec3 normalized(dvec3 v);       // normalize to 8.8
 int16_t dot(dvec3 a, dvec3 b);
+int16_t fmuls16(int16_t x, int16_t y);
 
 // div.cpp
-uint16_t inv8(uint8_t x);
+uint16_t inv8(uint8_t x);   // approximates 2^16 / x
+uint16_t inv16(uint16_t x); // (x >= 256) approximates 2^24 / x
 uint16_t divlut(uint16_t x, uint8_t y);
 int16_t divlut(int16_t x, uint8_t y);
 uint16_t divlut(uint24_t x, uint8_t y);

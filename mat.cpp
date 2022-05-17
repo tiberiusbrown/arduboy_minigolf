@@ -1,5 +1,11 @@
 #include "game.hpp"
 
+int16_t fmuls16(int16_t x, int16_t y)
+{
+    int32_t p = int32_t(x) * y;
+    return int16_t(uint32_t(p) >> 15);
+}
+
 /*
 Rotation matrix:
 
@@ -30,6 +36,27 @@ void rotation(mat3& m, uint8_t yaw, int8_t pitch)
     m[7] = sinA;
     m[8] = fmuls8(cosA, cosB);
 }
+
+void rotation16(dmat3& m, uint16_t yaw, int16_t pitch)
+{
+    int16_t sinA = fsin16((uint16_t)pitch);
+    int16_t cosA = fcos16((uint16_t)pitch);
+    int16_t sinB = fsin16(yaw);
+    int16_t cosB = fcos16(yaw);
+
+    m[0] = cosB;
+    m[1] = 0;
+    m[2] = sinB;
+
+    m[3] = fmuls16(sinA, sinB);
+    m[4] = cosA;
+    m[5] = -fmuls16(sinA, cosB);
+
+    m[6] = -fmuls16(cosA, sinB);
+    m[7] = sinA;
+    m[8] = fmuls16(cosA, cosB);
+}
+
 
 /*
 Rotation matrix:

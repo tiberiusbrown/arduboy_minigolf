@@ -41,6 +41,33 @@ uint16_t inv8(uint8_t x)
     return pgm_read_word(&DIVISORS[x]);
 }
 
+// for x >= 256: approximates 2^24 / x
+// i.e., given x: 8.8, find y=1/x: 0.16
+uint16_t inv16(uint16_t x)
+{
+    myassert(x >= 256);
+    // initial guess
+    uint16_t const* p = &DIVISORS[x >> 8];
+    uint16_t y = pgm_read_word(p);
+    {
+        // refine initial guess by linear interpolation
+        uint16_t ty = pgm_read_word(p + 1);
+        uint8_t t0 = uint8_t(x);
+        uint8_t t1 = 255 - t0;
+        y = uint16_t((u24(y) * t1 + u24(ty) * t0) >> 8);
+    }
+    // one iter of newton raphson to refine further
+    for(uint8_t i = 0; i < 1; ++i)
+    {
+        uint24_t xy = u24((uint32_t(y) * x) >> 8);
+        // 2 - x * y
+        uint24_t t = uint24_t(0x20000) - xy;
+        // y' = y * (2 - x * y)
+        y = uint16_t((uint32_t(t) * y) >> 16);
+    }
+    return y;
+}
+
 static FORCEINLINE uint32_t mul16x16(uint16_t a, uint16_t b)
 {
 #if 1

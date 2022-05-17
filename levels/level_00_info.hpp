@@ -1,6 +1,6 @@
 #pragma once
 
-static constexpr phys_box LEVEL_00_BOXES[8] PROGMEM =
+static constexpr phys_box LEVEL_00_BOXES[9] PROGMEM =
 {
     { { 768, 256, 1792 }, { 3840, -256, -768 }, 0, 0 },
     { { 1664, 256, 768 }, { 1408, -256, -1792 }, 0, 0 },
@@ -10,4 +10,5 @@ static constexpr phys_box LEVEL_00_BOXES[8] PROGMEM =
     { { 768, 576, 576 }, { -1024, -256, -1792 }, 64, 19 },
     { { 1408, 256, 768 }, { -2688, 256, -1792 }, 0, 0 },
     { { 768, 256, 1024 }, { -3328, 256, 0 }, 0, 0 },
+    { { 1086, 256, 256 }, { -3509, 512, -1973 }, 32, 0 },
 };
