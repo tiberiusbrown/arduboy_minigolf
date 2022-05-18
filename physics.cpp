@@ -14,7 +14,7 @@ static constexpr int16_t MAX_VEL = 256 * 64;
 // gravity acceleration: y vel units per step
 static constexpr int16_t GRAVITY = 96;
 
-// ball restitution as a fraction of 256
+// ball restitution as a fraction of 256. min 0.5
 static constexpr uint8_t RESTITUTION = 256 * 0.5;
 
 static constexpr int8_t REST_MINUS_ONE = int8_t(RESTITUTION - 256);
@@ -187,7 +187,7 @@ static void physics_collision(phys_box b)
     }
 }
 
-void physics_step()
+static void main_step()
 {
     // TODO: check collision and perform restitution here
     {
@@ -211,8 +211,18 @@ void physics_step()
     ball.y += int8_t(uint16_t(ball_vel.y + 128) >> 8);
     ball.z += int8_t(uint16_t(ball_vel.z + 128) >> 8);
 
-    // angular damping
-    ball_vel_ang.x = int16_t(u24(s24(ball_vel_ang.x) * 255) >> 8);
-    ball_vel_ang.y = int16_t(u24(s24(ball_vel_ang.y) * 255) >> 8);
-    ball_vel_ang.z = int16_t(u24(s24(ball_vel_ang.z) * 255) >> 8);
+}
+
+void physics_step()
+{
+    for(uint8_t i = 0; i < 2; ++i)
+    {
+        main_step();
+        main_step();
+
+        // angular damping
+        ball_vel_ang.x = int16_t(u24(s24(ball_vel_ang.x) * 255) >> 8);
+        ball_vel_ang.y = int16_t(u24(s24(ball_vel_ang.y) * 255) >> 8);
+        ball_vel_ang.z = int16_t(u24(s24(ball_vel_ang.z) * 255) >> 8);
+    }
 }

@@ -10,6 +10,8 @@ static constexpr int FBH = 1 * 64;
 //8-bit grayscale buffer
 #define BUFFER_8BIT 0
 
+#define BALL_XRAY 1
+
 static constexpr uint16_t SAVE_VERSION = 1;
 
 // platform functionality
@@ -184,7 +186,7 @@ static constexpr uint8_t MAX_FACES = 150;
 static constexpr uint8_t MAX_CLIP_FACES = 48;
 struct face_sorting_data
 {
-    array<int16_t, MAX_VERTS> vz; // local space z
+    array<int16_t, MAX_VERTS> vz;     // camera space z
     array<uint16_t, MAX_VERTS> vdist; // world vertex distance
     array<uint16_t, MAX_FACES> fdist; // world face distance
 };
@@ -278,7 +280,7 @@ struct level_info
 };
 
 // levels.cpp
-extern level_info const LEVELS[1] PROGMEM;
+extern level_info const LEVELS[2] PROGMEM;
 extern level_info const* current_level;
 
 // game.cpp

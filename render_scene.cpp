@@ -62,9 +62,9 @@ uint8_t render_scene(
     for(uint8_t j = nv = 0; nv < num_verts; ++nv, j += 3)
     {
         dvec3 dv;
-        dv.x = (int8_t)pgm_read_byte(&verts[j + 0]) << 8;
-        dv.y = (int8_t)pgm_read_byte(&verts[j + 1]) << 8;
-        dv.z = (int8_t)pgm_read_byte(&verts[j + 2]) << 8;
+        dv.x = (int8_t)pgm_read_byte(&verts[j + 0]) << 7;
+        dv.y = (int8_t)pgm_read_byte(&verts[j + 1]) << 7;
+        dv.z = (int8_t)pgm_read_byte(&verts[j + 2]) << 7;
 
         // translate
         dv.x -= cam.x;
@@ -121,7 +121,7 @@ uint8_t render_scene(
             ball_valid = true;
             face_order[nf] = 255;
             fd.fdist[nf] = uint16_t(uint32_t(fdist) >> 16);
-            //fd.fdist[nf] = tabs(dv.y) + (uint16_t(tabs(dv.x) + tabs(dv.z)) >> 4);;
+            //fd.fdist[nf] = tabs(dv.y) + (uint16_t(tabs(dv.x) + tabs(dv.z)) >> 4);
             nv += 2;
             nf += 1;
         }
@@ -130,7 +130,7 @@ uint8_t render_scene(
     // assemble faces and clip them to near plane
     for(uint8_t i = 0; i < num_faces; ++i)
     {
-        if(nf + 1 > MAX_FACES)
+        if(nf + 2 > MAX_FACES)
             break;
 
         uint8_t const* fptr = &faces[i * 4];
@@ -156,8 +156,6 @@ uint8_t render_scene(
         if((behind & (behind - 1)) != 0)
         {
             if(nv + 2 > MAX_VERTS)
-                continue;
-            if(nf + 1 > MAX_FACES)
                 continue;
             if(nclipf + 4 > MAX_CLIP_FACES * 4)
                 continue;
@@ -388,6 +386,9 @@ uint8_t render_scene(
                 dvec2 c = vs[balli0];
                 ballr = uint16_t(vs[balli1].x - c.x);
                 draw_ball_filled(vs[balli0], ballr);
+#if !BALL_XRAY
+                draw_ball_outline(vs[balli0], ballr + 8);
+#endif
             }
             continue;
         }
@@ -401,8 +402,10 @@ uint8_t render_scene(
         }
         draw_tri(vs[i0], vs[i1], vs[i2], pt);
     }
+#if BALL_XRAY
     if(ball_valid)
         draw_ball_outline(vs[balli0], ballr + 8);
+#endif
 
 #if PERFDOOM
     }

@@ -80,15 +80,15 @@ if(WIN32)
 endif()
 
 add_executable(convert_obj tools/convert_obj.cpp)
-set(LEVELN 00)
+set(LEVELN 00 01)
 foreach(N ${LEVELN})
     set(LEVEL_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}.obj")
     set(LEVEL_HPP "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}.hpp")
     set(LEVEL_INFO_HPP "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}_info.hpp")
     add_custom_command(
         OUTPUT "${LEVEL_HPP}"
-        COMMAND convert_obj "${LEVEL_OBJ}" "${LEVEL_HPP}"
-        DEPENDS "${LEVEL_OBJ}"
+        COMMAND convert_obj "${LEVEL_OBJ}" "${LEVEL_HPP}" "${N}"
+        DEPENDS convert_obj "${LEVEL_OBJ}"
     )
     target_sources(${PROJECT_NAME} PUBLIC "${LEVEL_HPP}")
     target_sources(${PROJECT_NAME} PUBLIC "${LEVEL_INFO_HPP}")

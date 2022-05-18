@@ -9,7 +9,7 @@ struct face { uint8_t i0, i1, i2, pt; };
 
 int main(int argc, char** argv)
 {
-    if(argc < 3) return 1;
+    if(argc < 4) return 1;
 
     FILE* f = fopen(argv[1], "r");
     if(!f)
@@ -30,9 +30,9 @@ int main(int argc, char** argv)
             int n = fscanf(f, " %f %f %f\n", &x, &y, &z);
             if(n != 3)
                 goto fail;
-            int8_t ix = int8_t(roundf(x));
-            int8_t iy = int8_t(roundf(y));
-            int8_t iz = int8_t(roundf(z));
+            int8_t ix = int8_t(roundf(x * 2));
+            int8_t iy = int8_t(roundf(y * 2));
+            int8_t iz = int8_t(roundf(z * 2));
             verts.push_back({ ix, iy, iz });
         }
         else if(c == 'f')
@@ -70,8 +70,8 @@ int main(int argc, char** argv)
     f = fopen(argv[2], "w");
     if(!f) return 1;
     fprintf(f, "#pragma once\n\n");
-    fprintf(f, "static constexpr int8_t LEVEL_00_VERTS[%d] PROGMEM =\n{\n",
-        (int)verts.size() * 3);
+    fprintf(f, "static constexpr int8_t LEVEL_%s_VERTS[%d] PROGMEM =\n{\n",
+        argv[3], (int)verts.size() * 3);
     for(size_t i = 0; i < verts.size(); ++i)
     {
         fprintf(f, "%s%+4d, %+4d, %+4d,%c",
@@ -80,8 +80,8 @@ int main(int argc, char** argv)
             i % 4 == 3 ? '\n' : ' ');
     }
     fprintf(f, "\n};\n\n");
-    fprintf(f, "static constexpr uint8_t LEVEL_00_FACES[%d] PROGMEM =\n{\n",
-        (int)faces.size() * 4);
+    fprintf(f, "static constexpr uint8_t LEVEL_%s_FACES[%d] PROGMEM =\n{\n",
+        argv[3], (int)faces.size() * 4);
     for(size_t i = 0; i < faces.size(); ++i)
     {
         fprintf(f, "%s%3d, %3d, %3d, %3d,%c",

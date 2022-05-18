@@ -2,15 +2,13 @@
 
 static void reset_ball()
 {
-    ball.x = 256 * 12;
-    ball.y = 256 * 1;
+    ball.x = 256 * -7;
+    ball.y = 256 * 3;
     ball.z = 256 * -7;
 
     ball_vel_ang = {};
     ball_vel = {};
-    ball_vel.x = 256 * -30;
-
-    //ball_vel.x = -256 * 6;
+    ball_vel.x = 256 * 5;
 }
 
 void game_setup()
@@ -19,9 +17,9 @@ void game_setup()
 
     reset_ball();
 
-    cam = { 1327, 1048, 1024 };
-    yaw = 0;
-    pitch = 16;
+    cam = { -1133, 1880, 376 };
+    yaw = 53760;
+    pitch = 4880;
 }
 
 void move_forward(int16_t amount)
@@ -87,8 +85,7 @@ void game_loop()
 
     }
 
-    for(uint8_t i = 0; i < 4; ++i)
-        physics_step();
+    physics_step();
 
     if(ball.y < 256 * -10)
         reset_ball();
