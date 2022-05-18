@@ -31,12 +31,12 @@ void camera_follow_ball()
 {
     uint16_t tyaw = atan2(ball_vel.x, ball_vel.z) + 8192;
     dvec3 tcam = ball;
-    tcam.y += 256 * 4;
+    tcam.y += 256 * 8;
     {
         int16_t fs = fsin16(tyaw);
         int16_t fc = fcos16(tyaw);
-        tcam.x -= int8_t(uint16_t(fc) >> 8) * 12;
-        tcam.z -= int8_t(uint16_t(fs) >> 8) * 12;
+        tcam.x -= int8_t(uint16_t(fc) >> 8) * 24;
+        tcam.z -= int8_t(uint16_t(fs) >> 8) * 24;
     }
     tyaw += 16384;
     int16_t tpitch = 1000; // TODO
