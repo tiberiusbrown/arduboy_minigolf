@@ -19,13 +19,6 @@ static constexpr uint8_t YMASK1[8] PROGMEM =
     0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff
 };
 
-static int16_t div16s(int16_t x)
-{
-    uint16_t r = (uint16_t)x >> 4;
-    if(x < 0) r |= 0xf000;
-    return (int16_t)r;
-}
-
 static constexpr uint16_t PATTERNS[5] PROGMEM =
 {
     0x0000,

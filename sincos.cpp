@@ -64,3 +64,58 @@ int16_t fcos16(uint16_t angle)
 {
     return fsin16(angle + 0x4000);
 }
+
+static constexpr uint16_t ATAN_TABLE[33] PROGMEM =
+{
+        1,  1304,  2605,  3900,  5189,  6467,  7733,  8985,
+    10221, 11439, 12637, 13814, 14968, 16100, 17206, 18288,
+    19344, 20374, 21378, 22355, 23305, 24230, 25128, 26001,
+    26848, 27669, 28467, 29240, 29990, 30717, 31422, 32105,
+    32767,
+};
+
+int16_t atan2(int16_t x, int16_t y)
+{
+    uint8_t f = 0;
+    if(y < 0)
+    {
+        f |= 1;
+        y = -y;
+    }
+    if(x < 0)
+    {
+        f |= 2;
+        x = -x;
+    }
+    if(x < y)
+    {
+        f |= 4;
+        swap(x, y);
+    }
+
+    uint16_t ratio;
+    if(x < 256)
+    {
+        uint16_t invx = inv8(uint8_t(uint16_t(x) >> 8));
+        ratio = uint16_t((uint32_t(invx) * uint16_t(y)) >> 18);
+    }
+    else
+    {
+        uint16_t invx = inv16(uint16_t(x));
+        ratio = uint16_t((uint32_t(invx) * uint16_t(y)) >> 26);
+    }
+
+    uint8_t i = uint8_t(ratio >> 8);
+    uint8_t f1 = uint8_t(ratio);
+    uint8_t f0 = 255 - f1;
+    uint16_t t0 = pgm_read_byte(&ATAN_TABLE[i]);
+    uint16_t t1 = pgm_read_byte(&ATAN_TABLE[i + 1]);
+
+    uint16_t t = int16_t(u24(u24(t0) * f0 + u24(t1) * f1 + t0) >> 8);
+
+    if(f & 1) t = -t;
+    if(f & 2) t = 32768 - t;
+    if(f & 4) t = 16384 - t;
+
+    return t;
+}

@@ -5,6 +5,7 @@
 
 int main()
 {
+    // sin table
     for(int i = 0; i < 65; ++i)
     {
         double x = M_PI / 128 * i;
@@ -13,6 +14,7 @@ int main()
 
     printf("\n\n");
 
+    // sin16 table
     for(int i = 0; i < 65; ++i)
     {
         double x = M_PI / 128 * i;
@@ -21,9 +23,19 @@ int main()
 
     printf("\n\n");
 
+    // inv table
     for(int i = 0; i < 256; ++i)
     {
         int d = i == 0 ? 65535 : int(1.0 / i * 65535.5);
+        printf("%5d,%c", d, i % 8 < 7 ? ' ' : '\n');
+    }
+
+    printf("\n\n");
+
+    // atan table
+    for (int i = 0; i < 33; ++i)
+    {
+        int d = (int)round(atan(double(i) / 32) * 32767 / (M_PI / 4) + 0.5);
         printf("%5d,%c", d, i % 8 < 7 ? ' ' : '\n');
     }
 

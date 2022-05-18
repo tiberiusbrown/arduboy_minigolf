@@ -297,7 +297,8 @@ extern dvec3 ball_vel_ang; // angular velocity
 void physics_step();
 
 // camera.cpp
-void update_camera(dvec3 tpos, uint16_t tyaw, int16_t tpitch);
+void update_camera(dvec3 tcam, uint16_t tyaw, int16_t tpitch);
+void camera_follow_ball();
 
 // draw.cpp
 int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z);
@@ -328,6 +329,7 @@ int8_t fsin(uint8_t angle); // output is signed 1.7
 int8_t fcos(uint8_t angle); // output is signed 1.7
 int16_t fsin16(uint16_t angle);
 int16_t fcos16(uint16_t angle);
+int16_t atan2(int16_t x, int16_t y);
 
 // mat.cpp
 void rotation(mat3& m, uint8_t yaw, int8_t pitch);
@@ -365,6 +367,13 @@ static inline int16_t div8s(int16_t x)
     uint16_t y = uint16_t(x) >> 3;
     if(x < 0) y |= 0xe000;
     return y;
+}
+
+static inline int16_t div16s(int16_t x)
+{
+    uint16_t r = (uint16_t)x >> 4;
+    if (x < 0) r |= 0xf000;
+    return (int16_t)r;
 }
 
 static inline dvec2 frotate(vec2 v, uint8_t angle)

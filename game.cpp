@@ -90,5 +90,7 @@ void game_loop()
     if(ball.y < 256 * -10)
         reset_ball();
 
+    camera_follow_ball();
+
     render_scene();
 }
