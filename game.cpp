@@ -9,6 +9,14 @@ static void reset_ball()
     ball_vel_ang = {};
     ball_vel = {};
     ball_vel.x = 256 * 5;
+
+#if 0
+    ball = { 3840, 128, 256 };
+
+    ball_vel_ang = {};
+    ball_vel = {};
+    ball_vel.z = 256 * -25;
+#endif
 }
 
 void game_setup()
@@ -87,7 +95,7 @@ void game_loop()
 
     physics_step();
 
-    if(ball.y < 256 * -10)
+    if(ball.y < 256 * -20)
         reset_ball();
 
     camera_follow_ball();
