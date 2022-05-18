@@ -120,7 +120,7 @@ uint8_t render_scene(
             balli1 = nv + 1;
             ball_valid = true;
             face_order[nf] = 255;
-            fd.fdist[nf] = uint16_t(uint32_t(fdist) >> 16);
+            fd.fdist[nf] = uint16_t(uint32_t(fdist) >> 16) + 128;
             //fd.fdist[nf] = tabs(dv.y) + (uint16_t(tabs(dv.x) + tabs(dv.z)) >> 4);
             nv += 2;
             nf += 1;

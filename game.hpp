@@ -296,6 +296,9 @@ extern dvec3 ball_vel;     // velocity
 extern dvec3 ball_vel_ang; // angular velocity
 void physics_step();
 
+// camera.cpp
+void update_camera(dvec3 tpos, uint16_t tyaw, int16_t tpitch);
+
 // draw.cpp
 int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z);
 void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati);

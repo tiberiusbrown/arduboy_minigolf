@@ -1,170 +1,181 @@
-// Formatting library for C++ - custom Google Test assertions
-//
-// Copyright (c) 2012 - present, Victor Zverovich
-// All rights reserved.
-//
-// For the license information refer to format.h.
+/*
+ Custom Google Test assertions.
+
+ Copyright (c) 2012-2014, Victor Zverovich
+ All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of source code must retain the above copyright notice, this
+    list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #ifndef FMT_GTEST_EXTRA_H_
 #define FMT_GTEST_EXTRA_H_
 
-#include <stdlib.h>  // _invalid_parameter_handler
-
 #include <string>
+#include <gmock/gmock.h>
 
-#ifdef FMT_MODULE_TEST
-import fmt;
-#else
-#  include "fmt/os.h"
-#endif  // FMG_MODULE_TEST
+#include "fmt/format.h"
 
-#include "gmock/gmock.h"
+#ifndef FMT_USE_FILE_DESCRIPTORS
+# define FMT_USE_FILE_DESCRIPTORS 0
+#endif
+
+#if FMT_USE_FILE_DESCRIPTORS
+# include "fmt/posix.h"
+#endif
 
 #define FMT_TEST_THROW_(statement, expected_exception, expected_message, fail) \
-  GTEST_AMBIGUOUS_ELSE_BLOCKER_                                                \
-  if (::testing::AssertionResult gtest_ar = ::testing::AssertionSuccess()) {   \
-    std::string gtest_expected_message = expected_message;                     \
-    bool gtest_caught_expected = false;                                        \
-    try {                                                                      \
-      GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement);               \
-    } catch (expected_exception const& e) {                                    \
-      if (gtest_expected_message != e.what()) {                                \
-        gtest_ar << #statement                                                 \
-            " throws an exception with a different message.\n"                 \
-                 << "Expected: " << gtest_expected_message << "\n"             \
-                 << "  Actual: " << e.what();                                  \
-        goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__);            \
-      }                                                                        \
-      gtest_caught_expected = true;                                            \
-    } catch (...) {                                                            \
-      gtest_ar << "Expected: " #statement                                      \
-                  " throws an exception of type " #expected_exception          \
-                  ".\n  Actual: it throws a different type.";                  \
-      goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__);              \
-    }                                                                          \
-    if (!gtest_caught_expected) {                                              \
-      gtest_ar << "Expected: " #statement                                      \
-                  " throws an exception of type " #expected_exception          \
-                  ".\n  Actual: it throws nothing.";                           \
-      goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__);              \
-    }                                                                          \
-  } else                                                                       \
-    GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__)                      \
-        : fail(gtest_ar.failure_message())
+  GTEST_AMBIGUOUS_ELSE_BLOCKER_ \
+  if (::testing::AssertionResult gtest_ar = ::testing::AssertionSuccess()) { \
+    std::string gtest_expected_message = expected_message; \
+    bool gtest_caught_expected = false; \
+    try { \
+      GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement); \
+    } \
+    catch (expected_exception const& e) { \
+      if (gtest_expected_message != e.what()) { \
+        gtest_ar \
+          << #statement " throws an exception with a different message.\n" \
+          << "Expected: " << gtest_expected_message << "\n" \
+          << "  Actual: " << e.what(); \
+        goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__); \
+      } \
+      gtest_caught_expected = true; \
+    } \
+    catch (...) { \
+      gtest_ar << \
+          "Expected: " #statement " throws an exception of type " \
+          #expected_exception ".\n  Actual: it throws a different type."; \
+      goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__); \
+    } \
+    if (!gtest_caught_expected) { \
+      gtest_ar << \
+          "Expected: " #statement " throws an exception of type " \
+          #expected_exception ".\n  Actual: it throws nothing."; \
+      goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__); \
+    } \
+  } else \
+    GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__): \
+      fail(gtest_ar.failure_message())
 
 // Tests that the statement throws the expected exception and the exception's
 // what() method returns expected message.
 #define EXPECT_THROW_MSG(statement, expected_exception, expected_message) \
-  FMT_TEST_THROW_(statement, expected_exception, expected_message,        \
-                  GTEST_NONFATAL_FAILURE_)
+  FMT_TEST_THROW_(statement, expected_exception, \
+      expected_message, GTEST_NONFATAL_FAILURE_)
 
-inline std::string system_error_message(int error_code,
-                                        const std::string& message) {
-  auto ec = std::error_code(error_code, std::generic_category());
-  return std::system_error(ec, message).what();
-}
+std::string format_system_error(int error_code, fmt::StringRef message);
 
 #define EXPECT_SYSTEM_ERROR(statement, error_code, message) \
-  EXPECT_THROW_MSG(statement, std::system_error,            \
-                   system_error_message(error_code, message))
+  EXPECT_THROW_MSG(statement, fmt::SystemError, \
+      format_system_error(error_code, message))
 
-#if FMT_USE_FCNTL
+#if FMT_USE_FILE_DESCRIPTORS
 
 // Captures file output by redirecting it to a pipe.
 // The output it can handle is limited by the pipe capacity.
-class output_redirect {
+class OutputRedirect {
  private:
-  FILE* file_;
-  fmt::file original_;  // Original file passed to redirector.
-  fmt::file read_end_;  // Read end of the pipe where the output is redirected.
+  FILE *file_;
+  fmt::File original_;  // Original file passed to redirector.
+  fmt::File read_end_;  // Read end of the pipe where the output is redirected.
+
+  GTEST_DISALLOW_COPY_AND_ASSIGN_(OutputRedirect);
 
   void flush();
   void restore();
 
  public:
-  explicit output_redirect(FILE* file);
-  ~output_redirect() FMT_NOEXCEPT;
-
-  output_redirect(const output_redirect&) = delete;
-  void operator=(const output_redirect&) = delete;
+  explicit OutputRedirect(FILE *file);
+  ~OutputRedirect() FMT_NOEXCEPT;
 
   // Restores the original file, reads output from the pipe into a string
   // and returns it.
   std::string restore_and_read();
 };
 
-#  define FMT_TEST_WRITE_(statement, expected_output, file, fail)              \
-    GTEST_AMBIGUOUS_ELSE_BLOCKER_                                              \
-    if (::testing::AssertionResult gtest_ar = ::testing::AssertionSuccess()) { \
-      std::string gtest_expected_output = expected_output;                     \
-      output_redirect gtest_redir(file);                                       \
-      GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement);               \
-      std::string gtest_output = gtest_redir.restore_and_read();               \
-      if (gtest_output != gtest_expected_output) {                             \
-        gtest_ar << #statement " produces different output.\n"                 \
-                 << "Expected: " << gtest_expected_output << "\n"              \
-                 << "  Actual: " << gtest_output;                              \
-        goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__);            \
-      }                                                                        \
-    } else                                                                     \
-      GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__)                    \
-          : fail(gtest_ar.failure_message())
+#define FMT_TEST_WRITE_(statement, expected_output, file, fail) \
+  GTEST_AMBIGUOUS_ELSE_BLOCKER_ \
+  if (::testing::AssertionResult gtest_ar = ::testing::AssertionSuccess()) { \
+    std::string gtest_expected_output = expected_output; \
+    OutputRedirect gtest_redir(file); \
+    GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement); \
+    std::string gtest_output = gtest_redir.restore_and_read(); \
+    if (gtest_output != gtest_expected_output) { \
+      gtest_ar \
+        << #statement " produces different output.\n" \
+        << "Expected: " << gtest_expected_output << "\n" \
+        << "  Actual: " << gtest_output; \
+      goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__); \
+    } \
+  } else \
+    GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__): \
+      fail(gtest_ar.failure_message())
 
 // Tests that the statement writes the expected output to file.
-#  define EXPECT_WRITE(file, statement, expected_output) \
+#define EXPECT_WRITE(file, statement, expected_output) \
     FMT_TEST_WRITE_(statement, expected_output, file, GTEST_NONFATAL_FAILURE_)
 
-#  ifdef _MSC_VER
+#ifdef _MSC_VER
 
 // Suppresses Windows assertions on invalid file descriptors, making
 // POSIX functions return proper error codes instead of crashing on Windows.
-class suppress_assert {
+class SuppressAssert {
  private:
   _invalid_parameter_handler original_handler_;
   int original_report_mode_;
 
-  static void handle_invalid_parameter(const wchar_t*, const wchar_t*,
-                                       const wchar_t*, unsigned, uintptr_t) {}
+  static void handle_invalid_parameter(const wchar_t *,
+      const wchar_t *, const wchar_t *, unsigned , uintptr_t) {}
 
  public:
-  suppress_assert()
-      : original_handler_(
-            _set_invalid_parameter_handler(handle_invalid_parameter)),
-        original_report_mode_(_CrtSetReportMode(_CRT_ASSERT, 0)) {}
-  ~suppress_assert() {
+  SuppressAssert()
+  : original_handler_(_set_invalid_parameter_handler(handle_invalid_parameter)),
+    original_report_mode_(_CrtSetReportMode(_CRT_ASSERT, 0)) {
+  }
+  ~SuppressAssert() {
     _set_invalid_parameter_handler(original_handler_);
     _CrtSetReportMode(_CRT_ASSERT, original_report_mode_);
-    (void)original_report_mode_;
   }
 };
 
-#    define SUPPRESS_ASSERT(statement) \
-      {                                \
-        suppress_assert sa;            \
-        statement;                     \
-      }
-#  else
-#    define SUPPRESS_ASSERT(statement) statement
-#  endif  // _MSC_VER
+# define SUPPRESS_ASSERT(statement) { SuppressAssert sa; statement; }
+#else
+# define SUPPRESS_ASSERT(statement) statement
+#endif  // _MSC_VER
 
-#  define EXPECT_SYSTEM_ERROR_NOASSERT(statement, error_code, message) \
-    EXPECT_SYSTEM_ERROR(SUPPRESS_ASSERT(statement), error_code, message)
+#define EXPECT_SYSTEM_ERROR_NOASSERT(statement, error_code, message) \
+  EXPECT_SYSTEM_ERROR(SUPPRESS_ASSERT(statement), error_code, message)
 
 // Attempts to read count characters from a file.
-std::string read(fmt::file& f, size_t count);
+std::string read(fmt::File &f, std::size_t count);
 
-#  define EXPECT_READ(file, expected_content) \
-    EXPECT_EQ(expected_content,               \
-              read(file, fmt::string_view(expected_content).size()))
+#define EXPECT_READ(file, expected_content) \
+  EXPECT_EQ(expected_content, read(file, std::strlen(expected_content)))
 
-#else
-#  define EXPECT_WRITE(file, statement, expected_output) \
-    do {                                                 \
-      (void)(file);                                      \
-      (void)(statement);                                 \
-      (void)(expected_output);                           \
-      SUCCEED();                                         \
-    } while (false)
-#endif  // FMT_USE_FCNTL
+#endif  // FMT_USE_FILE_DESCRIPTORS
+
+template <typename Mock>
+struct ScopedMock : testing::StrictMock<Mock> {
+  ScopedMock() { Mock::instance = this; }
+  ~ScopedMock() { Mock::instance = 0; }
+};
 
 #endif  // FMT_GTEST_EXTRA_H_

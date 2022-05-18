@@ -1,31 +1,41 @@
-// Formatting library for C++ - FMT_ASSERT test
-//
-// It is a separate test to minimize the number of EXPECT_DEBUG_DEATH checks
-// which are slow on some platforms. In other tests FMT_ASSERT is made to throw
-// an exception which is much faster and easier to check.
-//
-// Copyright (c) 2012 - present, Victor Zverovich
-// All rights reserved.
-//
-// For the license information refer to format.h.
+/*
+ Assertion tests
 
-#include "fmt/core.h"
+ Copyright (c) 2015, Victor Zverovich
+ All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of source code must retain the above copyright notice, this
+    list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "fmt/format.h"
 #include "gtest/gtest.h"
 
-TEST(assert_test, fail) {
 #if GTEST_HAS_DEATH_TEST
-  EXPECT_DEBUG_DEATH(FMT_ASSERT(false, "don't panic!"), "don't panic!");
+# define EXPECT_DEBUG_DEATH_IF_SUPPORTED(statement, regex) \
+    EXPECT_DEBUG_DEATH(statement, regex)
 #else
-  fmt::print("warning: death tests are not supported\n");
+# define EXPECT_DEBUG_DEATH_IF_SUPPORTED(statement, regex) \
+    GTEST_UNSUPPORTED_DEATH_TEST_(statement, regex, )
 #endif
-}
 
-TEST(assert_test, dangling_else) {
-  bool test_condition = false;
-  bool executed_else = false;
-  if (test_condition)
-    FMT_ASSERT(true, "");
-  else
-    executed_else = true;
-  EXPECT_TRUE(executed_else);
+TEST(AssertTest, Fail) {
+  EXPECT_DEBUG_DEATH_IF_SUPPORTED(FMT_ASSERT(false, "don't panic!"), "don't panic!");
 }

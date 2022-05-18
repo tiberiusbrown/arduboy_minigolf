@@ -41,6 +41,7 @@ endif()
 
 set(MINIGOLF_SOURCES
     game.hpp
+    camera.cpp
     div.cpp
     game.hpp
     draw.cpp
@@ -73,7 +74,7 @@ if(WIN32)
     )
     target_include_directories(level_editor PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/imgui"
-        "${CMAKE_CURRENT_SOURCE_DIR}/tools/fmt/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/fmt"
     )
     target_compile_definitions(level_editor PUBLIC
         -DBASE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")

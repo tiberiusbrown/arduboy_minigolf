@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 # reStructuredText (RST) to GitHub-flavored Markdown converter
 
-import re, sys
+import re
 from docutils import core, nodes, writers
 
 
@@ -36,9 +35,6 @@ class Translator(nodes.NodeVisitor):
         self.version = re.match(r'(\d+\.\d+\.\d+).*', node.children[0]).group(1)
         raise nodes.SkipChildren
 
-    def visit_title_reference(self, node):
-        raise Exception(node)
-
     def depart_title(self, node):
         pass
 
@@ -65,7 +61,7 @@ class Translator(nodes.NodeVisitor):
         self.write('\n\n')
 
     def visit_paragraph(self, node):
-        self.write('\n\n')
+        pass
 
     def depart_paragraph(self, node):
         pass
@@ -113,30 +109,6 @@ class Translator(nodes.NodeVisitor):
     def depart_image(self, node):
         pass
 
-    def write_row(self, row, widths):
-        for i, entry in enumerate(row):
-            text = entry[0][0] if len(entry) > 0 else ''
-            if i != 0:
-                self.write('|')
-            self.write('{:{}}'.format(text, widths[i]))
-        self.write('\n')
-
-    def visit_table(self, node):
-        table = node.children[0]
-        colspecs = table[:-2]
-        thead = table[-2]
-        tbody = table[-1]
-        widths = [int(cs['colwidth']) for cs in colspecs]
-        sep = '|'.join(['-' * w for w in widths]) + '\n'
-        self.write('\n\n')
-        self.write_row(thead[0], widths)
-        self.write(sep)
-        for row in tbody:
-            self.write_row(row, widths)
-        raise nodes.SkipChildren
-
-    def depart_table(self, node):
-        pass
 
 class MDWriter(writers.Writer):
     """GitHub-flavored markdown writer"""
@@ -153,7 +125,3 @@ class MDWriter(writers.Writer):
 def convert(rst_path):
     """Converts RST file to Markdown."""
     return core.publish_file(source_path=rst_path, writer=MDWriter())
-
-
-if __name__ == '__main__':
-    convert(sys.argv[1])
