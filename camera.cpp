@@ -85,6 +85,4 @@ void update_camera_follow_ball(
     update_camera_look_at(
         tlookat, tyaw, tpitch, dist,
         move_speed, look_speed);
-
-    yaw2 = tyaw;
 }

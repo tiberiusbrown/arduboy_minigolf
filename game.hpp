@@ -291,7 +291,8 @@ enum class st : uint8_t
     ROLLING,    // watch the ball after a shot
 };
 extern st state;
-extern uint16_t yaw2;
+extern uint16_t yaw_aim;
+extern uint8_t power_aim;
 void move_forward(int16_t amount);
 void move_right(int16_t amount);
 void move_up(int16_t amount);
@@ -323,6 +324,8 @@ void update_camera_follow_ball(
 
 // draw.cpp
 int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z);
+void set_pixel(uint8_t x, uint8_t y);
+void clear_pixel(uint8_t x, uint8_t y);
 void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati);
 void draw_ball_filled(dvec2 c, uint16_t r);
 void draw_ball_outline(dvec2 c, uint16_t r);

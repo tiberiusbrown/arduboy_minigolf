@@ -2,7 +2,13 @@
 
 // alternative yaw for non camera uses
 // (like aiming, tracking ball velocity)
-uint16_t yaw2;
+uint16_t yaw_aim;
+
+uint8_t power_aim;
+static constexpr uint8_t MIN_POWER = 4;
+static constexpr uint8_t MAX_POWER = 128;
+
+static dvec3 prev_ball;
 
 st state;
 
@@ -101,18 +107,23 @@ void game_loop()
         int16_t pitch = 4096;
         uint16_t dist = 256 * 6;
         update_camera_look_at_fastangle(
-            above_ball, yaw2, pitch, dist, 64, 64);
+            above_ball, yaw_aim, pitch, dist, 64, 64);
 
         uint8_t btns = poll_btns();
         uint8_t amount = (btns & BTN_B) ? 16 : 255;
-        if(btns & BTN_LEFT ) yaw2 -= amount;
-        if(btns & BTN_RIGHT) yaw2 += amount;
+        if(btns & BTN_LEFT ) yaw_aim -= amount;
+        if(btns & BTN_RIGHT) yaw_aim += amount;
+
+        if(btns & BTN_UP  ) power_aim += 4;
+        if(btns & BTN_DOWN) power_aim -= 4;
+        power_aim = tclamp(power_aim, MIN_POWER, MAX_POWER);
 
         if(btns & BTN_A)
         {
-            uint16_t power2 = 256 * 128; // this is max
-            int16_t ys = fsin16(yaw2);
-            int16_t yc = -fcos16(yaw2);
+            uint16_t power2 = uint16_t(power_aim) << 8;
+            int16_t ys = fsin16(yaw_aim);
+            int16_t yc = -fcos16(yaw_aim);
+            prev_ball = ball;
             ball_vel.x = int16_t(uint32_t(int32_t(ys) * power2) >> 16);
             ball_vel.z = int16_t(uint32_t(int32_t(yc) * power2) >> 16);
             state = st::ROLLING;
@@ -124,11 +135,35 @@ void game_loop()
             state = st::AIM;
         else if(ball.y < (256 * -20))
         {
-            reset_ball();
+            ball = prev_ball;
+            ball_vel = {};
             state = st::AIM;
         }
         update_camera_follow_ball(256 * 12, 64, 16);
     }
 
     render_scene();
+    
+    if(state == st::AIM)
+    {
+        static constexpr uint8_t OFFX = 46;
+        static constexpr uint8_t OFFY = 24;
+        for(uint8_t y = OFFY + 1; y <= OFFY + 34; ++y)
+        {
+            set_pixel(OFFX + 0, y);
+            set_pixel(OFFX + 6, y);
+            for(uint8_t x = OFFX + 1; x <= OFFX + 5; ++x)
+                clear_pixel(x, y);
+        }
+        for(uint8_t x = OFFX + 1; x <= OFFX + 5; ++x)
+        {
+            set_pixel(x, OFFY + 0);
+            set_pixel(x, OFFY + 35);
+        }
+        for(uint8_t i = 0, y = OFFY + 33; i < power_aim; i += 4, --y)
+        {
+            for(uint8_t x = OFFX + 2; x <= OFFX + 4; ++x)
+                set_pixel(x, y);
+        }
+    }
 }

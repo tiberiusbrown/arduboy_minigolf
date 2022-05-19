@@ -4,10 +4,26 @@
 array<uint8_t, BUF_BYTES> buf;
 #endif
 
-static void set_pixel(uint8_t x, uint8_t y)
+static constexpr uint8_t SET_MASK[8] PROGMEM =
 {
-    if(x < FBW && y < FBH)
-        buf[y / 8 * FBW + x] |= (1 << (y % 8));
+    0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
+};
+
+void set_pixel(uint8_t x, uint8_t y)
+{
+    //if(x < FBW && y < FBH)
+        buf[y / 8 * FBW + x] |= pgm_read_byte(&SET_MASK[y & 7]);
+}
+
+static constexpr uint8_t CLEAR_MASK[8] PROGMEM =
+{
+    0xfe, 0xfd, 0xfb, 0xf7, 0xef, 0xdf, 0xbf, 0x7f,
+};
+
+void clear_pixel(uint8_t x, uint8_t y)
+{
+    //if(x < FBW && y < FBH)
+        buf[y / 8 * FBW + x] &= pgm_read_byte(&CLEAR_MASK[y & 7]);
 }
 
 static constexpr uint8_t YMASK0[8] PROGMEM =

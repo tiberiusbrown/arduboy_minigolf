@@ -221,9 +221,8 @@ static void main_step()
 
 bool physics_step()
 {
-    for(uint8_t i = 0; i < 2; ++i)
+    for(uint8_t i = 0; i < 4; ++i)
     {
-        main_step();
         main_step();
 
         // angular damping
