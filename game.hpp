@@ -294,11 +294,18 @@ void look_right(int16_t amount);
 extern dvec3 ball;         // position
 extern dvec3 ball_vel;     // velocity
 extern dvec3 ball_vel_ang; // angular velocity
-void physics_step();
+bool physics_step(); // returns true if ball has stopped
 
 // camera.cpp
-void update_camera(dvec3 tcam, uint16_t tyaw, int16_t tpitch);
-void camera_follow_ball();
+void update_camera(
+    dvec3 tcam, uint16_t tyaw, int16_t tpitch,
+    uint8_t move_speed, uint8_t look_speed);
+void update_camera_look_at(
+    dvec3 tlookat, uint16_t tyaw, int16_t tpitch, uint8_t dist,
+    uint8_t move_speed, uint8_t look_speed);
+void update_camera_follow_ball(
+    uint8_t dist,
+    uint8_t move_speed, uint8_t look_speed);
 
 // draw.cpp
 int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z);

@@ -2,21 +2,7 @@
 
 static void reset_ball()
 {
-    ball.x = 256 * -7;
-    ball.y = 256 * 3;
-    ball.z = 256 * -7;
-
-    ball_vel_ang = {};
-    ball_vel = {};
-    ball_vel.x = 256 * 5;
-
-#if 0
-    ball = { 3840, 128, 256 };
-
-    ball_vel_ang = {};
-    ball_vel = {};
-    ball_vel.z = 256 * -25;
-#endif
+    memcpy_P(&ball, &current_level->ball_pos, sizeof(ball));
 }
 
 void game_setup()
@@ -98,7 +84,12 @@ void game_loop()
     if(ball.y < 256 * -20)
         reset_ball();
 
-    camera_follow_ball();
+    {
+        dvec3 above_ball = ball;
+        above_ball.y += 256 * 2;
+        uint16_t aim_yaw = 0;
+        update_camera_look_at(above_ball, aim_yaw, 4096, 6, 32, 32);
+    }
 
     render_scene();
 }

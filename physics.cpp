@@ -8,6 +8,9 @@ dvec3 ball_vel;
 
 dvec3 ball_vel_ang;
 
+static uint16_t steps;
+static constexpr uint16_t MAX_STEPS = 30 * 60;
+
 // 0.25 units per step
 static constexpr int16_t MAX_VEL = 256 * 64;
 
@@ -213,7 +216,7 @@ static void main_step()
 
 }
 
-void physics_step()
+bool physics_step()
 {
     for(uint8_t i = 0; i < 2; ++i)
     {
@@ -225,4 +228,14 @@ void physics_step()
         ball_vel_ang.y = int16_t(u24(s24(ball_vel_ang.y) * 255) >> 8);
         ball_vel_ang.z = int16_t(u24(s24(ball_vel_ang.z) * 255) >> 8);
     }
+    bool done =
+        steps >= MAX_STEPS ||
+        ball.y < 256 * -64 ||
+        tmin(tabs(ball_vel.x), tabs(ball_vel.y), tabs(ball_vel.z)) < 64;
+    if(done)
+    {
+        steps = 0;
+        ball_vel = {};
+    }
+    return done;
 }

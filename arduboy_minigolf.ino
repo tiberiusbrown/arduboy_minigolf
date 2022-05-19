@@ -5,7 +5,13 @@
 #include <Arduboy2.h>
 #include <Arduino.h>
 
+#define SHOW_FPS 1
+
+#if SHOW_FPS
 Arduboy2 a;
+#else
+Arduboy2Base a;
+#endif
 uint8_t* const buf = Arduboy2Base::sBuffer;
 
 uint16_t time_ms()
@@ -57,10 +63,12 @@ void setup()
     game_setup();
 
     a.setFrameRate(30);
+#if SHOW_FPS
     uint16_t pt = time_ms();
     uint16_t dt = 0;
     uint16_t fps = 0;
     uint16_t nf = 0;
+#endif
     for(;;)
     {
         if (WDTCSR & _BV(WDE))
@@ -72,9 +80,11 @@ void setup()
             for(;;);
         }
       
-        //while(!a.nextFrame())
+        //while(!a.nextFrameDEV())
             ;
         game_loop();
+
+#if SHOW_FPS
         uint16_t t = time_ms();
         uint16_t tdt = t - pt;
         pt = t;
@@ -94,6 +104,8 @@ void setup()
         a.write('0' + f /  10);
         f %=  10;
         a.write('0' + f);
+#endif
+        
         Arduboy2Base::display(true);
     }
   
