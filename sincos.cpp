@@ -113,9 +113,9 @@ int16_t atan2(int16_t x, int16_t y)
 
     uint16_t t = int16_t(u24(u24(t0) * f0 + u24(t1) * f1 + t0) >> 8);
 
-    if(f & 1) t = -t;
     if(f & 2) t = 32768 - t;
     if(f & 4) t = 16384 - t;
+    if(f & 1) t = -t;
 
     return t;
 }

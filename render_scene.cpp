@@ -8,13 +8,6 @@ array<uint8_t, MAX_FACES> face_order;
 array<uint8_t, MAX_CLIP_FACES * 4> clip_faces;
 array<dvec2, MAX_VERTS> vs;
 
-// camera look angle (roll not supported)
-uint16_t yaw;
-int16_t pitch;
-
-// camera position
-dvec3 cam;
-
 static dvec2 interpz(dvec2 a, int16_t az, dvec2 b, int16_t bz)
 {
     dvec2 r;
@@ -120,7 +113,7 @@ uint8_t render_scene(
             balli1 = nv + 1;
             ball_valid = true;
             face_order[nf] = 255;
-            fd.fdist[nf] = uint16_t(uint32_t(fdist) >> 16);
+            fd.fdist[nf] = uint16_t(uint32_t(fdist) >> 16) + 64;
             //fd.fdist[nf] = tabs(dv.y) + (uint16_t(tabs(dv.x) + tabs(dv.z)) >> 4);
             nv += 2;
             nf += 1;

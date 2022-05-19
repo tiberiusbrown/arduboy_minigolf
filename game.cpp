@@ -1,8 +1,15 @@
 #include "game.hpp"
 
+// alternative yaw for non camera uses
+// (like aiming, tracking ball velocity)
+uint16_t yaw2;
+
+st state;
+
 static void reset_ball()
 {
     memcpy_P(&ball, &current_level->ball_pos, sizeof(ball));
+    ball_vel = {};
 }
 
 void game_setup()
@@ -14,6 +21,8 @@ void game_setup()
     cam = { -1133, 1880, 376 };
     yaw = 53760;
     pitch = 4880;
+
+    state = st::AIM;
 }
 
 void move_forward(int16_t amount)
@@ -47,6 +56,7 @@ void look_right(int16_t amount)
 
 void game_loop()
 {
+#if 0
     {
         uint8_t btns = poll_btns();
 
@@ -78,17 +88,46 @@ void game_loop()
         }
 
     }
+#endif
 
-    physics_step();
+    if(state == st::LEVEL)
+    {
 
-    if(ball.y < 256 * -20)
-        reset_ball();
-
+    }
+    else if(state == st::AIM)
     {
         dvec3 above_ball = ball;
-        above_ball.y += 256 * 2;
-        uint16_t aim_yaw = 0;
-        update_camera_look_at(above_ball, aim_yaw, 4096, 6, 32, 32);
+        above_ball.y += (256 * 2);
+        int16_t pitch = 4096;
+        uint16_t dist = 256 * 6;
+        update_camera_look_at_fastangle(
+            above_ball, yaw2, pitch, dist, 64, 64);
+
+        uint8_t btns = poll_btns();
+        uint8_t amount = (btns & BTN_B) ? 16 : 255;
+        if(btns & BTN_LEFT ) yaw2 -= amount;
+        if(btns & BTN_RIGHT) yaw2 += amount;
+
+        if(btns & BTN_A)
+        {
+            uint16_t power2 = 256 * 128; // this is max
+            int16_t ys = fsin16(yaw2);
+            int16_t yc = -fcos16(yaw2);
+            ball_vel.x = int16_t(uint32_t(int32_t(ys) * power2) >> 16);
+            ball_vel.z = int16_t(uint32_t(int32_t(yc) * power2) >> 16);
+            state = st::ROLLING;
+        }
+    }
+    else if(state == st::ROLLING)
+    {
+        if(physics_step())
+            state = st::AIM;
+        else if(ball.y < (256 * -20))
+        {
+            reset_ball();
+            state = st::AIM;
+        }
+        update_camera_follow_ball(256 * 12, 64, 16);
     }
 
     render_scene();

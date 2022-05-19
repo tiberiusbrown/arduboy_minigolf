@@ -15,12 +15,14 @@ static constexpr uint16_t MAX_STEPS = 30 * 60;
 static constexpr int16_t MAX_VEL = 256 * 64;
 
 // gravity acceleration: y vel units per step
-static constexpr int16_t GRAVITY = 96;
+static constexpr int16_t GRAVITY = 48;
 
-// ball restitution as a fraction of 256. min 0.5
-static constexpr uint8_t RESTITUTION = 256 * 0.5;
+// ball restitution as a fraction of 256
+static constexpr uint8_t RESTITUTION = 256 * 0.75;
 
-static constexpr int8_t REST_MINUS_ONE = int8_t(RESTITUTION - 256);
+static uint8_t stop_vel_steps;
+static constexpr int16_t STOP_VEL = 256;
+static constexpr uint8_t STOP_VEL_MAX_STEPS = 30;
 
 // square unsigned (x >= 0)
 static constexpr uint32_t FORCEINLINE squ(int16_t x)
@@ -165,7 +167,8 @@ static void physics_collision(phys_box b)
     // impulse factor
     dvec3 Jv;
     {
-        int16_t t0 = -dot(vp, normal) * 3 / 2;
+        int16_t t0 = -dot(vp, normal);
+        t0 += int16_t(u24(s24(t0) * RESTITUTION) >> 8);
         int16_t t1 = -dot(vp, tangent);
         t1 = int16_t(u24(s24(t1) * (256 / 3)) >> 8);
         Jv.x  = int16_t(u24(s24(t0) *  normal.x) >> 8);
@@ -224,17 +227,21 @@ bool physics_step()
         main_step();
 
         // angular damping
-        ball_vel_ang.x = int16_t(u24(s24(ball_vel_ang.x) * 255) >> 8);
-        ball_vel_ang.y = int16_t(u24(s24(ball_vel_ang.y) * 255) >> 8);
-        ball_vel_ang.z = int16_t(u24(s24(ball_vel_ang.z) * 255) >> 8);
+        ball_vel_ang.x = int16_t(u24(s24(ball_vel_ang.x) * 255 + 0x80) >> 8);
+        ball_vel_ang.y = int16_t(u24(s24(ball_vel_ang.y) * 255 + 0x80) >> 8);
+        ball_vel_ang.z = int16_t(u24(s24(ball_vel_ang.z) * 255 + 0x80) >> 8);
     }
+    if(tmax(tabs(ball_vel.x), tabs(ball_vel.y), tabs(ball_vel.z)) < STOP_VEL)
+        ++stop_vel_steps;
+    else
+        stop_vel_steps = 0;
     bool done =
         steps >= MAX_STEPS ||
-        ball.y < 256 * -64 ||
-        tmin(tabs(ball_vel.x), tabs(ball_vel.y), tabs(ball_vel.z)) < 64;
+        stop_vel_steps >= STOP_VEL_MAX_STEPS;
     if(done)
     {
         steps = 0;
+        stop_vel_steps = 0;
         ball_vel = {};
     }
     return done;

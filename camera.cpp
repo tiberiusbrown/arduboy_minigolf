@@ -1,5 +1,11 @@
 #include "game.hpp"
 
+// camera position
+dvec3 cam;
+// camera look angle (roll not supported)
+uint16_t yaw;
+int16_t pitch;
+
 struct ctrl
 {
     int16_t dydt;
@@ -32,14 +38,30 @@ void update_camera(
 }
 
 void update_camera_look_at(
-    dvec3 tlookat, uint16_t tyaw, int16_t tpitch, uint8_t dist,
+    dvec3 tlookat, uint16_t tyaw, int16_t tpitch, uint16_t dist,
     uint8_t move_speed, uint8_t look_speed)
 {
     dvec3 tcam = tlookat;
     {
         mat3 m;
-        rotation_phys(m, uint8_t(-(tyaw >> 8)), int8_t(-uint16_t(tpitch>> 8)));
-        dvec3 dv = matvec(m, dvec3{ 0, 0, int16_t(uint16_t(dist) << 8) });
+        rotation_phys(m, uint8_t(-(yaw >> 8)), int8_t(-uint16_t(pitch>> 8)));
+        dvec3 dv = matvec(m, dvec3{ 0, 0, int16_t(dist) });
+        tcam.x += dv.x;
+        tcam.y += dv.y;
+        tcam.z += dv.z;
+    }
+    update_camera(tcam, tyaw, tpitch, move_speed, look_speed);
+}
+
+void update_camera_look_at_fastangle(
+    dvec3 tlookat, uint16_t tyaw, int16_t tpitch, uint16_t dist,
+    uint8_t move_speed, uint8_t look_speed)
+{
+    dvec3 tcam = tlookat;
+    {
+        mat3 m;
+        rotation_phys(m, uint8_t(-(tyaw >> 8)), int8_t(-uint16_t(tpitch >> 8)));
+        dvec3 dv = matvec(m, dvec3{ 0, 0, int16_t(dist) });
         tcam.x += dv.x;
         tcam.y += dv.y;
         tcam.z += dv.z;
@@ -48,14 +70,21 @@ void update_camera_look_at(
 }
 
 void update_camera_follow_ball(
-    uint8_t dist,
+    uint16_t dist,
     uint8_t move_speed, uint8_t look_speed)
 {
-    uint16_t tyaw = atan2(ball_vel.x, ball_vel.z) + (16384 + 8192);
-    int16_t tpitch = 4096; // TODO
+    //uint16_t tyaw = atan2(ball_vel.x, ball_vel.z) + 16384;
+
+    dvec3 flag;
+    memcpy_P(&flag, &current_level->flag_pos, sizeof(flag));
+    uint16_t tyaw = atan2(flag.x - ball.x, flag.z - ball.z) + 16384;
+
+    int16_t tpitch = 6500; // TODO
     dvec3 tlookat = ball;
 
     update_camera_look_at(
         tlookat, tyaw, tpitch, dist,
         move_speed, look_speed);
+
+    yaw2 = tyaw;
 }

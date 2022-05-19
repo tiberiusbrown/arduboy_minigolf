@@ -284,6 +284,14 @@ extern level_info const LEVELS[2] PROGMEM;
 extern level_info const* current_level;
 
 // game.cpp
+enum class st : uint8_t
+{
+    LEVEL,      // circle around the level for a bit
+    AIM,        // aim the ball for a shot
+    ROLLING,    // watch the ball after a shot
+};
+extern st state;
+extern uint16_t yaw2;
 void move_forward(int16_t amount);
 void move_right(int16_t amount);
 void move_up(int16_t amount);
@@ -297,14 +305,20 @@ extern dvec3 ball_vel_ang; // angular velocity
 bool physics_step(); // returns true if ball has stopped
 
 // camera.cpp
+extern dvec3 cam;
+extern uint16_t yaw;
+extern int16_t  pitch;
 void update_camera(
     dvec3 tcam, uint16_t tyaw, int16_t tpitch,
     uint8_t move_speed, uint8_t look_speed);
 void update_camera_look_at(
-    dvec3 tlookat, uint16_t tyaw, int16_t tpitch, uint8_t dist,
+    dvec3 tlookat, uint16_t tyaw, int16_t tpitch, uint16_t dist,
+    uint8_t move_speed, uint8_t look_speed);
+void update_camera_look_at_fastangle(
+    dvec3 tlookat, uint16_t tyaw, int16_t tpitch, uint16_t dist,
     uint8_t move_speed, uint8_t look_speed);
 void update_camera_follow_ball(
-    uint8_t dist,
+    uint16_t dist,
     uint8_t move_speed, uint8_t look_speed);
 
 // draw.cpp
@@ -317,9 +331,6 @@ void draw_ball_outline(dvec2 c, uint16_t r);
 extern array<uint8_t, MAX_FACES> face_order;
 extern array<uint8_t, MAX_CLIP_FACES * 4> clip_faces;
 extern array<dvec2, MAX_VERTS> vs;
-extern uint16_t yaw;
-extern int16_t  pitch;
-extern dvec3 cam;
 void clear_buf();
 uint8_t render_scene();
 uint8_t render_scene(
