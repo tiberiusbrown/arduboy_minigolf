@@ -110,9 +110,8 @@ void game_loop()
             above_ball, yaw_aim, pitch, dist, 64, 64);
 
         uint8_t btns = poll_btns();
-        uint8_t amount = (btns & BTN_B) ? 16 : 255;
-        if(btns & BTN_LEFT ) yaw_aim -= amount;
-        if(btns & BTN_RIGHT) yaw_aim += amount;
+        if(btns & BTN_LEFT ) yaw_aim -= 128;
+        if(btns & BTN_RIGHT) yaw_aim += 128;
 
         if(btns & BTN_UP  ) power_aim += 4;
         if(btns & BTN_DOWN) power_aim -= 4;
