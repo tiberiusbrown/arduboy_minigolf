@@ -79,9 +79,10 @@ void setup()
             *(volatile uint8_t*)0x801 = 0x77;
             for(;;);
         }
-      
+
+        // TODO: replace this call. it costs >1KB
         //while(!a.nextFrameDEV())
-        //while(!a.nextFrame())
+        while(!a.nextFrame())
             ;
         game_loop();
 

@@ -11,11 +11,16 @@ static constexpr uint8_t MAX_POWER = 128;
 static dvec3 prev_ball;
 
 st state;
+static uint16_t nframe;
+static uint16_t yaw_level;
+
+static uint8_t prev_btns;
 
 static void reset_ball()
 {
     memcpy_P(&ball, &current_level->ball_pos, sizeof(ball));
     ball_vel = {};
+    ball_vel_ang = {};
 }
 
 void game_setup()
@@ -28,7 +33,9 @@ void game_setup()
     yaw = 53760;
     pitch = 4880;
 
-    state = st::AIM;
+    state = st::LEVEL;
+    nframe = 0;
+    yaw_level = 0;
 }
 
 void move_forward(int16_t amount)
@@ -62,43 +69,19 @@ void look_right(int16_t amount)
 
 void game_loop()
 {
-#if 0
-    {
-        uint8_t btns = poll_btns();
-
-        if(btns & BTN_A)
-        {
-            // look
-            if(btns & BTN_UP   ) look_up(256);
-            if(btns & BTN_DOWN ) look_up(-256);
-            if(btns & BTN_LEFT ) look_right(-256);
-            if(btns & BTN_RIGHT) look_right(256);
-
-            pitch = tclamp<int16_t>(pitch, -64 * 256, 64 * 256);
-        }
-        else if(btns & BTN_B)
-        {
-            // rise and fall
-            if(btns & BTN_UP  ) move_up(64);
-            if(btns & BTN_DOWN) move_up(-64);
-        }
-        else
-        {
-            // move and strafe
-            int8_t sinA = fsin(yaw) / 4;
-            int8_t cosA = fcos(yaw) / 4;
-            if(btns & BTN_UP   ) move_forward(64);
-            if(btns & BTN_DOWN ) move_forward(-64);
-            if(btns & BTN_LEFT ) move_right(-64);
-            if(btns & BTN_RIGHT) move_right(64);
-        }
-
-    }
-#endif
+    uint8_t btns = poll_btns();
+    uint8_t pressed = btns & ~prev_btns;
+    prev_btns = btns;
 
     if(state == st::LEVEL)
     {
-
+        update_camera_look_at_fastangle(
+            { 0, 0, 0 }, yaw_level, 6000, 256 * 25, 64, 64);
+        yaw_level += 256;
+        if(++nframe >= 256)
+            state = st::AIM;
+        if(pressed & BTN_B)
+            state = st::AIM;
     }
     else if(state == st::AIM)
     {
@@ -126,6 +109,13 @@ void game_loop()
             ball_vel.z = mul_f8_s16(yc, power_aim);
             state = st::ROLLING;
         }
+
+        if(pressed & BTN_B)
+        {
+            yaw_level = yaw_aim;
+            nframe = 0;
+            state = st::LEVEL;
+        }
     }
     else if(state == st::ROLLING)
     {
@@ -135,6 +125,7 @@ void game_loop()
         {
             ball = prev_ball;
             ball_vel = {};
+            ball_vel_ang = {};
             state = st::AIM;
         }
         update_camera_follow_ball(256 * 12, 64, 16);

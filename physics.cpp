@@ -37,17 +37,17 @@ uint32_t sqdist_point_aabb(dvec3 size, dvec3 pt)
     uint32_t d = 0;
     {
         int16_t pv = pt.x, bv = size.x;
-        if(pv < -bv) d += squ(-bv - pv);
+        if(pv < -bv) d += squ(pv + bv);
         if(pv >  bv) d += squ(pv - bv);
     }
     {
         int16_t pv = pt.y, bv = size.y;
-        if(pv < -bv) d += squ(-bv - pv);
+        if(pv < -bv) d += squ(pv + bv);
         if(pv >  bv) d += squ(pv - bv);
     }
     {
         int16_t pv = pt.z, bv = size.z;
-        if(pv < -bv) d += squ(-bv - pv);
+        if(pv < -bv) d += squ(pv + bv);
         if(pv >  bv) d += squ(pv - bv);
     }
     return d;
@@ -88,7 +88,7 @@ If m = 1, I = 1/8, en = 1/2, et = 1, rp = -(1/2)n, and t is orthogonal to rp:
     vp = v1 - 1/2cross(w1, n)
     Jv = -3/2*dot(vp, n)*n -1/3*dot(vp, t)*t    [note: factors are adjustable]
     v2 = v1 + Jv
-    w2 = w1 - 4*cross(n, Jv)
+    w2 = w1 + 4*cross(Jv, n)
 
 */
 
@@ -116,10 +116,9 @@ static void physics_collision(phys_box b)
         // rotate pt
         pt = matvec_t(m, pt);
     }
-    uint32_t d = sqdist_point_aabb(b.size, pt);
 
     // early exit if no collision
-    if(d > BALL_RADIUS_SQ)
+    if(sqdist_point_aabb(b.size, pt) > BALL_RADIUS_SQ)
         return;
 
     // find contact point on box
@@ -141,9 +140,10 @@ static void physics_collision(phys_box b)
         normal = matvec(m, normal);
     }
 
-    // ignore collision if normal aligned with current velocity
-    // this happens if collision is processed but ball still penetrates
     int16_t normdot = dot(ball_vel, normal);
+
+    // ignore collision if normal is aligned with current velocity; this
+    // happens if collision has been processed but the ball still penetrates
     if(normdot > 0)
         return;
 
@@ -212,9 +212,9 @@ static void main_step()
     ball_vel.y = tclamp<int16_t>(ball_vel.y, -MAX_VEL, MAX_VEL);
     ball_vel.z = tclamp<int16_t>(ball_vel.z, -MAX_VEL, MAX_VEL);
 
-    ball.x += int8_t(uint16_t(ball_vel.x + 128) >> 8);
-    ball.y += int8_t(uint16_t(ball_vel.y + 128) >> 8);
-    ball.z += int8_t(uint16_t(ball_vel.z + 128) >> 8);
+    ball.x += int8_t(uint16_t(ball_vel.x + 0x80) >> 8);
+    ball.y += int8_t(uint16_t(ball_vel.y + 0x80) >> 8);
+    ball.z += int8_t(uint16_t(ball_vel.z + 0x80) >> 8);
 
 }
 
@@ -225,6 +225,7 @@ bool physics_step()
         main_step();
 
         // angular damping
+        // these lines do not compile to multiplies
         ball_vel_ang.x = int16_t(u24(s24(ball_vel_ang.x) * 255 + 0x80) >> 8);
         ball_vel_ang.y = int16_t(u24(s24(ball_vel_ang.y) * 255 + 0x80) >> 8);
         ball_vel_ang.z = int16_t(u24(s24(ball_vel_ang.z) * 255 + 0x80) >> 8);
