@@ -67,14 +67,14 @@ int16_t fcos16(uint16_t angle)
 
 static constexpr uint16_t ATAN_TABLE[33] PROGMEM =
 {
-        1,  1304,  2605,  3900,  5189,  6467,  7733,  8985,
-    10221, 11439, 12637, 13814, 14968, 16100, 17206, 18288,
-    19344, 20374, 21378, 22355, 23305, 24230, 25128, 26001,
-    26848, 27669, 28467, 29240, 29990, 30717, 31422, 32105,
-    32767,
+       0,  326,  651,  975, 1297, 1617, 1933, 2246,
+    2555, 2860, 3159, 3453, 3742, 4025, 4302, 4572,
+    4836, 5094, 5344, 5589, 5826, 6058, 6282, 6500,
+    6712, 6917, 7117, 7310, 7498, 7679, 7856, 8026,
+    8192,
 };
 
-int16_t atan2(int16_t x, int16_t y)
+int16_t atan2(int16_t y, int16_t x)
 {
     uint8_t f = 0;
     if(y < 0)
@@ -96,13 +96,13 @@ int16_t atan2(int16_t x, int16_t y)
     uint16_t ratio;
     if(x < 256)
     {
-        uint16_t invx = inv8(uint8_t(uint16_t(x) >> 8));
-        ratio = uint16_t((uint32_t(invx) * uint16_t(y)) >> 18);
+        uint16_t invx = inv8(uint8_t(x));
+        ratio = uint16_t((uint32_t(invx) * uint16_t(y)) >> 3);
     }
     else
     {
         uint16_t invx = inv16(uint16_t(x));
-        ratio = uint16_t((uint32_t(invx) * uint16_t(y)) >> 26);
+        ratio = uint16_t((uint32_t(invx) * uint16_t(y)) >> 11);
     }
 
     uint8_t i = uint8_t(ratio >> 8);
@@ -113,8 +113,8 @@ int16_t atan2(int16_t x, int16_t y)
 
     uint16_t t = mul_f8_u16(t0, f0) + mul_f8_u16(t1, f1) + (t0 >> 8);
 
-    if(f & 2) t = 32768 - t;
     if(f & 4) t = 16384 - t;
+    if(f & 2) t = 32768 - t;
     if(f & 1) t = -t;
 
     return t;

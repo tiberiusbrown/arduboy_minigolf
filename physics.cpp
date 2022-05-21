@@ -27,7 +27,7 @@ static constexpr uint8_t STOP_VEL_MAX_STEPS = 30;
 // square unsigned (x >= 0)
 static constexpr uint32_t FORCEINLINE squ(int16_t x)
 {
-    return uint32_t(x) * uint16_t(x);
+    return int32_t(x) * x;
 }
 
 static constexpr uint32_t BALL_RADIUS_SQ = squ(BALL_RADIUS);
@@ -132,6 +132,10 @@ static void physics_collision(phys_box b)
     normal.x = pt.x - cpt.x;
     normal.y = pt.y - cpt.y;
     normal.z = pt.z - cpt.z;
+
+    // ball center should never be able to be inside box
+    myassert((normal.x | normal.y | normal.z) != 0);
+
     normal = normalized(normal);
 
     if(b.yaw != 0 || b.pitch != 0)
@@ -143,9 +147,17 @@ static void physics_collision(phys_box b)
     int16_t normdot = dot(ball_vel, normal);
 
     // ignore collision if normal is aligned with current velocity; this
-    // happens if collision has been processed but the ball still penetrates
+    // happens in case collision has been processed but failed to
+    // resolve penetration
     if(normdot > 0)
         return;
+
+    // attempt to resolve penetration
+#if 0
+    ball.x -= mul_f16_s16(normal.x, normdot);
+    ball.y -= mul_f16_s16(normal.y, normdot);
+    ball.z -= mul_f16_s16(normal.z, normdot);
+#endif
 
     // tangent vector is rejection of velocity from normal
     dvec3 tangent;
@@ -194,18 +206,6 @@ static void physics_collision(phys_box b)
 
 static void main_step()
 {
-    // TODO: check collision and perform restitution here
-    {
-        phys_box const* boxes = pgmptr(&current_level->boxes);
-        uint8_t num_boxes = pgm_read_byte(&current_level->num_boxes);
-        for(uint8_t i = 0; i < num_boxes; ++i)
-        {
-            phys_box b;
-            memcpy_P(&b, &boxes[i], sizeof(b));
-            physics_collision(b);
-        }
-    }
-
     ball_vel.y -= GRAVITY;
 
     ball_vel.x = tclamp<int16_t>(ball_vel.x, -MAX_VEL, MAX_VEL);
@@ -216,6 +216,17 @@ static void main_step()
     ball.y += int8_t(uint16_t(ball_vel.y + 0x80) >> 8);
     ball.z += int8_t(uint16_t(ball_vel.z + 0x80) >> 8);
 
+    // check collision and perform restitution
+    {
+        phys_box const* boxes = pgmptr(&current_level->boxes);
+        uint8_t num_boxes = pgm_read_byte(&current_level->num_boxes);
+        for(uint8_t i = 0; i < num_boxes; ++i)
+        {
+            phys_box b;
+            memcpy_P(&b, &boxes[i], sizeof(b));
+            physics_collision(b);
+        }
+    }
 }
 
 bool physics_step()

@@ -35,8 +35,8 @@ int main()
     // atan table
     for (int i = 0; i < 33; ++i)
     {
-        int d = (int)round(atan(double(i) / 32) * 32767 / (M_PI / 4) + 0.5);
-        printf("%5d,%c", d, i % 8 < 7 ? ' ' : '\n');
+        int d = (int)round(atan(double(i) / 32) * 8192 / (M_PI / 4));
+        printf("%4d,%c", d, i % 8 < 7 ? ' ' : '\n');
     }
 
     return 0;

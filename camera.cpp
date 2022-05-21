@@ -77,7 +77,7 @@ void update_camera_follow_ball(
 
     dvec3 flag;
     memcpy_P(&flag, &current_level->flag_pos, sizeof(flag));
-    uint16_t tyaw = atan2(flag.x - ball.x, flag.z - ball.z) + 16384;
+    uint16_t tyaw = atan2(flag.z - ball.z, flag.x - ball.x) + 16384;
 
     int16_t tpitch = 6500; // TODO
     dvec3 tlookat = ball;

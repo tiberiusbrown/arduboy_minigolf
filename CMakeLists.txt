@@ -104,8 +104,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC git)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED 11)
 
 if(NOT EMSCRIPTEN)
-    add_executable(gen_sincos tools/gen_sincos.cpp)
-    add_executable(test_div_sin tools/test_div_sin.cpp ${MINIGOLF_SOURCES})
+    add_executable(gen_math_tables tools/gen_math_tables.cpp)
+    add_executable(test_math tools/test_math.cpp ${MINIGOLF_SOURCES})
 endif()
 
 if(MSVC)

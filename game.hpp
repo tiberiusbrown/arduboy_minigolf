@@ -357,7 +357,7 @@ int8_t fsin(uint8_t angle); // output is signed 1.7
 int8_t fcos(uint8_t angle); // output is signed 1.7
 int16_t fsin16(uint16_t angle);
 int16_t fcos16(uint16_t angle);
-int16_t atan2(int16_t x, int16_t y);
+int16_t atan2(int16_t y, int16_t x);
 
 // mat.cpp
 void rotation(mat3& m, uint8_t yaw, int8_t pitch);
@@ -390,6 +390,7 @@ int16_t  mul_f8_s16 (int16_t  a, int16_t  b);
 uint16_t mul_f8_u16 (uint16_t a, uint8_t  b);
 uint16_t mul_f8_u16 (uint16_t a, uint16_t b);
 int16_t  mul_f15_s16(int16_t  a, int16_t  b);
+int16_t  mul_f16_s16(int16_t  a, int16_t  b);
 
 static inline int16_t div8s(int16_t x)
 {

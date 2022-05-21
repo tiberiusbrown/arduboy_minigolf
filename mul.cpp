@@ -107,6 +107,11 @@ int16_t mul_f8_s16(int16_t a, int16_t b)
 #endif
 }
 
+int16_t mul_f16_s16(int16_t a, int16_t b)
+{
+    return int16_t(uint32_t(int32_t(a) * b) >> 16);
+}
+
 uint16_t mul_f8_u16(uint16_t a, uint8_t b)
 {
 #if USE_AVR_INLINE_ASM

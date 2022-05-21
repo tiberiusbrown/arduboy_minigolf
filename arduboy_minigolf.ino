@@ -5,6 +5,7 @@
 #include <Arduboy2.h>
 #include <Arduino.h>
 
+#define FPS_SET 1
 #define SHOW_FPS 1
 
 #if SHOW_FPS
@@ -62,9 +63,9 @@ void setup()
     
     game_setup();
 
-    a.setFrameRate(30);
-#if SHOW_FPS
+    //a.setFrameRate(30);
     uint16_t pt = time_ms();
+#if SHOW_FPS
     uint16_t dt = 0;
     uint16_t fps = 0;
     uint16_t nf = 0;
@@ -79,12 +80,26 @@ void setup()
             *(volatile uint8_t*)0x801 = 0x77;
             for(;;);
         }
+        
+        //while(!a.nextFrame())
+        //    ;
 
-        // TODO: replace this call. it costs >1KB
-        //while(!a.nextFrameDEV())
-        while(!a.nextFrame())
-            ;
-        game_loop();
+        // the above call increases code size by 1 KB.
+        // reimplement logic below:
+
+#if FPS_SET
+        for(;;)
+        {
+            uint8_t t = (uint8_t)time_ms();
+            uint8_t dt = t - (uint8_t)pt;
+            if(dt < 33)
+            {
+                if(++dt < 33) Arduboy2Base::idle();
+                continue;
+            }
+            break;
+        }
+#endif
 
 #if SHOW_FPS
         uint16_t t = time_ms();
@@ -98,7 +113,11 @@ void setup()
             nf = 0;
             dt = 0;
         }
+#endif
+        
+        game_loop();
 
+#if SHOW_FPS
         a.setCursor(0, 0);
         uint16_t f = fps;
         a.write('0' + f / 100);

@@ -62,5 +62,37 @@ int main()
         printf("\n\n");
     }
 
+    // test atan2
+    {
+        int worst_diff = 0;
+        int16_t worst_x = 0;
+        int16_t worst_y = 0;
+        for(int i = 0; i < 1024; ++i)
+        {
+            for(int j = 0; j < 1024; ++j)
+            {
+                int16_t x = (i - 512) * 63;
+                int16_t y = (j - 512) * 63 + 31;
+                uint16_t z = atan2(y, x);
+                uint16_t act_z = uint16_t(floor(atan2(double(y), double(x)) / (M_PI * 2) * 65535.9));
+                int diff = std::abs(z - act_z);
+                if(diff > worst_diff)
+                    worst_diff = diff, worst_x = x, worst_y = y;
+            }
+        }
+
+        int16_t x = worst_x;
+        int16_t y = worst_y;
+        uint16_t act_z = uint16_t(floor(atan2(double(y), double(x)) / (M_PI * 2) * 65535.9));
+        uint16_t z = atan2(y, x);
+        int diff = std::abs(z - act_z);
+        printf("x     = %d\n", (int)x);
+        printf("y     = %d\n", (int)y);
+        printf("z     = %d\n", (int)z);
+        printf("act z = %d\n", act_z);
+        printf("diff  = %d\n", (int)diff);
+        printf("\n\n");
+    }
+
     return 0;
 }
