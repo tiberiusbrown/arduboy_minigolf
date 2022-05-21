@@ -56,7 +56,7 @@ int16_t fsin16(uint16_t angle)
     int16_t s1 = fsin16_helper(angle_hi + 1);
     uint8_t f1 = uint8_t(angle);
     uint8_t f0 = 255 - f1;
-    int16_t t = int16_t(u24(s24(s0) * f0 + s24(s1) * f1 + s0) >> 8);
+    int16_t t = mul_f8_s16(s0, f0) + mul_f8_s16(s1, f1) + int8_t(uint16_t(s0) >> 8);
     return t;
 }
 
@@ -108,10 +108,10 @@ int16_t atan2(int16_t x, int16_t y)
     uint8_t i = uint8_t(ratio >> 8);
     uint8_t f1 = uint8_t(ratio);
     uint8_t f0 = 255 - f1;
-    uint16_t t0 = pgm_read_byte(&ATAN_TABLE[i]);
-    uint16_t t1 = pgm_read_byte(&ATAN_TABLE[i + 1]);
+    uint16_t t0 = pgm_read_word(&ATAN_TABLE[i]);
+    uint16_t t1 = pgm_read_word(&ATAN_TABLE[i + 1]);
 
-    uint16_t t = int16_t(u24(u24(t0) * f0 + u24(t1) * f1 + t0) >> 8);
+    uint16_t t = mul_f8_u16(t0, f0) + mul_f8_u16(t1, f1) + (t0 >> 8);
 
     if(f & 2) t = 32768 - t;
     if(f & 4) t = 16384 - t;

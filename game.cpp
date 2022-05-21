@@ -33,16 +33,16 @@ void game_setup()
 
 void move_forward(int16_t amount)
 {
-    int16_t sinA = fmuls16(amount, fsin16(yaw));
-    int16_t cosA = fmuls16(amount, fcos16(yaw));
+    int16_t sinA = mul_f15_s16(amount, fsin16(yaw));
+    int16_t cosA = mul_f15_s16(amount, fcos16(yaw));
     cam.x += sinA;
     cam.z -= cosA;
 }
 
 void move_right(int16_t amount)
 {
-    int16_t sinA = fmuls16(amount, fsin16(yaw));
-    int16_t cosA = fmuls16(amount, fcos16(yaw));
+    int16_t sinA = mul_f15_s16(amount, fsin16(yaw));
+    int16_t cosA = mul_f15_s16(amount, fcos16(yaw));
     cam.x += cosA;
     cam.z += sinA;
 }
@@ -120,12 +120,11 @@ void game_loop()
 
         if(btns & BTN_A)
         {
-            uint16_t power2 = uint16_t(power_aim) << 8;
             int16_t ys = fsin16(yaw_aim);
             int16_t yc = -fcos16(yaw_aim);
             prev_ball = ball;
-            ball_vel.x = int16_t(uint32_t(int32_t(ys) * power2) >> 16);
-            ball_vel.z = int16_t(uint32_t(int32_t(yc) * power2) >> 16);
+            ball_vel.x = mul_f8_s16(ys, power_aim);
+            ball_vel.z = mul_f8_s16(yc, power_aim);
             state = st::ROLLING;
         }
     }

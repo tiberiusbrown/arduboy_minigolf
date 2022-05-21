@@ -7,6 +7,8 @@
 static constexpr int FBW = 1 * 128;
 static constexpr int FBH = 1 * 64;
 
+#define USE_AVR_INLINE_ASM 1
+
 //8-bit grayscale buffer
 #define BUFFER_8BIT 0
 
@@ -82,6 +84,11 @@ inline void const* pgm_read_ptr(void const* p) { return *(void const**)p; }
 
 #include <string.h>
 #define memcpy_P memcpy
+#endif
+
+#if !defined(__AVR__)
+#undef USE_AVR_INLINE_ASM
+#define USE_AVR_INLINE_ASM 0
 #endif
 
 // useful when T is a pointer type, like function pointer or char const*
@@ -363,7 +370,6 @@ dvec3 matvec_t(mat3 m, dvec3 v); // transpose
 dvec3 matvec (dmat3 m, dvec3 v);
 dvec3 normalized(dvec3 v);       // normalize to 8.8
 int16_t dot(dvec3 a, dvec3 b);
-int16_t fmuls16(int16_t x, int16_t y);
 
 // div.cpp
 uint16_t inv8(uint8_t x);   // approximates 2^16 / x
@@ -373,15 +379,17 @@ int16_t divlut(int16_t x, uint8_t y);
 uint16_t divlut(uint24_t x, uint8_t y);
 int16_t divlut(int24_t x, uint8_t y);
 
-static inline dvec2 frotate(dvec2 v, uint8_t angle)
-{
-    int8_t fs = fsin(angle);
-    int8_t fc = fcos(angle);
-    dvec2 r;
-    r.x = int16_t(uint32_t(((int32_t)v.x * fc - (int32_t)v.y * fs)) >> 7);
-    r.y = int16_t(uint32_t(((int32_t)v.y * fc + (int32_t)v.x * fs)) >> 7);
-    return r;
-}
+// mul.cpp
+// key: mul_f[shift]_[dst]
+//      shift: fraction bits / right shift of product
+//      dst:   type of destination
+int16_t  mul_f7_s16 (int16_t  a, int8_t   b);
+int16_t  mul_f8_s16 (int16_t  a, uint8_t  b);
+int16_t  mul_f8_s16 (int16_t  a, uint16_t b);
+int16_t  mul_f8_s16 (int16_t  a, int16_t  b);
+uint16_t mul_f8_u16 (uint16_t a, uint8_t  b);
+uint16_t mul_f8_u16 (uint16_t a, uint16_t b);
+int16_t  mul_f15_s16(int16_t  a, int16_t  b);
 
 static inline int16_t div8s(int16_t x)
 {
@@ -395,31 +403,4 @@ static inline int16_t div16s(int16_t x)
     uint16_t r = (uint16_t)x >> 4;
     if (x < 0) r |= 0xf000;
     return (int16_t)r;
-}
-
-static inline dvec2 frotate(vec2 v, uint8_t angle)
-{
-    int8_t fs = fsin(angle);
-    int8_t fc = fcos(angle);
-    dvec2 r;
-    r.x = div8s(v.x * fc - v.y * fs);
-    r.y = div8s(v.y * fc + v.x * fs);
-    return r;
-}
-
-static inline int16_t div64s(int16_t x)
-{
-    uint16_t y = uint16_t(x) >> 6;
-    if(x < 0) y |= 0xfc00;
-    return y;
-}
-
-static inline dvec2 frotate16(vec2 v, uint16_t angle)
-{
-    int16_t fs = fsin16(angle);
-    int16_t fc = fcos16(angle);
-    dvec2 r;
-    r.x = div64s(v.x * s24(fc) - v.y * s24(fs));
-    r.y = div64s(v.y * s24(fc) + v.x * s24(fs));
-    return r;
 }

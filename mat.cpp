@@ -1,11 +1,5 @@
 #include "game.hpp"
 
-int16_t fmuls16(int16_t x, int16_t y)
-{
-    int32_t p = int32_t(x) * y;
-    return int16_t(uint32_t(p) >> 15);
-}
-
 /*
 Rotation matrix:
 
@@ -48,13 +42,13 @@ void rotation16(dmat3& m, uint16_t yaw, int16_t pitch)
     m[1] = 0;
     m[2] = sinB;
 
-    m[3] = fmuls16(sinA, sinB);
+    m[3] = mul_f15_s16(sinA, sinB);
     m[4] = cosA;
-    m[5] = -fmuls16(sinA, cosB);
+    m[5] = -mul_f15_s16(sinA, cosB);
 
-    m[6] = -fmuls16(cosA, sinB);
+    m[6] = -mul_f15_s16(cosA, sinB);
     m[7] = sinA;
-    m[8] = fmuls16(cosA, cosB);
+    m[8] = mul_f15_s16(cosA, cosB);
 }
 
 
@@ -110,27 +104,27 @@ dvec3 matvec_t(mat3 m, vec3 v)
 dvec3 matvec(mat3 m, dvec3 v)
 {
     dvec3 r;
-    r.x = (u24(s24(v.x) * m[0] + s24(v.y) * m[1] + s24(v.z) * m[2]) << 1) >> 8;
-    r.y = (u24(s24(v.x) * m[3] + s24(v.y) * m[4] + s24(v.z) * m[5]) << 1) >> 8;
-    r.z = (u24(s24(v.x) * m[6] + s24(v.y) * m[7] + s24(v.z) * m[8]) << 1) >> 8;
+    r.x = mul_f7_s16(v.x, m[0]) + mul_f7_s16(v.y, m[1]) + mul_f7_s16(v.z, m[2]);
+    r.y = mul_f7_s16(v.x, m[3]) + mul_f7_s16(v.y, m[4]) + mul_f7_s16(v.z, m[5]);
+    r.z = mul_f7_s16(v.x, m[6]) + mul_f7_s16(v.y, m[7]) + mul_f7_s16(v.z, m[8]);
     return r;
 }
 
 dvec3 matvec_t(mat3 m, dvec3 v)
 {
     dvec3 r;
-    r.x = (u24(s24(v.x) * m[0] + s24(v.y) * m[3] + s24(v.z) * m[6]) << 1) >> 8;
-    r.y = (u24(s24(v.x) * m[1] + s24(v.y) * m[4] + s24(v.z) * m[7]) << 1) >> 8;
-    r.z = (u24(s24(v.x) * m[2] + s24(v.y) * m[5] + s24(v.z) * m[8]) << 1) >> 8;
+    r.x = mul_f7_s16(v.x, m[0]) + mul_f7_s16(v.y, m[3]) + mul_f7_s16(v.z, m[6]);
+    r.y = mul_f7_s16(v.x, m[1]) + mul_f7_s16(v.y, m[4]) + mul_f7_s16(v.z, m[7]);
+    r.z = mul_f7_s16(v.x, m[2]) + mul_f7_s16(v.y, m[5]) + mul_f7_s16(v.z, m[8]);
     return r;
 }
 
 dvec3 matvec(dmat3 m, dvec3 v)
 {
     dvec3 r;
-    r.x = (uint32_t(int32_t(v.x) * m[0] + int32_t(v.y) * m[1] + int32_t(v.z) * m[2]) << 1) >> 16;
-    r.y = (uint32_t(int32_t(v.x) * m[3] + int32_t(v.y) * m[4] + int32_t(v.z) * m[5]) << 1) >> 16;
-    r.z = (uint32_t(int32_t(v.x) * m[6] + int32_t(v.y) * m[7] + int32_t(v.z) * m[8]) << 1) >> 16;
+    r.x = mul_f15_s16(v.x, m[0]) + mul_f15_s16(v.y, m[1]) + mul_f15_s16(v.z, m[2]);
+    r.y = mul_f15_s16(v.x, m[3]) + mul_f15_s16(v.y, m[4]) + mul_f15_s16(v.z, m[5]);
+    r.z = mul_f15_s16(v.x, m[6]) + mul_f15_s16(v.y, m[7]) + mul_f15_s16(v.z, m[8]);
     return r;
 }
 
@@ -143,11 +137,11 @@ static uint16_t inv_sqrt(uint16_t a)
     for(uint8_t i = 0; i < 8; ++i)
     {
         uint16_t t;
-        t = uint16_t((u24(x) * x) >> 8); // x*x
-        t = uint16_t((u24(a) * t) >> 8); // a*x*x
-        t >>= 1;                         // 0.5 * a*x*x
-
-        x = uint16_t(u24(s24(int16_t(0x180) - int16_t(t)) * x) >> 8);
+        t = mul_f8_u16(x, x); // x*x
+        t = mul_f8_u16(a, t); // a*x*x
+        t >>= 1;              // 0.5 * a*x*x
+        myassert(t <= 0x180);
+        x = mul_f8_u16(uint16_t(0x180 - t), x);
     }
 
     return x;
@@ -163,22 +157,22 @@ dvec3 normalized(dvec3 v)
         v.y /= 2;
         v.z /= 2;
     }
-    uint24_t d2 = 0;
-    d2 += u24(s24(v.x) * v.x);
-    d2 += u24(s24(v.y) * v.y);
-    d2 += u24(s24(v.z) * v.z);
-    uint16_t d = inv_sqrt(uint16_t(d2 >> 8));
-    v.x = int16_t(u24(s24(v.x) * d) >> 8);
-    v.y = int16_t(u24(s24(v.y) * d) >> 8);
-    v.z = int16_t(u24(s24(v.z) * d) >> 8);
+    uint16_t d = 0;
+    d += mul_f8_s16(v.x, v.x);
+    d += mul_f8_s16(v.y, v.y);
+    d += mul_f8_s16(v.z, v.z);
+    d = inv_sqrt(d);
+    v.x = mul_f8_s16(v.x, d);
+    v.y = mul_f8_s16(v.y, d);
+    v.z = mul_f8_s16(v.z, d);
     return v;
 }
 
 int16_t dot(dvec3 a, dvec3 b)
 {
-    int24_t r = 0;
-    r += s24(a.x) * b.x;
-    r += s24(a.y) * b.y;
-    r += s24(a.z) * b.z;
-    return int16_t(u24(r) >> 8);
+    int16_t r = 0;
+    r += mul_f8_s16(a.x, b.x);
+    r += mul_f8_s16(a.y, b.y);
+    r += mul_f8_s16(a.z, b.z);
+    return r;
 }

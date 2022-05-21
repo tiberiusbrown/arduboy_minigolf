@@ -17,8 +17,8 @@ struct ctrl
     {
         int16_t diff = x - y;
         int16_t d2ydt = diff / 4 - dydt;
-        y    += int16_t(u24(s24(dydt ) * speed) >> 8);
-        dydt += int16_t(u24(s24(d2ydt) * speed) >> 8);
+        y    += mul_f8_s16(dydt , speed);
+        dydt += mul_f8_s16(d2ydt, speed);
         return y;
     }
 

@@ -56,14 +56,12 @@ static void draw_vline(uint8_t x, int16_t y0, int16_t y1, uint16_t pat)
 
     uint8_t t0 = ty0 & 0xf8;
     uint8_t t1 = ty1 & 0xf8;
-    ty0 &= 7;
-    ty1 &= 7;
+    uint8_t m0 = pgm_read_byte(&YMASK0[ty0 & 7]);
+    uint8_t m1 = pgm_read_byte(&YMASK1[ty1 & 7]);
 
     uint8_t pattern = (x & 1) ? uint8_t(pat) : uint8_t(pat >> 8);
 
     uint8_t* p = &buf[t0 * (FBW / 8) + x];
-    uint8_t m0 = pgm_read_byte(&YMASK0[ty0]);
-    uint8_t m1 = pgm_read_byte(&YMASK1[ty1]);
 
     if(t0 == t1)
     {
@@ -306,7 +304,17 @@ int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z)
     uint32_t p = uint32_t(xz) * uint16_t(b - a);
     uint16_t ac = uint16_t(c - a);
     int16_t t;
-    t = (int16_t)(p / ac);
+
+    if(ac >= 256)
+    {
+        uint16_t i = inv16(ac);
+        t = int16_t(((p >> 8) * i) >> 16);
+    }
+    else
+    {
+        uint16_t i = inv8(ac);
+        t = int16_t((p * i) >> 16);
+    }
 
     if(x > z) t = -t;
     return x + t;

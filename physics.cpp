@@ -94,11 +94,10 @@ If m = 1, I = 1/8, en = 1/2, et = 1, rp = -(1/2)n, and t is orthogonal to rp:
 
 static dvec3 cross(dvec3 a, dvec3 b)
 {
-    // function designed to be used with at least one near unit-length arg
     dvec3 r;
-    r.x = int16_t(u24(s24(a.y) * b.z - s24(a.z) * b.y) >> 8);
-    r.y = int16_t(u24(s24(a.z) * b.x - s24(a.x) * b.z) >> 8);
-    r.z = int16_t(u24(s24(a.x) * b.y - s24(a.y) * b.x) >> 8);
+    r.x = mul_f8_s16(a.y, b.z) - mul_f8_s16(a.z, b.y);
+    r.y = mul_f8_s16(a.z, b.x) - mul_f8_s16(a.x, b.z);
+    r.z = mul_f8_s16(a.x, b.y) - mul_f8_s16(a.y, b.x);
     return r;
 }
 
@@ -150,9 +149,9 @@ static void physics_collision(phys_box b)
 
     // tangent vector is rejection of velocity from normal
     dvec3 tangent;
-    tangent.x = ball_vel.x - int16_t(u24(s24(normdot) * normal.x) >> 8);
-    tangent.y = ball_vel.y - int16_t(u24(s24(normdot) * normal.y) >> 8);
-    tangent.z = ball_vel.z - int16_t(u24(s24(normdot) * normal.z) >> 8);
+    tangent.x = ball_vel.x - mul_f8_s16(normdot, normal.x);
+    tangent.y = ball_vel.y - mul_f8_s16(normdot, normal.y);
+    tangent.z = ball_vel.z - mul_f8_s16(normdot, normal.z);
     tangent = normalized(tangent);
 
     // contact point velocity
@@ -168,15 +167,15 @@ static void physics_collision(phys_box b)
     dvec3 Jv;
     {
         int16_t t0 = -dot(vp, normal);
-        t0 += int16_t(u24(s24(t0) * RESTITUTION) >> 8);
         int16_t t1 = -dot(vp, tangent);
-        t1 = int16_t(u24(s24(t1) * (256 / 3)) >> 8);
-        Jv.x  = int16_t(u24(s24(t0) *  normal.x) >> 8);
-        Jv.y  = int16_t(u24(s24(t0) *  normal.y) >> 8);
-        Jv.z  = int16_t(u24(s24(t0) *  normal.z) >> 8);
-        Jv.x += int16_t(u24(s24(t1) * tangent.x) >> 8);
-        Jv.y += int16_t(u24(s24(t1) * tangent.y) >> 8);
-        Jv.z += int16_t(u24(s24(t1) * tangent.z) >> 8);
+        t0 += mul_f8_s16(t0, RESTITUTION);
+        t1  = mul_f8_s16(t1, uint8_t(256 / 3));
+        Jv.x  = mul_f8_s16(t0,  normal.x);
+        Jv.y  = mul_f8_s16(t0,  normal.y);
+        Jv.z  = mul_f8_s16(t0,  normal.z);
+        Jv.x += mul_f8_s16(t1, tangent.x);
+        Jv.y += mul_f8_s16(t1, tangent.y);
+        Jv.z += mul_f8_s16(t1, tangent.z);
     }
 
     // velocity update
