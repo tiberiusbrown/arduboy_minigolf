@@ -36,9 +36,11 @@ static constexpr phys_box make_box_45(
 
 #include "levels/level_00.hpp"
 #include "levels/level_01.hpp"
+#include "levels/level_02.hpp"
 
 #include "levels/level_00_info.hpp"
 #include "levels/level_01_info.hpp"
+#include "levels/level_02_info.hpp"
 
 level_info const* current_level = 0;
 
@@ -53,8 +55,9 @@ level_info const* current_level = 0;
     /* flag_pos  */ LEVEL_##n__##_FLAG_POS, \
     }
 
-level_info const LEVELS[2] PROGMEM =
+level_info const LEVELS[3] PROGMEM =
 {
     LEVEL_GEOM(00),
     LEVEL_GEOM(01),
+    LEVEL_GEOM(02),
 };

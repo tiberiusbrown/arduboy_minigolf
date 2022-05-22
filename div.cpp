@@ -52,9 +52,9 @@ uint16_t inv16(uint16_t x)
     {
         // refine initial guess by linear interpolation
         uint16_t ty = pgm_read_word(p + 1);
-        uint8_t t0 = uint8_t(x);
-        uint8_t t1 = 255 - t0;
-        y = uint16_t((u24(y) * t1 + u24(ty) * t0) >> 8);
+        uint8_t t1 = uint8_t(x);
+        uint8_t t0 = 255 - t1;
+        y = mul_f8_u16(y, t0) + mul_f8_u16(ty, t1) + (y >> 8);
     }
     // one iter of newton raphson to refine further
     for(uint8_t i = 0; i < 1; ++i)
@@ -66,52 +66,4 @@ uint16_t inv16(uint16_t x)
         y = uint16_t((uint32_t(t) * y) >> 16);
     }
     return y;
-}
-
-static FORCEINLINE uint32_t mul16x16(uint16_t a, uint16_t b)
-{
-#if 1
-    return uint32_t(a) * b;
-#else
-    //      AH AL
-    //      BH BL
-    //      =====
-    //       ALBL
-    //    AHBL
-    //    ALBH
-    // AHBH
-    // ==========
-    uint8_t AL = uint8_t(a);
-    uint8_t BL = uint8_t(b);
-    uint8_t AH = uint8_t(a >> 8);
-    uint8_t BH = uint8_t(b >> 8);
-    uint32_t ALBL = AL * BL;
-    uint32_t AHBL = AH * BL;
-    uint32_t ALBH = AL * BH;
-    uint32_t AHBH = AH * BH;
-    return ALBL + ((AHBL + ALBH) << 8) + (AHBH << 16);
-#endif
-}
-
-uint16_t divlut(uint16_t x, uint8_t y)
-{
-    uint16_t t = pgm_read_word(&DIVISORS[y]);
-    return uint16_t(mul16x16(x, t) >> 16);
-}
-
-int16_t divlut(int16_t x, uint8_t y)
-{
-    return x < 0 ? -divlut(uint16_t(-x), y) : divlut(uint16_t(x), y);
-}
-
-uint16_t divlut(uint24_t x, uint8_t y)
-{
-    uint16_t t = pgm_read_word(&DIVISORS[y]);
-    uint32_t p = uint32_t(x) * t;
-    return uint16_t(p >> 16);
-}
-
-int16_t divlut(int24_t x, uint8_t y)
-{
-    return x < 0 ? -divlut(u24(-x), y) : divlut(u24(x), y);
 }

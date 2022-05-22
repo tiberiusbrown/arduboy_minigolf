@@ -25,7 +25,7 @@ static void reset_ball()
 
 void game_setup()
 {
-    current_level = &LEVELS[0];
+    current_level = &LEVELS[2];
 
     reset_ball();
 
@@ -120,7 +120,10 @@ void game_loop()
     else if(state == st::ROLLING)
     {
         if(physics_step())
+        {
+            yaw_aim = yaw_to_flag();
             state = st::AIM;
+        }
         else if(ball.y < (256 * -20))
         {
             ball = prev_ball;

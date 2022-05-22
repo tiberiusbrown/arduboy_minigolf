@@ -287,7 +287,7 @@ struct level_info
 };
 
 // levels.cpp
-extern level_info const LEVELS[2] PROGMEM;
+extern level_info const LEVELS[3] PROGMEM;
 extern level_info const* current_level;
 
 // game.cpp
@@ -316,6 +316,7 @@ bool physics_step(); // returns true if ball has stopped
 extern dvec3 cam;
 extern uint16_t yaw;
 extern int16_t  pitch;
+uint16_t yaw_to_flag();
 void update_camera(
     dvec3 tcam, uint16_t tyaw, int16_t tpitch,
     uint8_t move_speed, uint8_t look_speed);
@@ -374,10 +375,6 @@ int16_t dot(dvec3 a, dvec3 b);
 // div.cpp
 uint16_t inv8(uint8_t x);   // approximates 2^16 / x
 uint16_t inv16(uint16_t x); // (x >= 256) approximates 2^24 / x
-uint16_t divlut(uint16_t x, uint8_t y);
-int16_t divlut(int16_t x, uint8_t y);
-uint16_t divlut(uint24_t x, uint8_t y);
-int16_t divlut(int24_t x, uint8_t y);
 
 // mul.cpp
 // key: mul_f[shift]_[dst]

@@ -82,7 +82,7 @@ if(WIN32)
 endif()
 
 add_executable(convert_obj tools/convert_obj.cpp)
-set(LEVELN 00 01)
+set(LEVELN 00 01 02)
 foreach(N ${LEVELN})
     set(LEVEL_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}.obj")
     set(LEVEL_HPP "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}.hpp")

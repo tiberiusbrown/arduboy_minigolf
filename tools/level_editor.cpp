@@ -163,10 +163,18 @@ static void editor_gui()
     for(size_t i = 0; i < boxstrs.size(); ++i)
         boxstrs2.push_back(boxstrs[i].c_str());
     auto& boxes = editor_boxes[level_index];
+    if(Button("Clone Box"))
+    {
+        boxes.push_back(boxes[editor_boxi]);
+        editor_boxi = (int)boxes.size() - 1;
+    }
     if(Button("Add Box"))
+    {
         boxes.push_back({});
+        editor_boxi = (int)boxes.size() - 1;
+    }
     SameLine();
-    if(Button("Remove Box"))
+    if(Button("Remove Box") && boxes.size() > 1)
     {
         boxes.erase(boxes.begin() + editor_boxi);
         editor_boxi = tclamp(editor_boxi, 0, (int)boxes.size() - 1);
@@ -220,7 +228,8 @@ static void editor_draw_box(phys_box box, ImU32 col)
         t.x *= CORNERS[j * 3 + 0];
         t.y *= CORNERS[j * 3 + 1];
         t.z *= CORNERS[j * 3 + 2];
-        t = matvec(m, t);
+        if(box.yaw != 0 || box.pitch != 0)
+            t = matvec(m, t);
         p[j].x += t.x;
         p[j].y += t.y;
         p[j].z += t.z;

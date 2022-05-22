@@ -69,16 +69,18 @@ void update_camera_look_at_fastangle(
     update_camera(tcam, tyaw, tpitch, move_speed, look_speed);
 }
 
+uint16_t yaw_to_flag()
+{
+    dvec3 flag;
+    memcpy_P(&flag, &current_level->flag_pos, sizeof(flag));
+    return atan2(flag.z - ball.z, flag.x - ball.x) + 16384;
+}
+
 void update_camera_follow_ball(
     uint16_t dist,
     uint8_t move_speed, uint8_t look_speed)
 {
-    //uint16_t tyaw = atan2(ball_vel.x, ball_vel.z) + 16384;
-
-    dvec3 flag;
-    memcpy_P(&flag, &current_level->flag_pos, sizeof(flag));
-    uint16_t tyaw = atan2(flag.z - ball.z, flag.x - ball.x) + 16384;
-
+    uint16_t tyaw = yaw_to_flag();
     int16_t tpitch = 6500; // TODO
     dvec3 tlookat = ball;
 
