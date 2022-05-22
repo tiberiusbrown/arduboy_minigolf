@@ -2,7 +2,9 @@
 
 #define PERFDOOM 0
 
-static constexpr int16_t ZNEAR = 256 * 0.5;  // near
+#define FDIST_CAMY_MOD 1
+
+static constexpr int16_t ZNEAR = 256;  // near
 
 array<uint8_t, MAX_FACES> face_order;
 array<uint8_t, MAX_CLIP_FACES * 4> clip_faces;
@@ -55,9 +57,9 @@ uint8_t render_scene(
     for(uint8_t j = nv = 0; nv < num_verts; ++nv, j += 3)
     {
         dvec3 dv;
-        dv.x = (int8_t)pgm_read_byte(&verts[j + 0]) << 7;
-        dv.y = (int8_t)pgm_read_byte(&verts[j + 1]) << 7;
-        dv.z = (int8_t)pgm_read_byte(&verts[j + 2]) << 7;
+        dv.x = (int8_t)pgm_read_byte(&verts[j + 0]) * 128;
+        dv.y = (int8_t)pgm_read_byte(&verts[j + 1]) * 128;
+        dv.z = (int8_t)pgm_read_byte(&verts[j + 2]) * 128;
 
         // translate
         dv.x -= cam.x;
@@ -65,12 +67,10 @@ uint8_t render_scene(
         dv.z -= cam.z;
 
         // vertex distance
-        //fd.vdist[nv] = uint16_t(tabs(dv.x) + tabs(dv.y) + tabs(dv.z));
         fd.vdist[nv] = uint16_t(uint32_t(
             int32_t(dv.x) * dv.x +
             int32_t(dv.y) * dv.y +
             int32_t(dv.z) * dv.z) >> 16);
-        //fd.vdist[nv] = tabs(dv.y) + (uint16_t(tabs(dv.x) + tabs(dv.z)) >> 4);
 
         // rotate
         dv = matvec(m, dv);
@@ -101,6 +101,12 @@ uint8_t render_scene(
         fdist += int32_t(dv.y) * dv.y;
         fdist += int32_t(dv.z) * dv.z;
         fdist *= 3;
+#if FDIST_CAMY_MOD
+        {
+            int16_t dy = dv.y - cam.y;
+            fdist += int32_t(dy) * dy * 4;
+        }
+#endif
 
         if(dv.z >= ZNEAR)
         {
@@ -114,13 +120,13 @@ uint8_t render_scene(
             ball_valid = true;
             face_order[nf] = 255;
             fd.fdist[nf] = uint16_t(uint32_t(fdist) >> 16) + 16;
-            //fd.fdist[nf] = tabs(dv.y) + (uint16_t(tabs(dv.x) + tabs(dv.z)) >> 4);
             nv += 2;
             nf += 1;
         }
     }
 
     // assemble faces and clip them to near plane
+    int8_t camy8 = hibyte(cam.y * 2);
     for(uint8_t i = 0; i < num_faces; ++i)
     {
         if(nf + 2 > MAX_FACES)
@@ -144,6 +150,19 @@ uint8_t render_scene(
 
         // face distance
         uint16_t fdist = fd.vdist[i0] + fd.vdist[i1] + fd.vdist[i2];
+#if FDIST_CAMY_MOD
+        {
+            int16_t y0 = (int8_t)pgm_read_byte(&verts[i0 * 3 + 1]) * 128;
+            int16_t y1 = (int8_t)pgm_read_byte(&verts[i1 * 3 + 1]) * 128;
+            int16_t y2 = (int8_t)pgm_read_byte(&verts[i2 * 3 + 1]) * 128;
+            int16_t a0 = tabs(cam.y - y0);
+            int16_t a1 = tabs(cam.y - y1);
+            int16_t a2 = tabs(cam.y - y2);
+            uint16_t amin = (uint16_t)tmin(a0, a1, a2);
+            uint16_t amin2 = uint16_t((uint32_t(amin) * amin) >> 16);
+            fdist += amin2 * 4;
+        }
+#endif
 
         // clip: exactly two vertices behind near plane
         if((behind & (behind - 1)) != 0)
@@ -282,45 +301,16 @@ uint8_t render_scene(
     {
         dvec3 dv = { vs[i].x, vs[i].y, fd.vz[i] };
 
-        // multiply x and y by 4/z, i.e., multiply by 1/(64*dv.z)
+        // multiply x and y by 4/z
         if(dv.z >= ZNEAR)
         {
-#if 0
-            // slightly cheaper divide
-            uint16_t zs = uint16_t(dv.z) >> 4;
-            uint16_t f;
-            if(zs >= 256)
-                f = inv8(uint8_t(uint16_t(dv.z) >> 8)) >> 6;
-            else
-                f = inv8((uint8_t)zs) >> 2;
-            int32_t nx = int32_t(f) * dv.x;
-            int32_t ny = int32_t(f) * dv.y;
-            nx = tclamp<int32_t>(nx, (int32_t)INT16_MIN * 240, (int32_t)INT16_MAX * 240);
-            ny = tclamp<int32_t>(ny, (int32_t)INT16_MIN * 240, (int32_t)INT16_MAX * 240);
-            dv.x = int16_t(nx >> 8);
-            dv.y = int16_t(ny >> 8);
-#else
-            if(dv.z >= 256)
-            {
-                uint16_t invz = inv16(dv.z);
-                int32_t nx = int32_t(invz) * dv.x;
-                int32_t ny = int32_t(invz) * dv.y;
-                nx = tclamp<int32_t>(nx, (int32_t)INT16_MIN * 240 * 64, (int32_t)INT16_MAX * 240 * 64);
-                ny = tclamp<int32_t>(ny, (int32_t)INT16_MIN * 240 * 64, (int32_t)INT16_MAX * 240 * 64);
-                dv.x = int16_t(uint32_t(nx) >> 14);
-                dv.y = int16_t(uint32_t(ny) >> 14);
-            }
-            else
-            {
-                uint16_t invz = inv8(dv.z);
-                int32_t nx = int32_t(invz) * dv.x;
-                int32_t ny = int32_t(invz) * dv.y;
-                nx = tclamp<int32_t>(nx, (int32_t)INT16_MIN * 60, (int32_t)INT16_MAX * 60);
-                ny = tclamp<int32_t>(ny, (int32_t)INT16_MIN * 60, (int32_t)INT16_MAX * 60);
-                dv.x = int16_t(uint24_t(nx) >> 6);
-                dv.y = int16_t(uint24_t(ny) >> 6);
-            }
-#endif
+            uint16_t invz = inv16(dv.z);
+            int32_t nx = int32_t(invz) * dv.x;
+            int32_t ny = int32_t(invz) * dv.y;
+            nx = tclamp<int32_t>(nx, (int32_t)INT16_MIN * 240 * 64, (int32_t)INT16_MAX * 240 * 64);
+            ny = tclamp<int32_t>(ny, (int32_t)INT16_MIN * 240 * 64, (int32_t)INT16_MAX * 240 * 64);
+            dv.x = int16_t(uint32_t(nx) >> 14);
+            dv.y = int16_t(uint32_t(ny) >> 14);
         }
 
         // center in framebuffer
@@ -422,26 +412,13 @@ dvec3 transform_point(dvec3 dv)
 
     if(dv.z >= ZNEAR)
     {
-        if(dv.z >= 256)
-        {
-            uint16_t invz = inv16(dv.z);
-            int32_t nx = int32_t(invz) * dv.x;
-            int32_t ny = int32_t(invz) * dv.y;
-            nx = tclamp<int32_t>(nx, (int32_t)INT16_MIN * 240 * 64, (int32_t)INT16_MAX * 240 * 64);
-            ny = tclamp<int32_t>(ny, (int32_t)INT16_MIN * 240 * 64, (int32_t)INT16_MAX * 240 * 64);
-            dv.x = int16_t(uint32_t(nx) >> 14);
-            dv.y = int16_t(uint32_t(ny) >> 14);
-        }
-        else
-        {
-            uint16_t invz = inv8(dv.z);
-            int32_t nx = int32_t(invz) * dv.x;
-            int32_t ny = int32_t(invz) * dv.y;
-            nx = tclamp<int32_t>(nx, (int32_t)INT16_MIN * 60, (int32_t)INT16_MAX * 60);
-            ny = tclamp<int32_t>(ny, (int32_t)INT16_MIN * 60, (int32_t)INT16_MAX * 60);
-            dv.x = int16_t(uint24_t(nx) >> 6);
-            dv.y = int16_t(uint24_t(ny) >> 6);
-        }
+        uint16_t invz = inv16(dv.z);
+        int32_t nx = int32_t(invz) * dv.x;
+        int32_t ny = int32_t(invz) * dv.y;
+        nx = tclamp<int32_t>(nx, (int32_t)INT16_MIN * 240 * 64, (int32_t)INT16_MAX * 240 * 64);
+        ny = tclamp<int32_t>(ny, (int32_t)INT16_MIN * 240 * 64, (int32_t)INT16_MAX * 240 * 64);
+        dv.x = int16_t(uint32_t(nx) >> 14);
+        dv.y = int16_t(uint32_t(ny) >> 14);
     }
 
     dv.x += (FBW / 2 * 16);

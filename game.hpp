@@ -402,3 +402,8 @@ static inline int16_t div16s(int16_t x)
     if (x < 0) r |= 0xf000;
     return (int16_t)r;
 }
+
+static inline int8_t hibyte(int16_t x)
+{
+    return int8_t(uint16_t(x) >> 8);
+}
