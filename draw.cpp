@@ -153,8 +153,6 @@ static void draw_tri_segment(
             e1 -= dx;
         }
         draw_vline((uint8_t)pxa, py0, py1, pat);
-        //set_pixel((uint8_t)pxa, (uint8_t)py0);
-        //set_pixel((uint8_t)pxa, (uint8_t)py1);
         pxa += 1;
         e0 += dy0;
         e1 += dy1;

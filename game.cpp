@@ -14,6 +14,9 @@ st state;
 static uint16_t nframe;
 static uint16_t yaw_level;
 
+static uint8_t graphic_offset;
+static constexpr uint8_t GRAPHIC_OFFSET_MAX = 32;
+
 static uint8_t prev_btns;
 
 uint8_t shots[18];
@@ -44,6 +47,7 @@ void game_setup()
 {
     for(auto& s : shots) s = 0;
     set_level(0);
+    graphic_offset = GRAPHIC_OFFSET_MAX;
 }
 
 void move_forward(int16_t amount)
@@ -86,9 +90,9 @@ void game_loop()
         update_camera_look_at_fastangle(
             { 0, 0, 0 }, yaw_level, 6000, 256 * 25, 64, 64);
         yaw_level += 256;
-        if(++nframe >= 256)
-            state = st::AIM;
-        if(pressed & BTN_B)
+        if(graphic_offset < GRAPHIC_OFFSET_MAX)
+            ++graphic_offset;
+        if(++nframe >= 256 || (pressed & BTN_B))
             state = st::AIM;
     }
     else if(state == st::AIM)
@@ -107,6 +111,9 @@ void game_loop()
         if(btns & BTN_UP  ) power_aim += 4;
         if(btns & BTN_DOWN) power_aim -= 4;
         power_aim = tclamp(power_aim, MIN_POWER, MAX_POWER);
+
+        if(graphic_offset > 0)
+            --graphic_offset;
 
         if(btns & BTN_A)
         {
@@ -141,10 +148,34 @@ void game_loop()
             state = st::AIM;
         }
         update_camera_follow_ball(256 * 12, 64, 16);
+        if(graphic_offset < GRAPHIC_OFFSET_MAX)
+            ++graphic_offset;
     }
 
     render_scene();
-    
+
+    draw_graphic(INFO_BAR, 5, -graphic_offset, 3, 28, GRAPHIC_OVERWRITE);
+    {
+        uint8_t n = current_level_index + 1;
+        if(n >= 10)
+        {
+            set_number(1, 5, 18 - graphic_offset);
+            set_number(n - 10, 5, 22 - graphic_offset);
+        }
+        else
+            set_number(n, 5, 22 - graphic_offset);
+    }
+    set_number(pgm_read_byte(&PARS[current_level_index]), 6, 22 - graphic_offset);
+    {
+        uint8_t n = shots[current_level_index] + 1;
+        uint8_t t = 0;
+        while(n >= 10)
+            n -= 10, ++t;
+        if(t != 0)
+            set_number(t, 7, 18 - graphic_offset);
+        set_number(n, 7, 22 - graphic_offset);
+    }
+
     if(state == st::AIM)
     {
         static constexpr uint8_t OFFX = 46;
@@ -167,27 +198,5 @@ void game_loop()
                 set_pixel(x, y);
         }
 
-        draw_graphic(INFO_BAR, 7, 0, 1, 76);
-
-        {
-            uint8_t n = current_level_index + 1;
-            if(n >= 10)
-            {
-                set_number(1, 7, 18);
-                set_number(n - 10, 7, 22);
-            }
-            else
-                set_number(n, 7, 22);
-        }
-        {
-            uint8_t n = shots[current_level_index] + 1;
-            uint8_t t = 0;
-            while(n >= 10)
-                n -= 10, ++t;
-            if(t != 0)
-                set_number(t, 7, 66);
-            set_number(n, 7, 70);
-        }
-        set_number(pgm_read_byte(&PARS[current_level_index]), 7, 42);
     }
 }

@@ -395,10 +395,19 @@ int16_t  mul_f16_s16(int16_t  a, int16_t  b);
 //    c: which column (0-127)
 //    h: graphic height in rows
 //    w: graphic width
-void draw_graphic(uint8_t const* p, uint8_t r, uint8_t c, uint8_t h, uint8_t w);
-void set_graphic(uint8_t const* p, uint8_t r, uint8_t c, uint8_t h, uint8_t w);
+enum
+{
+    GRAPHIC_OVERWRITE,
+    GRAPHIC_SET,
+    GRAPHIC_CLEAR,
+};
+void draw_graphic(
+    uint8_t const* p,
+    uint8_t r, uint8_t c,
+    uint8_t h, uint8_t w,
+    uint8_t op);
 void set_number(uint8_t n, uint8_t r, uint8_t c);
-extern uint8_t const INFO_BAR[76] PROGMEM;
+extern uint8_t const INFO_BAR[] PROGMEM;
 
 static inline int16_t div8s(int16_t x)
 {

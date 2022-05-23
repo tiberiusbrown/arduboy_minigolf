@@ -6,6 +6,13 @@
 
 static constexpr int16_t ZNEAR = 256;  // near
 
+static constexpr uint8_t FLAG_HEIGHT = 4;
+static constexpr uint8_t FLAG_SIZE = 2;
+static constexpr uint8_t FLAG_POLE_PAT = 4;
+static constexpr uint8_t FLAG_PAT = 3;
+
+static uint8_t flag_anim = 0;
+
 array<uint8_t, MAX_FACES> face_order;
 array<uint8_t, MAX_CLIP_FACES * 4> clip_faces;
 array<dvec2, MAX_VERTS> vs;
@@ -34,6 +41,46 @@ uint8_t render_scene()
         pgm_read_byte(&current_level->num_faces));
 }
 
+static uint8_t add_vertex(dmat3 const& m, dvec3 dv, uint8_t nv)
+{
+    // translate
+    dv.x -= cam.x;
+    dv.y -= cam.y;
+    dv.z -= cam.z;
+
+    // vertex distance
+    fd.vdist[nv] = uint16_t(uint32_t(
+        int32_t(dv.x) * dv.x +
+        int32_t(dv.y) * dv.y +
+        int32_t(dv.z) * dv.z) >> 16);
+
+    // rotate
+    dv = matvec(m, dv);
+    dv.z = -dv.z;
+
+    // save vertex
+    vs[nv] = { dv.x, dv.y };
+    fd.vz[nv] = dv.z;
+
+    return nv + 1;
+}
+
+static uint16_t calc_fdist(
+    uint8_t i0, uint8_t i1, uint8_t i2,
+    int16_t y0, int16_t y1, int16_t y2)
+{
+    uint16_t fdist = fd.vdist[i0] + fd.vdist[i1] + fd.vdist[i2];
+#if FDIST_CAMY_MOD
+    int16_t a0 = tabs(cam.y - y0);
+    int16_t a1 = tabs(cam.y - y1);
+    int16_t a2 = tabs(cam.y - y2);
+    uint16_t amin = (uint16_t)tmin(a0, a1, a2);
+    uint16_t amin2 = uint16_t((uint32_t(amin) * amin) >> 16);
+    fdist += amin2 * 4;
+#endif
+    return fdist;
+}
+
 uint8_t render_scene(
     int8_t const* verts,
     uint8_t const* faces,
@@ -54,31 +101,14 @@ uint8_t render_scene(
     uint8_t nclipf = 0;
 
     // translate and rotate vertices
-    for(uint8_t j = nv = 0; nv < num_verts; ++nv, j += 3)
+    for(uint8_t j = nv = 0; nv < num_verts; j += 3)
     {
         dvec3 dv;
         dv.x = (int8_t)pgm_read_byte(&verts[j + 0]) * 128;
         dv.y = (int8_t)pgm_read_byte(&verts[j + 1]) * 128;
         dv.z = (int8_t)pgm_read_byte(&verts[j + 2]) * 128;
 
-        // translate
-        dv.x -= cam.x;
-        dv.y -= cam.y;
-        dv.z -= cam.z;
-
-        // vertex distance
-        fd.vdist[nv] = uint16_t(uint32_t(
-            int32_t(dv.x) * dv.x +
-            int32_t(dv.y) * dv.y +
-            int32_t(dv.z) * dv.z) >> 16);
-
-        // rotate
-        dv = matvec(m, dv);
-        dv.z = -dv.z;
-
-        // save vertex
-        vs[nv] = { dv.x, dv.y };
-        fd.vz[nv] = dv.z;
+        nv = add_vertex(m, dv, nv);
     }
 
     // ball vertices (center and right side) and face
@@ -125,6 +155,80 @@ uint8_t render_scene(
         }
     }
 
+    // flag vertices and faces
+    {
+        bool flag_valid = true;
+        uint8_t fi = nv;
+        dvec3 dv;
+        memcpy_P(&dv, &current_level->flag_pos, sizeof(dv));
+        dv.y += 256 * 1;
+        int16_t dvy0 = dv.y;
+        nv = add_vertex(m, dv, nv);
+        flag_valid &= fd.vz[nv - 1] >= ZNEAR;
+        {
+            dvec2 tv = vs[nv - 1];
+            tv.x += 48;
+            vs[nv] = tv;
+            fd.vz[nv] = fd.vz[nv - 1];
+            ++nv;
+        }
+        dv.y += 256 * FLAG_HEIGHT;
+        int16_t dvy1 = dv.y;
+        nv = add_vertex(m, dv, nv);
+        flag_valid &= fd.vz[nv - 1] >= ZNEAR;
+        {
+            dvec2 tv = vs[nv - 1];
+            tv.x += 48;
+            vs[nv] = tv;
+            fd.vz[nv] = fd.vz[nv - 1];
+            ++nv;
+        }
+        dv.y += 256 * FLAG_SIZE;
+        nv = add_vertex(m, dv, nv);
+        flag_valid &= fd.vz[nv - 1] >= ZNEAR;
+        dv.y -= 256 * FLAG_SIZE / 2;
+        dv.x += fsin(flag_anim += 8);
+        dv.z -= 256 * FLAG_SIZE;
+        nv = add_vertex(m, dv, nv);
+        flag_valid &= fd.vz[nv - 1] >= ZNEAR;
+
+        if(flag_valid)
+        {
+            face_order[nf] = MAX_FACES + (nclipf >> 2);
+            fd.fdist[nf] = calc_fdist(
+                fi + 0, fi + 1, fi + 2,
+                dvy0, dvy0, dvy1);
+            ++nf;
+            clip_faces[nclipf + 0] = fi + 0;
+            clip_faces[nclipf + 1] = fi + 1;
+            clip_faces[nclipf + 2] = fi + 2;
+            clip_faces[nclipf + 3] = FLAG_POLE_PAT;
+            nclipf += 4;
+
+            face_order[nf] = MAX_FACES + (nclipf >> 2);
+            fd.fdist[nf] = calc_fdist(
+                fi + 1, fi + 2, fi + 3,
+                dvy0, dvy1, dvy1);
+            ++nf;
+            clip_faces[nclipf + 0] = fi + 1;
+            clip_faces[nclipf + 1] = fi + 2;
+            clip_faces[nclipf + 2] = fi + 3;
+            clip_faces[nclipf + 3] = FLAG_POLE_PAT;
+            nclipf += 4;
+
+            face_order[nf] = MAX_FACES + (nclipf >> 2);
+            fd.fdist[nf] = calc_fdist(
+                fi + 3, fi + 4, fi + 5,
+                dvy1, dvy1, dvy1);
+            ++nf;
+            clip_faces[nclipf + 0] = fi + 3;
+            clip_faces[nclipf + 1] = fi + 4;
+            clip_faces[nclipf + 2] = fi + 5;
+            clip_faces[nclipf + 3] = FLAG_PAT;
+            nclipf += 4;
+        }
+    }
+
     // assemble faces and clip them to near plane
     int8_t camy8 = hibyte(cam.y * 2);
     for(uint8_t i = 0; i < num_faces; ++i)
@@ -149,20 +253,13 @@ uint8_t render_scene(
         if(behind == 7) continue;
 
         // face distance
-        uint16_t fdist = fd.vdist[i0] + fd.vdist[i1] + fd.vdist[i2];
-#if FDIST_CAMY_MOD
+        uint16_t fdist;
         {
             int16_t y0 = (int8_t)pgm_read_byte(&verts[i0 * 3 + 1]) * 128;
             int16_t y1 = (int8_t)pgm_read_byte(&verts[i1 * 3 + 1]) * 128;
             int16_t y2 = (int8_t)pgm_read_byte(&verts[i2 * 3 + 1]) * 128;
-            int16_t a0 = tabs(cam.y - y0);
-            int16_t a1 = tabs(cam.y - y1);
-            int16_t a2 = tabs(cam.y - y2);
-            uint16_t amin = (uint16_t)tmin(a0, a1, a2);
-            uint16_t amin2 = uint16_t((uint32_t(amin) * amin) >> 16);
-            fdist += amin2 * 4;
+            fdist = calc_fdist(i0, i1, i2, y0, y1, y2);
         }
-#endif
 
         // clip: exactly two vertices behind near plane
         if((behind & (behind - 1)) != 0)
