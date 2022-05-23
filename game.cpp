@@ -16,6 +16,13 @@ static uint16_t yaw_level;
 
 static uint8_t prev_btns;
 
+uint8_t shots[18];
+
+static constexpr uint8_t PARS[18] PROGMEM =
+{
+    3, 3, 3,
+};
+
 static void reset_ball()
 {
     memcpy_P(&ball, &current_level->ball_pos, sizeof(ball));
@@ -23,19 +30,20 @@ static void reset_ball()
     ball_vel_ang = {};
 }
 
-void game_setup()
+void set_level(uint8_t index)
 {
-    current_level = &LEVELS[2];
-
+    current_level_index = index;
+    current_level = &LEVELS[index];
     reset_ball();
-
-    cam = { -1133, 1880, 376 };
-    yaw = 53760;
-    pitch = 4880;
-
-    state = st::LEVEL;
     nframe = 0;
     yaw_level = 0;
+    state = st::LEVEL;
+}
+
+void game_setup()
+{
+    for(auto& s : shots) s = 0;
+    set_level(0);
 }
 
 void move_forward(int16_t amount)
@@ -107,6 +115,7 @@ void game_loop()
             prev_ball = ball;
             ball_vel.x = mul_f8_s16(ys, power_aim);
             ball_vel.z = mul_f8_s16(yc, power_aim);
+            shots[current_level_index] += 1;
             state = st::ROLLING;
         }
 
@@ -157,5 +166,28 @@ void game_loop()
             for(uint8_t x = OFFX + 2; x <= OFFX + 4; ++x)
                 set_pixel(x, y);
         }
+
+        draw_graphic(INFO_BAR, 7, 0, 1, 76);
+
+        {
+            uint8_t n = current_level_index + 1;
+            if(n >= 10)
+            {
+                set_number(1, 7, 18);
+                set_number(n - 10, 7, 22);
+            }
+            else
+                set_number(n, 7, 22);
+        }
+        {
+            uint8_t n = shots[current_level_index] + 1;
+            uint8_t t = 0;
+            while(n >= 10)
+                n -= 10, ++t;
+            if(t != 0)
+                set_number(t, 7, 66);
+            set_number(n, 7, 70);
+        }
+        set_number(pgm_read_byte(&PARS[current_level_index]), 7, 42);
     }
 }

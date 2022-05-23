@@ -9,9 +9,6 @@ static constexpr int FBH = 1 * 64;
 
 #define USE_AVR_INLINE_ASM 1
 
-//8-bit grayscale buffer
-#define BUFFER_8BIT 0
-
 #define BALL_XRAY 1
 
 static constexpr uint16_t SAVE_VERSION = 1;
@@ -178,7 +175,7 @@ static constexpr uint8_t BTN_RIGHT = 0x40;
 static constexpr uint8_t BTN_A     = 0x08;
 static constexpr uint8_t BTN_B     = 0x04;
 
-static constexpr size_t BUF_BYTES = FBW * FBH / (BUFFER_8BIT ? 1 : 8);
+static constexpr size_t BUF_BYTES = FBW * FBH / 8;
 #ifdef ARDUINO
 extern uint8_t* const buf;
 #else
@@ -288,6 +285,7 @@ struct level_info
 
 // levels.cpp
 extern level_info const LEVELS[3] PROGMEM;
+extern uint8_t current_level_index;
 extern level_info const* current_level;
 
 // game.cpp
@@ -300,6 +298,8 @@ enum class st : uint8_t
 extern st state;
 extern uint16_t yaw_aim;
 extern uint8_t power_aim;
+extern uint8_t shots[18];
+void set_level(uint8_t index);
 void move_forward(int16_t amount);
 void move_right(int16_t amount);
 void move_up(int16_t amount);
@@ -388,6 +388,17 @@ uint16_t mul_f8_u16 (uint16_t a, uint8_t  b);
 uint16_t mul_f8_u16 (uint16_t a, uint16_t b);
 int16_t  mul_f15_s16(int16_t  a, int16_t  b);
 int16_t  mul_f16_s16(int16_t  a, int16_t  b);
+
+// graphics.cpp
+// draw_graphic
+//    r: 8-pixel row index (0-7)
+//    c: which column (0-127)
+//    h: graphic height in rows
+//    w: graphic width
+void draw_graphic(uint8_t const* p, uint8_t r, uint8_t c, uint8_t h, uint8_t w);
+void set_graphic(uint8_t const* p, uint8_t r, uint8_t c, uint8_t h, uint8_t w);
+void set_number(uint8_t n, uint8_t r, uint8_t c);
+extern uint8_t const INFO_BAR[76] PROGMEM;
 
 static inline int16_t div8s(int16_t x)
 {

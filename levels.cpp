@@ -42,6 +42,7 @@ static constexpr phys_box make_box_45(
 #include "levels/level_01_info.hpp"
 #include "levels/level_02_info.hpp"
 
+uint8_t current_level_index;
 level_info const* current_level = 0;
 
 #define LEVEL_GEOM(n__) { \

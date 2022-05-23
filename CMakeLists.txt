@@ -46,6 +46,7 @@ set(MINIGOLF_SOURCES
     mul.cpp
     game.hpp
     draw.cpp
+    graphics.cpp
     levels.cpp
     physics.cpp
     sincos.cpp
