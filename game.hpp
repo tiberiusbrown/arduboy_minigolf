@@ -11,6 +11,8 @@ static constexpr int FBH = 1 * 64;
 
 #define BALL_XRAY 1
 
+#define NUM_LEVELS 5
+
 static constexpr uint16_t SAVE_VERSION = 1;
 
 // platform functionality
@@ -284,7 +286,7 @@ struct level_info
 };
 
 // levels.cpp
-extern level_info const LEVELS[4] PROGMEM;
+extern level_info const LEVELS[NUM_LEVELS] PROGMEM;
 extern uint8_t current_level_index;
 extern level_info const* current_level;
 

@@ -2,6 +2,11 @@
 
 static constexpr uint8_t STARTING_LEVEL = 0;
 
+static constexpr uint8_t PARS[18] PROGMEM =
+{
+    2, 3, 4, 3, 3,
+};
+
 // alternative yaw for non camera uses
 // (like aiming, tracking ball velocity)
 uint16_t yaw_aim;
@@ -22,11 +27,6 @@ static constexpr uint8_t GRAPHIC_OFFSET_MAX = 32;
 static uint8_t prev_btns;
 
 uint8_t shots[18];
-
-static constexpr uint8_t PARS[18] PROGMEM =
-{
-    2, 3, 4, 3,
-};
 
 static void draw_nframe_progress()
 {

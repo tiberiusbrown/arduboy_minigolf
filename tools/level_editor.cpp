@@ -26,7 +26,6 @@ static constexpr int WH = 64 * ZOOM;
 #define FMT_HEADER_ONLY
 #include <fmt/format.h>
 
-static constexpr int NUM_LEVELS = IM_ARRAYSIZE(LEVELS);
 static std::vector<phys_box> editor_boxes[NUM_LEVELS];
 static level_info editor_levels[NUM_LEVELS];
 static int level_index = 0;
