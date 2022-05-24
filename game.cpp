@@ -1,5 +1,7 @@
 #include "game.hpp"
 
+static constexpr uint8_t STARTING_LEVEL = 0;
+
 // alternative yaw for non camera uses
 // (like aiming, tracking ball velocity)
 uint16_t yaw_aim;
@@ -23,7 +25,7 @@ uint8_t shots[18];
 
 static constexpr uint8_t PARS[18] PROGMEM =
 {
-    3, 3, 3,
+    2, 3, 4, 3,
 };
 
 static void draw_nframe_progress()
@@ -106,6 +108,7 @@ void move_up(int16_t amount)
 void look_up(int16_t amount)
 {
     pitch -= amount;
+    pitch = tclamp<int16_t>(pitch, -64 * 256, 64 * 256);
 }
 void look_right(int16_t amount)
 {
@@ -201,7 +204,7 @@ void game_loop()
         }
 #else
         if(pressed & BTN_A)
-            state = st::LEVEL;
+            set_level(STARTING_LEVEL);
         render_scene();
         // TODO: draw title and "press A to play" graphics
         return;
@@ -244,7 +247,6 @@ void game_loop()
             prev_ball = ball;
             ball_vel.x = mul_f8_s16(ys, power_aim);
             ball_vel.z = mul_f8_s16(yc, power_aim);
-            shots[current_level_index] += 1;
             state = st::ROLLING;
         }
 
@@ -260,6 +262,7 @@ void game_loop()
         if(physics_step())
         {
             yaw_aim = yaw_to_flag();
+            shots[current_level_index] += 1;
             state = st::AIM;
         }
         else if(ball.y < (256 * -20))
@@ -267,10 +270,12 @@ void game_loop()
             ball = prev_ball;
             ball_vel = {};
             ball_vel_ang = {};
+            shots[current_level_index] += 2; // penalty
             state = st::AIM;
         }
         else if(ball_in_hole())
         {
+            shots[current_level_index] += 1;
             state = st::HOLE;
             yaw_aim = yaw;
             nframe = 0;

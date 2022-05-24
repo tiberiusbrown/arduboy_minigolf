@@ -113,6 +113,8 @@ void setup()
             nf = 0;
             dt = 0;
         }
+#else
+        pt = time_ms();
 #endif
         
         game_loop();

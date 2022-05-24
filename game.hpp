@@ -284,7 +284,7 @@ struct level_info
 };
 
 // levels.cpp
-extern level_info const LEVELS[3] PROGMEM;
+extern level_info const LEVELS[4] PROGMEM;
 extern uint8_t current_level_index;
 extern level_info const* current_level;
 
@@ -350,13 +350,9 @@ extern array<uint8_t, MAX_CLIP_FACES * 4> clip_faces;
 extern array<dvec2, MAX_VERTS> vs;
 void clear_buf();
 uint8_t render_scene();
-uint8_t render_scene(
-    int8_t const* verts,
-    uint8_t const* faces,
-    uint8_t num_verts,
-    uint8_t num_faces);
 #ifndef ARDUINO
-dvec3 transform_point(dvec3 pt);
+uint8_t render_scene_ortho(int zoom);
+dvec3 transform_point(dvec3 dv, bool ortho, int ortho_zoom);
 #endif
 
 // sincos.cpp

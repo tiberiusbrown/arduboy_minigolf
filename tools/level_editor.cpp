@@ -31,6 +31,9 @@ static std::vector<phys_box> editor_boxes[NUM_LEVELS];
 static level_info editor_levels[NUM_LEVELS];
 static int level_index = 0;
 
+static bool ortho = false;
+static int ortho_zoom = 512;
+
 static ImVec2 dvec2imvec(dvec2 v)
 {
     return { float(v.x) / (128 * 16) * WW, float(v.y) / (64 * 16) * WH };
@@ -114,6 +117,9 @@ static void editor_gui()
     using namespace ImGui;
     SetNextWindowSize({ 500, 600 }, ImGuiCond_FirstUseEver);
     Begin("Editor", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    Checkbox("Ortho", &ortho);
+    SameLine();
+    InputInt("Ortho Zoom", &ortho_zoom);
     InputInt("Level Index", &level_index);
     if(Button("Copy level info to clipboard"))
     {
@@ -168,6 +174,7 @@ static void editor_gui()
         boxes.push_back(boxes[editor_boxi]);
         editor_boxi = (int)boxes.size() - 1;
     }
+    SameLine();
     if(Button("Add Box"))
     {
         boxes.push_back({});
@@ -233,7 +240,7 @@ static void editor_draw_box(phys_box box, ImU32 col)
         p[j].x += t.x;
         p[j].y += t.y;
         p[j].z += t.z;
-        p[j] = transform_point(p[j]);
+        p[j] = transform_point(p[j], ortho, ortho_zoom);
         if(p[j].z < 128) return;
     }
 
@@ -319,24 +326,7 @@ int main(int, char**)
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX9_Init(g_pd3dDevice);
 
-    // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-    // - Read 'docs/FONTS.md' for more instructions and details.
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    //io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
-    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
-    //IM_ASSERT(font != NULL);
-
     // Our state
-    bool show_demo_window = true;
-    bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     memcpy(editor_levels, LEVELS, sizeof(LEVELS));
@@ -399,15 +389,40 @@ int main(int, char**)
             if(ImGui::IsKeyDown(ImGuiKey_DownArrow )) move_forward(-move_speed);
             if(ImGui::IsKeyDown(ImGuiKey_LeftArrow )) move_right(-move_speed);
             if(ImGui::IsKeyDown(ImGuiKey_RightArrow)) move_right(move_speed);
+
+            if(ImGui::IsKeyDown(ImGuiKey_Keypad1))
+            {
+                // x
+                yaw = uint16_t(-64 * 256);
+                pitch = 0;
+                ortho = true;
+                cam = { 30 * 256, 0, 0, };
+            }
+            if(ImGui::IsKeyDown(ImGuiKey_Keypad3))
+            {
+                // z
+                yaw = 0;
+                pitch = 0;
+                ortho = true;
+                cam = { 0, 0, 30 * 256, };
+            }
+            if(ImGui::IsKeyDown(ImGuiKey_Keypad7))
+            {
+                // y
+                yaw = 0;
+                pitch = 64 * 256;
+                ortho = true;
+                cam = { 0, 30 * 256, 0, };
+            }
         }
 
-        ImGui::ShowDemoWindow(nullptr);
+        //ImGui::ShowDemoWindow(nullptr);
 
         editor_gui();
 
         {
             auto const* faces = current_level->faces;
-            uint8_t nf = render_scene();
+            uint8_t nf = ortho ? render_scene_ortho(ortho_zoom) : render_scene();
             auto* draw = ImGui::GetBackgroundDrawList();
             for(uint8_t i = 0; i < nf; ++i)
             {

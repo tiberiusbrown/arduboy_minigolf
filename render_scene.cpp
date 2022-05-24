@@ -32,15 +32,6 @@ void clear_buf()
     while(pa < pb) *pa++ = 0;
 }
 
-uint8_t render_scene()
-{
-    return render_scene(
-        pgmptr(&current_level->verts),
-        pgmptr(&current_level->faces),
-        pgm_read_byte(&current_level->num_verts),
-        pgm_read_byte(&current_level->num_faces));
-}
-
 static uint8_t add_vertex(dmat3 const& m, dvec3 dv, uint8_t nv)
 {
     // translate
@@ -81,7 +72,12 @@ static uint16_t calc_fdist(
     return fdist;
 }
 
-uint8_t render_scene(
+#ifndef ARDUINO
+static int ortho_zoom;
+#endif
+
+template<bool ortho>
+static uint8_t render_scene(
     int8_t const* verts,
     uint8_t const* faces,
     uint8_t num_verts,
@@ -399,6 +395,15 @@ uint8_t render_scene(
     {
         dvec3 dv = { vs[i].x, vs[i].y, fd.vz[i] };
 
+#ifndef ARDUINO
+        if(ortho)
+        {
+            // divide x and y by ortho_zoom
+            dv.x = int32_t(dv.x) * ortho_zoom / 256 / 16;
+            dv.y = int32_t(dv.y) * ortho_zoom / 256 / 16;
+        }
+        else
+#endif
         // multiply x and y by 4/z
         if(dv.z >= ZNEAR)
         {
@@ -495,8 +500,26 @@ uint8_t render_scene(
     return nf;
 }
 
+uint8_t render_scene()
+{
+    return render_scene<false>(
+        pgmptr(&current_level->verts),
+        pgmptr(&current_level->faces),
+        pgm_read_byte(&current_level->num_verts),
+        pgm_read_byte(&current_level->num_faces));
+}
+
 #ifndef ARDUINO
-dvec3 transform_point(dvec3 dv)
+uint8_t render_scene_ortho(int zoom)
+{
+    ortho_zoom = zoom;
+    return render_scene<true>(
+        pgmptr(&current_level->verts),
+        pgmptr(&current_level->faces),
+        pgm_read_byte(&current_level->num_verts),
+        pgm_read_byte(&current_level->num_faces));
+}
+dvec3 transform_point(dvec3 dv, bool ortho, int ortho_zoom)
 {
     dmat3 m;
     rotation16(m, yaw, pitch);
@@ -508,7 +531,12 @@ dvec3 transform_point(dvec3 dv)
     dv = matvec(m, dv);
     dv.z = -dv.z;
 
-    if(dv.z >= ZNEAR)
+    if(ortho)
+    {
+        dv.x = int32_t(dv.x) * ortho_zoom / 256 / 16;
+        dv.y = int32_t(dv.y) * ortho_zoom / 256 / 16;
+    }
+    else if(dv.z >= ZNEAR)
     {
         uint16_t invz = inv16(dv.z);
         int32_t nx = int32_t(invz) * dv.x;
