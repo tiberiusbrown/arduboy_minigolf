@@ -291,14 +291,19 @@ extern level_info const* current_level;
 // game.cpp
 enum class st : uint8_t
 {
+    TITLE,      // title screen
     LEVEL,      // circle around the level for a bit
     AIM,        // aim the ball for a shot
     ROLLING,    // watch the ball after a shot
+    HOLE,       // ball went into hole
+    SCORE,      // viewing score card
 };
 extern st state;
+extern uint8_t nframe;
 extern uint16_t yaw_aim;
 extern uint8_t power_aim;
 extern uint8_t shots[18];
+bool ball_in_hole();
 void set_level(uint8_t index);
 void move_forward(int16_t amount);
 void move_right(int16_t amount);
@@ -329,6 +334,7 @@ void update_camera_look_at_fastangle(
 void update_camera_follow_ball(
     uint16_t dist,
     uint8_t move_speed, uint8_t look_speed);
+void update_camera_reset_velocities();
 
 // draw.cpp
 int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z);
@@ -407,7 +413,10 @@ void draw_graphic(
     uint8_t h, uint8_t w,
     uint8_t op);
 void set_number(uint8_t n, uint8_t r, uint8_t c);
-extern uint8_t const INFO_BAR[] PROGMEM;
+void set_number2(uint8_t n, uint8_t r, uint8_t c);
+void set_number3(uint16_t n, uint8_t r, uint8_t c);
+extern uint8_t const GFX_INFO_BAR[] PROGMEM;
+extern uint8_t const GFX_POWER[] PROGMEM;
 
 static inline int16_t div8s(int16_t x)
 {

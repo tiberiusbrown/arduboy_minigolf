@@ -114,6 +114,7 @@ uint8_t render_scene(
     // ball vertices (center and right side) and face
     uint8_t balli0, balli1; // ball face indices
     bool ball_valid = false;
+    if(!ball_in_hole())
     {
         dvec3 dv = ball;
         dv.x -= cam.x;
@@ -187,7 +188,7 @@ uint8_t render_scene(
         nv = add_vertex(m, dv, nv);
         flag_valid &= fd.vz[nv - 1] >= ZNEAR;
         dv.y -= 256 * FLAG_SIZE / 2;
-        dv.x += fsin(flag_anim += 8);
+        dv.x += fsin(nframe << 3);
         dv.z -= 256 * FLAG_SIZE;
         nv = add_vertex(m, dv, nv);
         flag_valid &= fd.vz[nv - 1] >= ZNEAR;

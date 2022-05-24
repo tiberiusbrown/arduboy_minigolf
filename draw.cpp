@@ -224,6 +224,28 @@ void draw_ball_filled(dvec2 c, uint16_t r)
     if(c.x < -(int16_t)r || c.y < -(int16_t)r) return;
     if(c.x > FBW * 16 + r || c.y > FBW * 16 + r) return;
 
+#if 0
+    int16_t e = 24 - r;
+    int16_t cx = div16s(c.x);
+    int16_t cy = div16s(c.y);
+    int16_t y = (int16_t)r;
+    int16_t px = 0;
+    int16_t py = r >> 4;
+    for(int16_t x = 0; x <= y; x += 16, px += 1)
+    {
+        draw_circle_bresenham_segment_filled(cx, cy, px, py, pat);
+        if(e > 0)
+        {
+            e += 80 + (x - y) * 2;
+            y -= 16;
+            py -= 1;
+        }
+        else
+        {
+            e += 48 + x * 2;
+        }
+    }
+#else
     c.x = div16s(c.x);
     c.y = div16s(c.y);
     r >>= 4;
@@ -245,6 +267,7 @@ void draw_ball_filled(dvec2 c, uint16_t r)
         e += dx;
         dx += 8;
     }
+#endif
 }
 
 int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z)
