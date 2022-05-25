@@ -329,7 +329,7 @@ void game_loop()
         memcpy_P(&flag, &current_level->flag_pos, sizeof(flag));
         update_camera_look_at_fastangle(flag, yaw_aim, 6000, 256 * 20, 64, 64);
         yaw_aim += 256;
-        if((pressed & BTN_B) || nframe == 255)
+        if(nframe == 255)
             state = st::SCORE;
         if(graphic_offset < GRAPHIC_OFFSET_MAX)
             ++graphic_offset;
