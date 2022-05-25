@@ -287,7 +287,7 @@ struct level_info
 
 // levels.cpp
 extern level_info const LEVELS[NUM_LEVELS] PROGMEM;
-extern uint8_t current_level_index;
+extern uint8_t leveli;
 extern level_info const* current_level;
 
 // game.cpp
@@ -341,6 +341,7 @@ void update_camera_reset_velocities();
 // draw.cpp
 int16_t interp(int16_t a, int16_t b, int16_t c, int16_t x, int16_t z);
 void set_pixel(uint8_t x, uint8_t y);
+void inv_pixel(uint8_t x, uint8_t y);
 void clear_pixel(uint8_t x, uint8_t y);
 void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati);
 void draw_ball_filled(dvec2 c, uint16_t r);
@@ -415,6 +416,8 @@ void set_number2(uint8_t n, uint8_t r, uint8_t c);
 void set_number3(uint16_t n, uint8_t r, uint8_t c);
 extern uint8_t const GFX_INFO_BAR[] PROGMEM;
 extern uint8_t const GFX_POWER[] PROGMEM;
+extern uint8_t const GFX_TITLE[] PROGMEM;
+extern uint8_t const GFX_SUBTITLE[] PROGMEM;
 
 static inline int16_t div8s(int16_t x)
 {

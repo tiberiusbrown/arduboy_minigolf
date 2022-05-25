@@ -11,8 +11,12 @@ static constexpr uint8_t SET_MASK[8] PROGMEM =
 
 void set_pixel(uint8_t x, uint8_t y)
 {
-    //if(x < FBW && y < FBH)
-        buf[y / 8 * FBW + x] |= pgm_read_byte(&SET_MASK[y & 7]);
+    buf[y / 8 * FBW + x] |= pgm_read_byte(&SET_MASK[y & 7]);
+}
+
+void inv_pixel(uint8_t x, uint8_t y)
+{
+    buf[y / 8 * FBW + x] ^= pgm_read_byte(&SET_MASK[y & 7]);
 }
 
 static constexpr uint8_t CLEAR_MASK[8] PROGMEM =
@@ -22,8 +26,7 @@ static constexpr uint8_t CLEAR_MASK[8] PROGMEM =
 
 void clear_pixel(uint8_t x, uint8_t y)
 {
-    //if(x < FBW && y < FBH)
-        buf[y / 8 * FBW + x] &= pgm_read_byte(&CLEAR_MASK[y & 7]);
+    buf[y / 8 * FBW + x] &= pgm_read_byte(&CLEAR_MASK[y & 7]);
 }
 
 static constexpr uint8_t YMASK0[8] PROGMEM =

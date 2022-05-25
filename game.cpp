@@ -17,6 +17,9 @@ static constexpr uint8_t MAX_POWER = 128;
 
 static dvec3 prev_ball;
 
+static bool practice;
+static uint8_t aim_wait;
+
 st state;
 uint8_t nframe;
 static uint16_t yaw_level;
@@ -58,7 +61,7 @@ static void reset_ball()
 
 void set_level(uint8_t index)
 {
-    current_level_index = index;
+    leveli = index;
     current_level = &LEVELS[index];
     reset_ball();
     nframe = 0;
@@ -73,9 +76,9 @@ static void reset_to_title()
     set_level(0);
     for(auto& s : shots) s = 0;
     state = st::TITLE;
-    cam = { 2378, 1408, -2593 };
+    cam = { 3331, 1664, -3451 };
     yaw = 57344;
-    pitch = 3328;
+    pitch = 3840;
     graphic_offset = GRAPHIC_OFFSET_MAX;
     update_camera_reset_velocities();
 }
@@ -205,20 +208,54 @@ void game_loop()
 #else
         if(pressed & BTN_A)
             set_level(STARTING_LEVEL);
-        render_scene();
-        // TODO: draw title and "press A to play" graphics
-        return;
+        else if(pressed & (BTN_LEFT | BTN_RIGHT))
+            practice = !practice;
 #endif
+        render_scene();
+        draw_graphic(GFX_TITLE, 1, 50, 2, 77, GRAPHIC_OVERWRITE);
+        draw_graphic(GFX_SUBTITLE, 4, 50, 1, 77, GRAPHIC_OVERWRITE);
+
+        uint8_t x0 = 49, x1 = 73;
+        if(practice)
+            x0 = 81, x1 = 127;
+        while(x0 <= x1)
+        {
+            for(uint8_t y = 32; y <= 40; ++y)
+                inv_pixel(x0, y);
+            ++x0;
+        }
+        return;
     }
     else if(state == st::LEVEL)
     {
         update_camera_look_at_fastangle(
             { 0, 0, 0 }, yaw_level, 6000, 256 * 25, 64, 64);
         yaw_level += 256;
-        if(graphic_offset < GRAPHIC_OFFSET_MAX)
-            ++graphic_offset;
-        if(nframe == 255 || (pressed & BTN_B))
-            state = st::AIM;
+        if(practice)
+        {
+            if(pressed & BTN_LEFT)
+                leveli = (leveli == 0 ? NUM_LEVELS - 1 : leveli - 1);
+            if(pressed & BTN_RIGHT)
+                leveli = (leveli == NUM_LEVELS - 1 ? 0 : leveli + 1);
+            if(pressed & BTN_A)
+                state = st::AIM, aim_wait = 0;
+            if(pressed & BTN_B)
+                reset_to_title();
+            current_level = &LEVELS[leveli];
+            reset_ball();
+            render_scene();
+            draw_graphic(GFX_INFO_BAR, 6, 0, 2, 28, GRAPHIC_OVERWRITE);
+            set_number2(leveli + 1, 6, 18);
+            set_number2(pgm_read_byte(&PARS[leveli]), 7, 18);
+            return;
+        }
+        else
+        {
+            if(graphic_offset < GRAPHIC_OFFSET_MAX)
+                ++graphic_offset;
+            if(nframe == 255 || (pressed & BTN_B))
+                state = st::AIM, aim_wait = 0;
+        }
     }
     else if(state == st::AIM)
     {
@@ -240,7 +277,9 @@ void game_loop()
         if(graphic_offset > 0)
             --graphic_offset;
 
-        if(btns & BTN_A)
+        if(aim_wait < 32)
+            ++aim_wait;
+        else if(btns & BTN_A)
         {
             int16_t ys = fsin16(yaw_aim);
             int16_t yc = -fcos16(yaw_aim);
@@ -262,7 +301,7 @@ void game_loop()
         if(physics_step())
         {
             yaw_aim = yaw_to_flag();
-            shots[current_level_index] += 1;
+            shots[leveli] += 1;
             state = st::AIM;
         }
         else if(ball.y < (256 * -20))
@@ -270,12 +309,12 @@ void game_loop()
             ball = prev_ball;
             ball_vel = {};
             ball_vel_ang = {};
-            shots[current_level_index] += 2; // penalty
+            shots[leveli] += 2; // penalty
             state = st::AIM;
         }
         else if(ball_in_hole())
         {
-            shots[current_level_index] += 1;
+            shots[leveli] += 1;
             state = st::HOLE;
             yaw_aim = yaw;
             nframe = 0;
@@ -290,7 +329,7 @@ void game_loop()
         memcpy_P(&flag, &current_level->flag_pos, sizeof(flag));
         update_camera_look_at_fastangle(flag, yaw_aim, 6000, 256 * 20, 64, 64);
         yaw_aim += 256;
-        if(nframe == 255)
+        if((pressed & BTN_B) || nframe == 255)
             state = st::SCORE;
         if(graphic_offset < GRAPHIC_OFFSET_MAX)
             ++graphic_offset;
@@ -303,10 +342,10 @@ void game_loop()
         {
             if(nframe == 32)
             {
-                if(current_level_index == sizeof(LEVELS) / sizeof(LEVELS[0]) - 1)
+                if(practice || leveli == sizeof(LEVELS) / sizeof(LEVELS[0]) - 1)
                     reset_to_title();
                 else
-                    set_level(current_level_index + 1);
+                    set_level(leveli + 1);
             }
             draw_nframe_progress();
         }
@@ -320,9 +359,9 @@ void game_loop()
     draw_graphic(GFX_INFO_BAR, 5, -graphic_offset, 3, 28, GRAPHIC_OVERWRITE);
     {
         uint8_t nx = 18 - graphic_offset;
-        set_number2(current_level_index + 1, 5, nx);
-        set_number2(pgm_read_byte(&PARS[current_level_index]), 6, nx);
-        set_number2(shots[current_level_index] + 1, 7, nx);
+        set_number2(leveli + 1, 5, nx);
+        set_number2(pgm_read_byte(&PARS[leveli]), 6, nx);
+        set_number2(shots[leveli] + 1, 7, nx);
     }
 
     if(graphic_offset < 5)
