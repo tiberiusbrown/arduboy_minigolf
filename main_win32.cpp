@@ -83,16 +83,22 @@ void flush_persistent()
     }
 }
 
+#ifndef NDEBUG
 static uint64_t perf_counter()
 {
     LARGE_INTEGER t;
     QueryPerformanceCounter(&t);
     return (uint64_t)t.QuadPart;
 }
+#endif
 
 uint16_t time_ms()
 {
+#ifndef NDEBUG
     return uint16_t(perf_counter() * 1000 / freq);
+#else
+    return 0;
+#endif
 }
 
 static void screenshot()
@@ -183,8 +189,10 @@ static void refresh()
 
 static void paint()
 {
+#ifndef NDEBUG
     if(perf_counter() - gif_frame_time > 0.05 * freq)
         send_gif_frame();
+#endif
     for(int i = 0; i < BUF_BYTES; ++i)
     {
         int x = i % FBW;
