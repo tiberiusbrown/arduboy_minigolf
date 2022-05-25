@@ -342,7 +342,7 @@ void game_loop()
         {
             if(nframe == 32)
             {
-                if(practice || leveli == sizeof(LEVELS) / sizeof(LEVELS[0]) - 1)
+                if(practice || (btns & BTN_B) || leveli == sizeof(LEVELS) / sizeof(LEVELS[0]) - 1)
                     reset_to_title();
                 else
                     set_level(leveli + 1);

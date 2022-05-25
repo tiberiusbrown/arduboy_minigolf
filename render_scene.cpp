@@ -218,7 +218,7 @@ static uint8_t render_scene(
                 fi + 3, fi + 4, fi + 5,
                 dvy1, dvy1, dvy1);
             ++nf;
-            clip_faces[nclipf + 0] = fi + 3;
+            clip_faces[nclipf + 0] = fi + 2;
             clip_faces[nclipf + 1] = fi + 4;
             clip_faces[nclipf + 2] = fi + 5;
             clip_faces[nclipf + 3] = FLAG_PAT;
