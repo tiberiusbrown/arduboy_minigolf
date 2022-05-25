@@ -471,7 +471,7 @@ static uint8_t render_scene(
             {
                 dvec2 c = vs[balli0];
                 ballr = uint16_t(vs[balli1].x - c.x);
-                draw_ball_filled(vs[balli0], ballr);
+                draw_ball_filled(vs[balli0], ballr, 0xffff);
 #if !BALL_XRAY
                 draw_ball_outline(vs[balli0], ballr + 8);
 #endif

@@ -31,18 +31,20 @@ static uint8_t prev_btns;
 
 uint8_t shots[18];
 
-static void draw_nframe_progress()
+static void draw_nframe_progress(uint8_t oy, uint8_t n)
 {
-    constexpr uint8_t R = 12;
+    constexpr uint8_t R = 9;
     int8_t fs = 0;
     int8_t fc = 127;
     dvec2 vc;
-    vc.x = 116 * 16;
-    vc.y = FBH * 16 / 2;
+    vc.x = 117 * 16;
+    vc.y = oy * 16;
     dvec2 v0;
     v0.x = vc.x + R * 16;
     v0.y = vc.y;
-    for(uint8_t j = 1; j <= nframe; ++j)
+    draw_ball_filled(vc, (R + 1) * 16, 0xffff);
+    draw_ball_filled(vc, (R - 1) * 16, 0x0000);
+    for(uint8_t j = 1; j <= n; ++j)
     {
         dvec2 v1;
         v1.x = vc.x + div16s(fmuls(fcos(j * 8), R));
@@ -347,10 +349,16 @@ void game_loop()
                 else
                     set_level(leveli + 1);
             }
-            draw_nframe_progress();
         }
         else
             nframe = 0;
+        uint8_t proga = 0, progb = 0;
+        if(     btns & BTN_A) proga = nframe;
+        else if(btns & BTN_B) progb = nframe;
+        draw_nframe_progress(21     , proga);
+        draw_nframe_progress(21 + 24, progb);
+        draw_graphic(GFX_NEXT, 2, 110, 1, 15, GRAPHIC_SET);
+        draw_graphic(GFX_QUIT, 5, 110, 1, 15, GRAPHIC_SET);
         return;
     }
 

@@ -222,7 +222,7 @@ void draw_ball_outline(dvec2 c, uint16_t r)
     }
 }
 
-void draw_ball_filled(dvec2 c, uint16_t r)
+void draw_ball_filled(dvec2 c, uint16_t r, uint16_t pat)
 {
     if(c.x < -(int16_t)r || c.y < -(int16_t)r) return;
     if(c.x > FBW * 16 + r || c.y > FBW * 16 + r) return;
@@ -260,7 +260,7 @@ void draw_ball_filled(dvec2 c, uint16_t r)
 
     for(int16_t x = 0; x <= y; ++x)
     {
-        draw_circle_bresenham_segment_filled(c.x, c.y, x, y, 0xffff);
+        draw_circle_bresenham_segment_filled(c.x, c.y, x, y, pat);
         if(e >= 0)
         {
             e += dy;

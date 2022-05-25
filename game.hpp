@@ -344,7 +344,7 @@ void set_pixel(uint8_t x, uint8_t y);
 void inv_pixel(uint8_t x, uint8_t y);
 void clear_pixel(uint8_t x, uint8_t y);
 void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati);
-void draw_ball_filled(dvec2 c, uint16_t r);
+void draw_ball_filled(dvec2 c, uint16_t r, uint16_t pat);
 void draw_ball_outline(dvec2 c, uint16_t r);
 
 // render_scene.cpp
@@ -418,6 +418,8 @@ extern uint8_t const GFX_INFO_BAR[] PROGMEM;
 extern uint8_t const GFX_POWER[] PROGMEM;
 extern uint8_t const GFX_TITLE[] PROGMEM;
 extern uint8_t const GFX_SUBTITLE[] PROGMEM;
+extern uint8_t const GFX_NEXT[] PROGMEM;
+extern uint8_t const GFX_QUIT[] PROGMEM;
 
 static inline int16_t div8s(int16_t x)
 {

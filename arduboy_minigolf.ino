@@ -112,7 +112,7 @@ void setup()
             fps = uint32_t(1000) * nf / dt;
             nf = 0;
             dt = 0;
-        }
+        } 
 #else
         pt = time_ms();
 #endif
