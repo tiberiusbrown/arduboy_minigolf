@@ -1,6 +1,6 @@
 #pragma once
 
-static constexpr phys_box LEVEL_00_BOXES[17] PROGMEM =
+static constexpr phys_box LEVEL_00_BOXES[16] PROGMEM =
 {
     { { 2304, 256, 4096 }, { 0, -256, 512 }, 0, 0 },
     { { 256, 512, 1152 }, { 1536, 0, 3456 }, 0, 0 },
@@ -18,7 +18,6 @@ static constexpr phys_box LEVEL_00_BOXES[17] PROGMEM =
     { { 724, 512, 724 }, { -2304, 0, -2304 }, 32, 0 },
     { { 724, 512, 724 }, { 2304, 0, -2304 }, 32, 0 },
     { { 724, 512, 724 }, { 2304, 0, 2304 }, 32, 0 },
-    { { 512, 256, 512 }, { 0, -768, -3840 }, 0, 0 },
 };
 static constexpr dvec3 LEVEL_00_BALL_POS = { 0, 128, 3968 };
 static constexpr dvec3 LEVEL_00_FLAG_POS = { 0, -256, -3840 };

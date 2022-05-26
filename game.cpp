@@ -4,7 +4,7 @@ static constexpr uint8_t STARTING_LEVEL = 0;
 
 static constexpr uint8_t PARS[18] PROGMEM =
 {
-    2, 3, 4, 3, 3,
+    2, 3, 4, 3, 4,
 };
 
 // alternative yaw for non camera uses
