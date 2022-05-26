@@ -31,7 +31,7 @@ static level_info editor_levels[NUM_LEVELS];
 static int level_index = 0;
 
 static bool ortho = false;
-static int ortho_zoom = 512;
+static int ortho_zoom = 500;
 
 static ImVec2 dvec2imvec(dvec2 v)
 {
@@ -43,13 +43,31 @@ static ImVec2 dvec2imvec(dvec3 v)
     return dvec2imvec(dvec2{ v.x, v.y });
 }
 
-static void input_coord(char const* label, int16_t& v)
+static void input_coord16(char const* label, int16_t& v)
 {
-    double fv = float(v) / 256;
+    double fv = double(v) / 256;
     ImGui::SetNextItemWidth(120);
     ImGui::InputDouble(label, &fv, 1.0, 1.0);
     fv = tclamp<double>(fv, -125, 125);
     v = (int16_t)round(fv * 256);
+}
+
+static void input_coord(char const* label, int8_t& v)
+{
+    double fv = double(v) * BOX_POS_FACTOR / 256;
+    ImGui::SetNextItemWidth(120);
+    ImGui::InputDouble(label, &fv, 1.0, 1.0);
+    fv = tclamp<double>(fv, -127.0 * BOX_POS_FACTOR / 256, 127.0 * BOX_POS_FACTOR / 256);
+    v = (int8_t)round(fv * (256 / BOX_POS_FACTOR));
+}
+
+static void input_size(char const* label, uint8_t& v)
+{
+    double fv = double(v) * BOX_SIZE_FACTOR / 256;
+    ImGui::SetNextItemWidth(120);
+    ImGui::InputDouble(label, &fv, 1.0, 1.0);
+    fv = tclamp<double>(fv, 0, 255.0 * BOX_SIZE_FACTOR / 256);
+    v = (uint8_t)round(fv * (256 / BOX_SIZE_FACTOR));
 }
 
 static void input_yaw(char const* label, uint8_t& v)
@@ -93,7 +111,7 @@ static std::string editor_get_string()
             r += fmt::format(
                 "    {{ {{ {}, {}, {} }}, {{ {}, {}, {} }}, {}, {} }},\n",
                 box.size.x, box.size.y, box.size.z,
-                box.pos.x, box.pos.y, box.pos.z,
+                box.pos.x , box.pos.y , box.pos.z ,
                 box.yaw, box.pitch);
         }
         r += "};\n";
@@ -118,7 +136,7 @@ static void editor_gui()
     Begin("Editor", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
     Checkbox("Ortho", &ortho);
     SameLine();
-    InputInt("Ortho Zoom", &ortho_zoom);
+    InputInt("Ortho Zoom", &ortho_zoom, 100);
     InputInt("Level Index", &level_index);
     if(Button("Copy level info to clipboard"))
     {
@@ -145,13 +163,13 @@ static void editor_gui()
     int num_boxes = (int)editor_boxes[level_index].size();
 
     AlignTextToFramePadding(); Text("Ball:"); SameLine();
-    input_coord("x##ballx", level.ball_pos.x); SameLine();
-    input_coord("y##bally", level.ball_pos.y); SameLine();
-    input_coord("z##ballz", level.ball_pos.z);
+    input_coord16("x##ballx", level.ball_pos.x); SameLine();
+    input_coord16("y##bally", level.ball_pos.y); SameLine();
+    input_coord16("z##ballz", level.ball_pos.z);
     AlignTextToFramePadding(); Text("Flag:"); SameLine();
-    input_coord("x##flagx", level.flag_pos.x); SameLine();
-    input_coord("y##flagy", level.flag_pos.y); SameLine();
-    input_coord("z##flagz", level.flag_pos.z);
+    input_coord16("x##flagx", level.flag_pos.x); SameLine();
+    input_coord16("y##flagy", level.flag_pos.y); SameLine();
+    input_coord16("z##flagz", level.flag_pos.z);
 
     std::vector<std::string> boxstrs;
     std::vector<char const*> boxstrs2;
@@ -197,9 +215,9 @@ static void editor_gui()
         input_coord("y##posy", box.pos.y); SameLine();
         input_coord("z##posz", box.pos.z);
         AlignTextToFramePadding(); Text("Size:"); SameLine(); SetCursorPosX(65);
-        input_coord("x##sizex", box.size.x); SameLine();
-        input_coord("y##sizey", box.size.y); SameLine();
-        input_coord("z##sizez", box.size.z);
+        input_size("x##sizex", box.size.x); SameLine();
+        input_size("y##sizey", box.size.y); SameLine();
+        input_size("z##sizez", box.size.z);
         AlignTextToFramePadding(); Text("Angles:"); SameLine(); SetCursorPosX(65);
         input_yaw("y##boxyaw", box.yaw); SameLine();
         input_pitch("p##boxpitch", box.pitch);
@@ -224,13 +242,18 @@ static void editor_draw_box(phys_box box, ImU32 col)
     auto* draw = ImGui::GetBackgroundDrawList();
 
     dvec3 p[8];
-    dvec3 size = box.size;
+    uvec3 size = box.size;
     mat3 m;
     rotation_phys(m, box.yaw, box.pitch);
     for(int j = 0; j < 8; ++j)
     {
-        p[j] = box.pos;
-        dvec3 t = box.size;
+        p[j].x = box.pos.x * BOX_POS_FACTOR;
+        p[j].y = box.pos.y * BOX_POS_FACTOR;
+        p[j].z = box.pos.z * BOX_POS_FACTOR;
+        dvec3 t;
+        t.x = box.size.x * BOX_SIZE_FACTOR;
+        t.y = box.size.y * BOX_SIZE_FACTOR;
+        t.z = box.size.z * BOX_SIZE_FACTOR;
         t.x *= CORNERS[j * 3 + 0];
         t.y *= CORNERS[j * 3 + 1];
         t.z *= CORNERS[j * 3 + 2];
@@ -474,14 +497,24 @@ int main(int, char**)
 
             {
                 auto ball = current_level->ball_pos;
+                uint8_t r = BALL_RADIUS / BOX_SIZE_FACTOR;
+                vec3 bp;
+                bp.x = ball.x / BOX_POS_FACTOR;
+                bp.y = ball.y / BOX_POS_FACTOR;
+                bp.z = ball.z / BOX_POS_FACTOR;
                 editor_draw_box(
-                    { { BALL_RADIUS, BALL_RADIUS, BALL_RADIUS }, ball },
+                    { { r, r, r }, bp },
                     ImGui::ColorConvertFloat4ToU32(ImVec4(0.f, 1.f, 0.5f, 1.f)));
             }
             {
                 auto flag = current_level->flag_pos;
+                uint8_t r = FLAG_RADIUS / BOX_SIZE_FACTOR;
+                vec3 fp;
+                fp.x = flag.x / BOX_POS_FACTOR;
+                fp.y = flag.y / BOX_POS_FACTOR;
+                fp.z = flag.z / BOX_POS_FACTOR;
                 editor_draw_box(
-                    { { FLAG_RADIUS, FLAG_RADIUS, FLAG_RADIUS }, flag },
+                    { { r, r, r }, fp },
                     ImGui::ColorConvertFloat4ToU32(ImVec4(1.f, 0.f, 1.f, 1.f)));
             }
         }

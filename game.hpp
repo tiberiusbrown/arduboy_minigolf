@@ -252,6 +252,7 @@ static uint24_t u24(int8_t x) { return u24(int32_t(x)); }
 struct vec2  { int8_t  x, y; };
 struct dvec2 { int16_t x, y; };
 struct vec3  { int8_t  x, y, z; };
+struct uvec3 { uint8_t x, y, z; };
 struct dvec3 { int16_t x, y, z; };
 using mat3 = array<int8_t, 9>;
 using dmat3 = array<int16_t, 9>;
@@ -265,10 +266,12 @@ static FORCEINLINE dvec3 vec_add(dvec3 a, dvec3 b)
     return r;
 }
 
+static constexpr uint8_t BOX_SIZE_FACTOR = 16;
+static constexpr uint8_t BOX_POS_FACTOR = 64;
 struct phys_box
 {
-    dvec3 size; // half extents
-    dvec3 pos;
+    uvec3 size; // half extents
+    vec3 pos;
     uint8_t yaw;
     int8_t pitch;
 };

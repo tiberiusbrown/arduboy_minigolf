@@ -1,39 +1,5 @@
 #include "game.hpp"
 
-static constexpr phys_box make_box(
-    double sx, double sy, double sz,
-    double x, double y, double z,
-    int yaw = 0, int pitch = 0)
-{
-    return {
-        int16_t(sx * 256),
-        int16_t(sy * 256),
-        int16_t(sz * 256),
-        int16_t( x * 256),
-        int16_t( y * 256),
-        int16_t( z * 256),
-        uint8_t(yaw), int8_t(pitch)
-    };
-}
-
-static constexpr double SQRT_2_OVER_2 = 0.70710678118;
-
-static constexpr phys_box make_box_45(
-    double sx, double sy, double sz,
-    double x, double y, double z,
-    int yaw)
-{
-    return {
-        int16_t(sx * 256 * SQRT_2_OVER_2),
-        int16_t(sy * 256),
-        int16_t(sz * 256 * SQRT_2_OVER_2),
-        int16_t(x * 256),
-        int16_t(y * 256),
-        int16_t(z * 256),
-        uint8_t(yaw), 0
-    };
-}
-
 #include "levels/level_00.hpp"
 #include "levels/level_01.hpp"
 #include "levels/level_02.hpp"

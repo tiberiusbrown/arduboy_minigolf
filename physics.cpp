@@ -106,9 +106,9 @@ static void physics_collision(phys_box b)
     mat3 m;
 
     dvec3 pt;
-    pt.x = ball.x - b.pos.x;
-    pt.y = ball.y - b.pos.y;
-    pt.z = ball.z - b.pos.z;
+    pt.x = ball.x - b.pos.x * BOX_POS_FACTOR;
+    pt.y = ball.y - b.pos.y * BOX_POS_FACTOR;
+    pt.z = ball.z - b.pos.z * BOX_POS_FACTOR;
 
     if(b.yaw != 0 || b.pitch != 0)
     {
@@ -117,15 +117,20 @@ static void physics_collision(phys_box b)
         pt = matvec_t(m, pt);
     }
 
+    dvec3 bsize;
+    bsize.x = b.size.x * BOX_SIZE_FACTOR;
+    bsize.y = b.size.y * BOX_SIZE_FACTOR;
+    bsize.z = b.size.z * BOX_SIZE_FACTOR;
+
     // early exit if no collision
-    if(sqdist_point_aabb(b.size, pt) > BALL_RADIUS_SQ)
+    if(sqdist_point_aabb(bsize, pt) > BALL_RADIUS_SQ)
         return;
 
     // find contact point on box
     dvec3 cpt;
-    cpt.x = tclamp<int16_t>(pt.x, -b.size.x, b.size.x);
-    cpt.y = tclamp<int16_t>(pt.y, -b.size.y, b.size.y);
-    cpt.z = tclamp<int16_t>(pt.z, -b.size.z, b.size.z);
+    cpt.x = tclamp<int16_t>(pt.x, -bsize.x, bsize.x);
+    cpt.y = tclamp<int16_t>(pt.y, -bsize.y, bsize.y);
+    cpt.z = tclamp<int16_t>(pt.z, -bsize.z, bsize.z);
 
     // collision normal is difference between contact point and ball center
     dvec3 normal;
