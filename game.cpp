@@ -4,7 +4,7 @@ static constexpr uint8_t STARTING_LEVEL = 0;
 
 static constexpr uint8_t PARS[18] PROGMEM =
 {
-    2, 3, 3, 4, 4, 3,
+    2, 3, 3, 4, 4, 4,
 };
 
 // alternative yaw for non camera uses
@@ -355,9 +355,12 @@ void game_loop()
         uint8_t proga = 0, progb = 0;
         if(     btns & BTN_A) proga = nframe;
         else if(btns & BTN_B) progb = nframe;
-        draw_nframe_progress(21     , proga);
+        if(!practice)
+        {
+            draw_nframe_progress(21, proga);
+            draw_graphic(GFX_NEXT, 2, 110, 1, 15, GRAPHIC_SET);
+        }
         draw_nframe_progress(21 + 24, progb);
-        draw_graphic(GFX_NEXT, 2, 110, 1, 15, GRAPHIC_SET);
         draw_graphic(GFX_QUIT, 5, 110, 1, 15, GRAPHIC_SET);
         return;
     }
