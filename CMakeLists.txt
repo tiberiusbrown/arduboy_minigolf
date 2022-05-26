@@ -47,13 +47,28 @@ set(MINIGOLF_SOURCES
     game.hpp
     draw.cpp
     graphics.cpp
-    levels.cpp
     physics.cpp
     sincos.cpp
     render_scene.cpp
     mat.cpp
     game.cpp
+    levels.cpp
 )
+
+add_executable(convert_obj tools/convert_obj.cpp)
+set(LEVELN 00 01 02 03 04 05 06)
+foreach(N ${LEVELN})
+    set(LEVEL_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}.obj")
+    set(LEVEL_HPP "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}.hpp")
+    set(LEVEL_INFO_HPP "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}_info.hpp")
+    add_custom_command(
+        OUTPUT "${LEVEL_HPP}"
+        COMMAND convert_obj "${LEVEL_OBJ}" "${LEVEL_HPP}" "${N}"
+        DEPENDS convert_obj "${LEVEL_OBJ}"
+    )
+    list(APPEND MINIGOLF_SOURCES "${LEVEL_HPP}")
+    list(APPEND MINIGOLF_SOURCES "${LEVEL_INFO_HPP}")
+endforeach()
 
 add_executable(
     ${PROJECT_NAME} ${WINFLAG}
@@ -81,25 +96,6 @@ if(WIN32)
     target_compile_definitions(level_editor PUBLIC
         -DBASE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 endif()
-
-add_executable(convert_obj tools/convert_obj.cpp)
-set(LEVELN 00 01 02 03 04 05)
-foreach(N ${LEVELN})
-    set(LEVEL_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}.obj")
-    set(LEVEL_HPP "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}.hpp")
-    set(LEVEL_INFO_HPP "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}_info.hpp")
-    add_custom_command(
-        OUTPUT "${LEVEL_HPP}"
-        COMMAND convert_obj "${LEVEL_OBJ}" "${LEVEL_HPP}" "${N}"
-        DEPENDS convert_obj "${LEVEL_OBJ}"
-    )
-    target_sources(${PROJECT_NAME} PUBLIC "${LEVEL_HPP}")
-    target_sources(${PROJECT_NAME} PUBLIC "${LEVEL_INFO_HPP}")
-    if(WIN32)
-        target_sources(level_editor PUBLIC "${LEVEL_HPP}")
-        target_sources(level_editor PUBLIC "${LEVEL_INFO_HPP}")
-    endif()
-endforeach()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC git)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED 11)
