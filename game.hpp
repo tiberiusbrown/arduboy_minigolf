@@ -11,7 +11,7 @@ static constexpr int FBH = 1 * 64;
 
 #define BALL_XRAY 1
 
-#define NUM_LEVELS 5
+#define NUM_LEVELS 6
 
 static constexpr uint16_t SAVE_VERSION = 1;
 

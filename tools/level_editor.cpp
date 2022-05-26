@@ -89,7 +89,7 @@ static void input_pitch(char const* label, int8_t& v)
 
 static double c2f(int16_t x)
 {
-    return double(x) / 256;
+    return double(x) * BOX_SIZE_FACTOR / 256;
 }
 
 static int editor_boxi = 0;

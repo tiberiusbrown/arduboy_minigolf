@@ -5,12 +5,14 @@
 #include "levels/level_02.hpp"
 #include "levels/level_03.hpp"
 #include "levels/level_04.hpp"
+#include "levels/level_05.hpp"
 
 #include "levels/level_00_info.hpp"
 #include "levels/level_01_info.hpp"
 #include "levels/level_02_info.hpp"
 #include "levels/level_03_info.hpp"
 #include "levels/level_04_info.hpp"
+#include "levels/level_05_info.hpp"
 
 uint8_t leveli;
 level_info const* current_level = 0;
@@ -33,4 +35,5 @@ level_info const LEVELS[NUM_LEVELS] PROGMEM =
     LEVEL_GEOM(02),
     LEVEL_GEOM(03),
     LEVEL_GEOM(04),
+    LEVEL_GEOM(05),
 };
