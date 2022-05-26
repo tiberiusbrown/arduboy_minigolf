@@ -458,9 +458,10 @@ int WINAPI WinMain(
     }
 
 byebye:
-    (void)0;
 #ifndef NDEBUG
     return 0;
+#else
+    ExitProcess(0);
 #endif
 }
 
