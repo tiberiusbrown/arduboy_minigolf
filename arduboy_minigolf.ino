@@ -20,18 +20,6 @@ uint16_t time_ms()
     return (uint16_t)millis();
 }
 
-uint8_t read_persistent(uint16_t addr)
-{
-    return EEPROM.read((int)addr);
-}
-
-void update_persistent(uint16_t addr, uint8_t data)
-{
-    EEPROM.update((int)addr, data);
-}
-
-void flush_persistent() {}
-
 uint8_t poll_btns()
 {
     return Arduboy2::buttonsState();

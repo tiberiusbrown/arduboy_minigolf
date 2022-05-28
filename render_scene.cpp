@@ -67,7 +67,7 @@ static uint16_t calc_fdist(
     int16_t a2 = tabs(cam.y - y2);
     uint16_t amin = (uint16_t)tmin(a0, a1, a2);
     uint16_t amin2 = uint16_t((uint32_t(amin) * amin) >> 16);
-    fdist += amin2 * 4;
+    fdist += amin2 * 16;
 #endif
     return fdist;
 }

@@ -11,16 +11,13 @@ static constexpr int FBH = 1 * 64;
 
 #define BALL_XRAY 1
 
-#define NUM_LEVELS 7
+#define NUM_LEVELS 11
 
 static constexpr uint16_t SAVE_VERSION = 1;
 
 // platform functionality
 uint16_t time_ms();
 uint8_t poll_btns();
-uint8_t read_persistent(uint16_t addr);
-void update_persistent(uint16_t addr, uint8_t data);
-void flush_persistent(); // (does nothing for Arduino)
 
 // game logic
 void game_setup();
@@ -290,6 +287,7 @@ struct level_info
 
 // levels.cpp
 extern level_info const LEVELS[NUM_LEVELS] PROGMEM;
+extern uint8_t const PARS[NUM_LEVELS] PROGMEM;
 extern uint8_t leveli;
 extern level_info const* current_level;
 

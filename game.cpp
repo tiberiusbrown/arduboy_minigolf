@@ -2,11 +2,6 @@
 
 static constexpr uint8_t STARTING_LEVEL = 0;
 
-static constexpr uint8_t PARS[18] PROGMEM =
-{
-    2, 3, 3, 4, 4, 4, 5,
-};
-
 // alternative yaw for non camera uses
 // (like aiming, tracking ball velocity)
 uint16_t yaw_aim;
@@ -17,7 +12,7 @@ static constexpr uint8_t MAX_POWER = 128;
 
 static dvec3 prev_ball;
 
-static bool practice;
+static uint8_t practice;
 static uint8_t aim_wait;
 
 st state;
@@ -211,7 +206,7 @@ void game_loop()
         if(pressed & BTN_A)
             set_level(STARTING_LEVEL);
         else if(pressed & (BTN_LEFT | BTN_RIGHT))
-            practice = !practice;
+            practice ^= 1;
 #endif
         render_scene();
         draw_graphic(GFX_TITLE, 1, 50, 2, 77, GRAPHIC_OVERWRITE);
@@ -233,14 +228,14 @@ void game_loop()
         update_camera_look_at_fastangle(
             { 0, 0, 0 }, yaw_level, 6000, 256 * 25, 64, 64);
         yaw_level += 256;
-        if(practice)
+        if(practice & 1)
         {
             if(pressed & BTN_LEFT)
                 leveli = (leveli == 0 ? NUM_LEVELS - 1 : leveli - 1);
             if(pressed & BTN_RIGHT)
                 leveli = (leveli == NUM_LEVELS - 1 ? 0 : leveli + 1);
             if(pressed & BTN_A)
-                state = st::AIM, aim_wait = 0;
+                state = st::AIM, practice = 2, aim_wait = 0;
             if(pressed & BTN_B)
                 reset_to_title();
             current_level = &LEVELS[leveli];
@@ -345,7 +340,7 @@ void game_loop()
             if(nframe == 32)
             {
                 if(practice || (btns & BTN_B) || leveli == sizeof(LEVELS) / sizeof(LEVELS[0]) - 1)
-                    reset_to_title();
+                    practice >>= 1, reset_to_title();
                 else
                     set_level(leveli + 1);
             }
