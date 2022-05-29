@@ -6,7 +6,7 @@
 #include <Arduino.h>
 
 #define FPS_SET 1
-#define SHOW_FPS 0
+#define SHOW_FPS 1
 
 #if SHOW_FPS
 Arduboy2 a;
