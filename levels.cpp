@@ -36,7 +36,7 @@ level_info const* current_level = 0;
     /* faces     */ LEVEL_##n__##_FACES, \
     /* boxes     */ LEVEL_##n__##_BOXES, \
     /* num_verts */ sizeof(LEVEL_##n__##_VERTS) / 3, \
-    /* num_faces */ sizeof(LEVEL_##n__##_FACES) / 4, \
+    /* num_faces */ LEVEL_##n__##_NUM_FACES, \
     /* num_boxes */ sizeof(LEVEL_##n__##_BOXES) / sizeof(phys_box), \
     /* ball_pos  */ LEVEL_##n__##_BALL_POS, \
     /* flag_pos  */ LEVEL_##n__##_FLAG_POS, \

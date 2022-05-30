@@ -279,7 +279,7 @@ struct level_info
     uint8_t const*  faces;
     phys_box const* boxes;
     uint8_t         num_verts;
-    uint8_t         num_faces;
+    uint8_t         num_faces[5];
     uint8_t         num_boxes;
     dvec3           ball_pos;
     dvec3           flag_pos;

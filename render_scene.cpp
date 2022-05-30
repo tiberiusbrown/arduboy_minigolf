@@ -81,7 +81,7 @@ static uint8_t render_scene(
     int8_t const* verts,
     uint8_t const* faces,
     uint8_t num_verts,
-    uint8_t num_faces)
+    uint8_t const* num_faces)
 {
     dmat3 m;
     rotation16(m, yaw, pitch);
@@ -228,166 +228,168 @@ static uint8_t render_scene(
 
     // assemble faces and clip them to near plane
     int8_t camy8 = hibyte(cam.y * 2);
-    for(uint8_t i = 0; i < num_faces; ++i)
+    for(uint8_t pat = 0, tnf = 0, i = 0; pat < 5; ++pat)
     {
-        if(nf + 2 > MAX_FACES)
-            break;
-
-        uint8_t const* fptr = &faces[i * 4];
-        uint8_t i0 = pgm_read_byte(fptr + 0);
-        uint8_t i1 = pgm_read_byte(fptr + 1);
-        uint8_t i2 = pgm_read_byte(fptr + 2);
-        int16_t z0 = fd.vz[i0];
-        int16_t z1 = fd.vz[i1];
-        int16_t z2 = fd.vz[i2];
-
-        uint8_t behind = 0;
-        if(z0 < ZNEAR) behind |= 1;
-        if(z1 < ZNEAR) behind |= 2;
-        if(z2 < ZNEAR) behind |= 4;
-
-        // discard if fully behind near plane
-        if(behind == 7) continue;
-
-        // face distance
-        uint16_t fdist;
+        tnf += pgm_read_byte(&num_faces[pat]);
+        for(; i < tnf; ++i)
         {
-            int16_t y0 = (int8_t)pgm_read_byte(&verts[i0 * 3 + 1]) * 128;
-            int16_t y1 = (int8_t)pgm_read_byte(&verts[i1 * 3 + 1]) * 128;
-            int16_t y2 = (int8_t)pgm_read_byte(&verts[i2 * 3 + 1]) * 128;
-            fdist = calc_fdist(i0, i1, i2, y0, y1, y2);
-        }
+            if(nf + 2 > MAX_FACES)
+                break;
 
-        // clip: exactly two vertices behind near plane
-        if((behind & (behind - 1)) != 0)
-        {
-            if(nv + 2 > MAX_VERTS)
+            uint8_t const* fptr = &faces[i * 3];
+            uint8_t i0 = pgm_read_byte(fptr + 0);
+            uint8_t i1 = pgm_read_byte(fptr + 1);
+            uint8_t i2 = pgm_read_byte(fptr + 2);
+            int16_t z0 = fd.vz[i0];
+            int16_t z1 = fd.vz[i1];
+            int16_t z2 = fd.vz[i2];
+
+            uint8_t behind = 0;
+            if(z0 < ZNEAR) behind |= 1;
+            if(z1 < ZNEAR) behind |= 2;
+            if(z2 < ZNEAR) behind |= 4;
+
+            // discard if fully behind near plane
+            if(behind == 7) continue;
+
+            // face distance
+            uint16_t fdist;
+            {
+                int16_t y0 = (int8_t)pgm_read_byte(&verts[i0 * 3 + 1]) * 128;
+                int16_t y1 = (int8_t)pgm_read_byte(&verts[i1 * 3 + 1]) * 128;
+                int16_t y2 = (int8_t)pgm_read_byte(&verts[i2 * 3 + 1]) * 128;
+                fdist = calc_fdist(i0, i1, i2, y0, y1, y2);
+            }
+
+            // clip: exactly two vertices behind near plane
+            if((behind & (behind - 1)) != 0)
+            {
+                if(nv + 2 > MAX_VERTS)
+                    continue;
+                if(nclipf + 4 > MAX_CLIP_FACES * 4)
+                    continue;
+
+                dvec2 newv0, newv1;
+                int16_t splitz;
+                uint8_t ibase;
+
+                // adjust the two near vertices.
+                if(!(behind & 1))
+                {
+                    ibase = i0;
+                    splitz = z0;
+                    newv0 = interpz(vs[i1], z1, vs[i0], z0);
+                    newv1 = interpz(vs[i2], z2, vs[i0], z0);
+                }
+                else if(!(behind & 2))
+                {
+                    ibase = i1;
+                    splitz = z1;
+                    newv0 = interpz(vs[i0], z0, vs[i1], z1);
+                    newv1 = interpz(vs[i2], z2, vs[i1], z1);
+                }
+                else
+                {
+                    ibase = i2;
+                    splitz = z2;
+                    newv0 = interpz(vs[i0], z0, vs[i2], z2);
+                    newv1 = interpz(vs[i1], z1, vs[i2], z2);
+                }
+
+                // add vertices
+                vs[nv] = newv0;
+                fd.vz[nv] = ZNEAR;
+                ++nv;
+                vs[nv] = newv1;
+                fd.vz[nv] = ZNEAR;
+                ++nv;
+
+                // add clip face
+                face_order[nf] = MAX_FACES + (nclipf >> 2);
+                fd.fdist[nf] = fdist;
+                ++nf;
+                clip_faces[nclipf + 0] = ibase;
+                clip_faces[nclipf + 1] = nv - 1;
+                clip_faces[nclipf + 2] = nv - 2;
+                clip_faces[nclipf + 3] = pat;
+                nclipf += 4;
+
                 continue;
-            if(nclipf + 4 > MAX_CLIP_FACES * 4)
+            }
+
+            // clip: exactly one vertex behind near plane
+            else if(behind != 0)
+            {
+                if(nv + 2 > MAX_VERTS)
+                    continue;
+                if(nclipf + 8 > MAX_CLIP_FACES * 4)
+                    continue;
+
+                uint8_t ia, ib, ic; // winding order indices
+                dvec2 newv0, newv1;
+                int16_t splitz0;
+                int16_t splitz1;
+                if(behind & 1)
+                {
+                    ia = i0, ib = i1, ic = i2;
+                    newv0 = interpz(vs[i0], z0, vs[i1], z1);
+                    newv1 = interpz(vs[i0], z0, vs[i2], z2);
+                    splitz0 = z1;
+                    splitz1 = z2;
+                }
+                else if(behind & 2)
+                {
+                    ia = i1, ib = i2, ic = i0;
+                    newv0 = interpz(vs[i1], z1, vs[i2], z2);
+                    newv1 = interpz(vs[i1], z1, vs[i0], z0);
+                    splitz0 = z2;
+                    splitz1 = z0;
+                }
+                else
+                {
+                    ia = i2, ib = i0, ic = i1;
+                    newv0 = interpz(vs[i2], z2, vs[i0], z0);
+                    newv1 = interpz(vs[i2], z2, vs[i1], z1);
+                    splitz0 = z0;
+                    splitz1 = z1;
+                }
+
+                // add new vertices
+                vs[nv] = newv0;
+                fd.vz[nv] = ZNEAR;
+                ++nv;
+                vs[nv] = newv1;
+                fd.vz[nv] = ZNEAR;
+                ++nv;
+
+                face_order[nf] = MAX_FACES + (nclipf >> 2);
+                fd.fdist[nf] = fdist;
+                ++nf;
+                face_order[nf] = MAX_FACES + (nclipf >> 2) + 1;
+                fd.fdist[nf] = fdist;
+                ++nf;
+
+                // TODO: backface culling issue here!
+
+                clip_faces[nclipf + 0] = nv - 2;
+                clip_faces[nclipf + 1] = ib;
+                clip_faces[nclipf + 2] = ic;
+                clip_faces[nclipf + 3] = pat;
+                nclipf += 4;
+
+                clip_faces[nclipf + 0] = nv - 2;
+                clip_faces[nclipf + 1] = ic;
+                clip_faces[nclipf + 2] = nv - 1;
+                clip_faces[nclipf + 3] = pat;
+                nclipf += 4;
+
                 continue;
-
-            dvec2 newv0, newv1;
-            int16_t splitz;
-            uint8_t ibase;
-
-            // adjust the two near vertices.
-            if(!(behind & 1))
-            {
-                ibase = i0;
-                splitz = z0;
-                newv0 = interpz(vs[i1], z1, vs[i0], z0);
-                newv1 = interpz(vs[i2], z2, vs[i0], z0);
-            }
-            else if(!(behind & 2))
-            {
-                ibase = i1;
-                splitz = z1;
-                newv0 = interpz(vs[i0], z0, vs[i1], z1);
-                newv1 = interpz(vs[i2], z2, vs[i1], z1);
-            }
-            else
-            {
-                ibase = i2;
-                splitz = z2;
-                newv0 = interpz(vs[i0], z0, vs[i2], z2);
-                newv1 = interpz(vs[i1], z1, vs[i2], z2);
             }
 
-            // add vertices
-            vs[nv] = newv0;
-            fd.vz[nv] = ZNEAR;
-            ++nv;
-            vs[nv] = newv1;
-            fd.vz[nv] = ZNEAR;
-            ++nv;
-
-            // add clip face
-            face_order[nf] = MAX_FACES + (nclipf >> 2);
+            face_order[nf] = i;
             fd.fdist[nf] = fdist;
             ++nf;
-            clip_faces[nclipf + 0] = ibase;
-            clip_faces[nclipf + 1] = nv - 1;
-            clip_faces[nclipf + 2] = nv - 2;
-            clip_faces[nclipf + 3] = pgm_read_byte(fptr + 3);
-            nclipf += 4;
-
-            continue;
         }
-
-        // clip: exactly one vertex behind near plane
-        else if(behind != 0)
-        {
-            if(nv + 2 > MAX_VERTS)
-                continue;
-            if(nclipf + 8 > MAX_CLIP_FACES * 4)
-                continue;
-
-            uint8_t ia, ib, ic; // winding order indices
-            dvec2 newv0, newv1;
-            int16_t splitz0;
-            int16_t splitz1;
-            if(behind & 1)
-            {
-                ia = i0, ib = i1, ic = i2;
-                newv0 = interpz(vs[i0], z0, vs[i1], z1);
-                newv1 = interpz(vs[i0], z0, vs[i2], z2);
-                splitz0 = z1;
-                splitz1 = z2;
-            }
-            else if(behind & 2)
-            {
-                ia = i1, ib = i2, ic = i0;
-                newv0 = interpz(vs[i1], z1, vs[i2], z2);
-                newv1 = interpz(vs[i1], z1, vs[i0], z0);
-                splitz0 = z2;
-                splitz1 = z0;
-            }
-            else
-            {
-                ia = i2, ib = i0, ic = i1;
-                newv0 = interpz(vs[i2], z2, vs[i0], z0);
-                newv1 = interpz(vs[i2], z2, vs[i1], z1);
-                splitz0 = z0;
-                splitz1 = z1;
-            }
-
-            // add new vertices
-            vs[nv] = newv0;
-            fd.vz[nv] = ZNEAR;
-            ++nv;
-            vs[nv] = newv1;
-            fd.vz[nv] = ZNEAR;
-            ++nv;
-
-            face_order[nf] = MAX_FACES + (nclipf >> 2);
-            fd.fdist[nf] = fdist;
-            ++nf;
-            face_order[nf] = MAX_FACES + (nclipf >> 2) + 1;
-            fd.fdist[nf] = fdist;
-            ++nf;
-
-            uint8_t pat = pgm_read_byte(fptr + 3);
-
-            // TODO: backface culling issue here!
-
-            clip_faces[nclipf + 0] = nv - 2;
-            clip_faces[nclipf + 1] = ib;
-            clip_faces[nclipf + 2] = ic;
-            clip_faces[nclipf + 3] = pat;
-            nclipf += 4;
-
-            clip_faces[nclipf + 0] = nv - 2;
-            clip_faces[nclipf + 1] = ic;
-            clip_faces[nclipf + 2] = nv - 1;
-            clip_faces[nclipf + 3] = pat;
-            nclipf += 4;
-
-            continue;
-        }
-
-        face_order[nf] = i;
-        fd.fdist[nf] = fdist;
-        ++nf;
     }
 
     // project vertices
@@ -451,18 +453,28 @@ static uint8_t render_scene(
         ball_valid = fd.vz[balli0] >= ZNEAR;
     clear_buf(); // buf mem was used during setup
     uint16_t ballr = 0;
+    uint8_t nfpat[4];
+    nfpat[0] =            pgm_read_byte(&num_faces[0]);
+    nfpat[1] = nfpat[0] + pgm_read_byte(&num_faces[1]);
+    nfpat[2] = nfpat[1] + pgm_read_byte(&num_faces[2]);
+    nfpat[3] = nfpat[2] + pgm_read_byte(&num_faces[3]);
     for(uint8_t i = 0; i < nf; ++i)
     {
         uint8_t t = face_order[i];
         uint8_t i0, i1, i2, pt;
-        uint16_t j = uint16_t(t) * 4;
         if(t < MAX_FACES)
         {
             // normal face
+            uint16_t j = uint16_t(t) * 3;
             i0 = pgm_read_byte(&faces[j + 0]);
             i1 = pgm_read_byte(&faces[j + 1]);
             i2 = pgm_read_byte(&faces[j + 2]);
-            pt = pgm_read_byte(&faces[j + 3]);
+            if     (t >= nfpat[3])
+                pt = 4;
+            else if(t >= nfpat[2]) pt = 3;
+            else if(t >= nfpat[1]) pt = 2;
+            else if(t >= nfpat[0]) pt = 1;
+            else                   pt = 0;
         }
         else if(t == 255)
         {
@@ -481,10 +493,11 @@ static uint8_t render_scene(
         else
         {
             // clip face
-            i0 = clip_faces[j - MAX_FACES * 4 + 0];
-            i1 = clip_faces[j - MAX_FACES * 4 + 1];
-            i2 = clip_faces[j - MAX_FACES * 4 + 2];
-            pt = clip_faces[j - MAX_FACES * 4 + 3];
+            uint16_t j = uint8_t(t - MAX_FACES) * 4;
+            i0 = clip_faces[j + 0];
+            i1 = clip_faces[j + 1];
+            i2 = clip_faces[j + 2];
+            pt = clip_faces[j + 3];
         }
         draw_tri(vs[i0], vs[i1], vs[i2], pt);
     }
@@ -506,7 +519,7 @@ uint8_t render_scene()
         pgmptr(&current_level->verts),
         pgmptr(&current_level->faces),
         pgm_read_byte(&current_level->num_verts),
-        pgm_read_byte(&current_level->num_faces));
+        current_level->num_faces);
 }
 
 #ifndef ARDUINO
@@ -517,7 +530,7 @@ uint8_t render_scene_ortho(int zoom)
         pgmptr(&current_level->verts),
         pgmptr(&current_level->faces),
         pgm_read_byte(&current_level->num_verts),
-        pgm_read_byte(&current_level->num_faces));
+        current_level->num_faces);
 }
 dvec3 transform_point(dvec3 dv, bool ortho, int ortho_zoom)
 {

@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include <vector>
+#include <algorithm>
 
 struct vert { int8_t x, y, z; };
 struct face { uint8_t i0, i1, i2, pt; };
@@ -67,6 +68,16 @@ int main(int argc, char** argv)
 
     fclose(f);
 
+    // sort by pattern
+    std::sort(
+        faces.begin(), faces.end(),
+        [](face a, face b) { return a.pt < b.pt; });
+    int pats[5] = {};
+    for(int i = 0; i < 5; ++i)
+        for(auto f : faces)
+            if(f.pt == i)
+                ++pats[i];
+
     f = fopen(argv[2], "w");
     if(!f) return 1;
     fprintf(f, "#pragma once\n\n");
@@ -81,15 +92,20 @@ int main(int argc, char** argv)
     }
     fprintf(f, "\n};\n\n");
     fprintf(f, "static constexpr uint8_t LEVEL_%s_FACES[%d] PROGMEM =\n{\n",
-        argv[3], (int)faces.size() * 4);
+        argv[3], (int)faces.size() * 3);
     for(size_t i = 0; i < faces.size(); ++i)
     {
-        fprintf(f, "%s%3d, %3d, %3d, %3d,%c",
-            i % 3 == 0 ? "    " : "",
-            (int)faces[i].i0, (int)faces[i].i1, (int)faces[i].i2, (int)faces[i].pt,
-            i % 3 == 2 ? '\n' : ' ');
+        fprintf(f, "%s%3d, %3d, %3d,%c",
+            i % 4 == 0 ? "    " : "",
+            (int)faces[i].i0, (int)faces[i].i1, (int)faces[i].i2,
+            i % 4 == 3 ? '\n' : ' ');
     }
-    fprintf(f, "\n};\n");
+    fprintf(f, "\n};\n\n");
+
+    fprintf(f, "#define LEVEL_%s_NUM_FACES { ", argv[3]);
+    for(int i = 0; i < 5; ++i)
+        fprintf(f, "%d, ", pats[i]);
+    fprintf(f, "}\n");
 
     fclose(f);
 
