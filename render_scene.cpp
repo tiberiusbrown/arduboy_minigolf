@@ -469,8 +469,7 @@ static uint8_t render_scene(
             i0 = pgm_read_byte(&faces[j + 0]);
             i1 = pgm_read_byte(&faces[j + 1]);
             i2 = pgm_read_byte(&faces[j + 2]);
-            if     (t >= nfpat[3])
-                pt = 4;
+            if     (t >= nfpat[3]) pt = 4;
             else if(t >= nfpat[2]) pt = 3;
             else if(t >= nfpat[1]) pt = 2;
             else if(t >= nfpat[0]) pt = 1;

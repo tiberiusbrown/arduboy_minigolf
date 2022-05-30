@@ -443,6 +443,11 @@ int main(int, char**)
         editor_gui();
 
         {
+            uint8_t nfpat[4];
+            nfpat[0] =            pgm_read_byte(&current_level->num_faces[0]);
+            nfpat[1] = nfpat[0] + pgm_read_byte(&current_level->num_faces[1]);
+            nfpat[2] = nfpat[1] + pgm_read_byte(&current_level->num_faces[2]);
+            nfpat[3] = nfpat[2] + pgm_read_byte(&current_level->num_faces[3]);
             auto const* faces = current_level->faces;
             uint8_t nf = ortho ? render_scene_ortho(ortho_zoom) : render_scene();
             auto* draw = ImGui::GetBackgroundDrawList();
@@ -450,14 +455,18 @@ int main(int, char**)
             {
                 uint8_t t = face_order[i];
                 uint8_t i0, i1, i2, pt;
-                uint16_t j = uint16_t(t) * 4;
                 if(t < MAX_FACES)
                 {
                     // normal face
+                    uint16_t j = uint16_t(t) * 3;
                     i0 = pgm_read_byte(&faces[j + 0]);
                     i1 = pgm_read_byte(&faces[j + 1]);
                     i2 = pgm_read_byte(&faces[j + 2]);
-                    pt = pgm_read_byte(&faces[j + 3]);
+                    if     (t >= nfpat[3]) pt = 4;
+                    else if(t >= nfpat[2]) pt = 3;
+                    else if(t >= nfpat[1]) pt = 2;
+                    else if(t >= nfpat[0]) pt = 1;
+                    else                   pt = 0;
                 }
                 else if(t == 255)
                 {
@@ -473,10 +482,11 @@ int main(int, char**)
                 else
                 {
                     // clip face
-                    i0 = clip_faces[j - MAX_FACES * 4 + 0];
-                    i1 = clip_faces[j - MAX_FACES * 4 + 1];
-                    i2 = clip_faces[j - MAX_FACES * 4 + 2];
-                    pt = clip_faces[j - MAX_FACES * 4 + 3];
+                    uint16_t j = uint8_t(t - MAX_FACES) * 4;
+                    i0 = clip_faces[j + 0];
+                    i1 = clip_faces[j + 1];
+                    i2 = clip_faces[j + 2];
+                    pt = clip_faces[j + 3];
                 }
                 static ImU32 const COLORS[5] =
                 {
