@@ -35,7 +35,7 @@ static int ortho_zoom = 500;
 
 static ImVec2 dvec2imvec(dvec2 v)
 {
-    return { float(v.x) / (128 * 16) * WW, float(v.y) / (64 * 16) * WH };
+    return { float(v.x) / (128 * FB_FRAC_COEF) * WW, float(v.y) / (64 * FB_FRAC_COEF) * WH };
 }
 
 static ImVec2 dvec2imvec(dvec3 v)
