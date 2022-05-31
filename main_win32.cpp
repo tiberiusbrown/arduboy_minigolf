@@ -153,7 +153,7 @@ static void screen_recording_toggle()
         snprintf(fname, sizeof(fname), "recording_%04d%02d%02d%02d%02d%02d.gif",
             ti->tm_year + 1900, ti->tm_mon + 1, ti->tm_mday,
             ti->tm_hour + 1, ti->tm_min, ti->tm_sec);
-        GifBegin(&gif, fname, FBW, FBH, 0);
+        GifBegin(&gif, fname, FBW, FBH, 33);
         gif_frame_time = perf_counter();
         gif_recording = true;
         send_gif_frame();
@@ -190,7 +190,7 @@ static void refresh()
 static void paint()
 {
 #ifndef NDEBUG
-    if(perf_counter() - gif_frame_time > 0.05 * freq)
+    //if(perf_counter() - gif_frame_time > 0.05 * freq)
         send_gif_frame();
 #endif
     for(int i = 0; i < BUF_BYTES; ++i)
@@ -338,6 +338,10 @@ static LRESULT CALLBACK window_proc(HWND w, UINT msg, WPARAM wParam, LPARAM lPar
         EndPaint(w, &gpaint);
         break;
     case WM_KEYDOWN:
+        if(wParam == 'R')
+            screen_recording_toggle();
+        if(wParam == VK_F3)
+            screenshot();
         btn_states |= translate_button(wParam);
         break;
     case WM_KEYUP:
