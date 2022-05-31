@@ -335,7 +335,7 @@ void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati)
             ay1 = interp(ax, 0, bx, ay1, by1);
             ax = 0;
         }
-        if(bx > FBW * 16)
+        if(bx > FBW * FB_FRAC_COEF)
         {
             by0 = interp(ax, FBW * FB_FRAC_COEF, bx, ay0, by0);
             by1 = interp(ax, FBW * FB_FRAC_COEF, bx, ay1, by1);
@@ -358,11 +358,11 @@ void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati)
             ay1 = interp(ax, 0, bx, ay1, by1);
             ax = 0;
         }
-        if(bx > FBW * 16)
+        if(bx > FBW * FB_FRAC_COEF)
         {
             by0 = interp(ax, FBW * FB_FRAC_COEF, bx, ay0, by0);
             by1 = interp(ax, FBW * FB_FRAC_COEF, bx, ay1, by1);
-            bx = FBW * 16;
+            bx = FBW * FB_FRAC_COEF;
         }
         draw_tri_segment(ax, ay0, ay1, bx, by0, by1, pat);
     }

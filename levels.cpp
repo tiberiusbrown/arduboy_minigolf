@@ -76,5 +76,5 @@ level_info const LEVELS[NUM_LEVELS] PROGMEM =
 
 uint8_t const PARS[NUM_LEVELS] PROGMEM =
 {
-    2, 3, 3, 4, 4, 4, 5, 4, 4, 4, 4, 4, 5, 5, 3, 5, 6, 6,
+    2, 3, 3, 4, 4, 4, 5, 4, 4, 3, 4, 4, 5, 5, 4, 5, 6, 6,
 };

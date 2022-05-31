@@ -13,7 +13,7 @@ static constexpr int FBH = 1 * 64;
 
 #define NUM_LEVELS 18
 
-#define FB_FRAC_BITS 2
+#define FB_FRAC_BITS 3
 static constexpr uint8_t FB_FRAC_COEF = 1 << FB_FRAC_BITS;
 static constexpr uint8_t FB_FRAC_MASK = FB_FRAC_COEF - 1;
 

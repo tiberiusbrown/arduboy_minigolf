@@ -116,24 +116,22 @@ static uint8_t render_scene(
         dv.x -= cam.x;
         dv.y -= cam.y;
         dv.z -= cam.z;
-        //fdist -= (uint32_t(32) << 16); // small bias
-        //fdist += (uint32_t(32) << 16); // small bias
         dv = matvec(m, dv);
         dv.z = -dv.z;
 
-        dv.y += 32;
-        dv.z -= 96;
-        int32_t fdist = 0;
-        fdist += int32_t(dv.x) * dv.x;
-        fdist += int32_t(dv.y) * dv.y;
-        fdist += int32_t(dv.z) * dv.z;
-        fdist *= 3;
-#if FDIST_CAMY_MOD
-        {
-            int16_t dy = dv.y - cam.y;
-            fdist += int32_t(dy) * dy * 4;
-        }
-#endif
+//        dv.y += 32;
+//        dv.z -= 96;
+//        int32_t fdist = 0;
+//        fdist += int32_t(dv.x) * dv.x;
+//        fdist += int32_t(dv.y) * dv.y;
+//        fdist += int32_t(dv.z) * dv.z;
+//        fdist *= 3;
+//#if FDIST_CAMY_MOD
+//        {
+//            int16_t dy = dv.y - cam.y;
+//            fdist += int32_t(dy) * dy * 4;
+//        }
+//#endif
 
         if(dv.z >= ZNEAR)
         {
@@ -146,7 +144,10 @@ static uint8_t render_scene(
             balli1 = nv + 1;
             ball_valid = true;
             face_order[nf] = 255;
-            fd.fdist[nf] = uint16_t(uint32_t(fdist) >> 16) + 16;
+            int16_t by = ball.y;
+            uint16_t fdist = calc_fdist(nv, nv, nv, by, by, by);
+            fdist += 32;
+            fd.fdist[nf] = fdist;
             nv += 2;
             nf += 1;
         }
@@ -369,8 +370,6 @@ static uint8_t render_scene(
                 fd.fdist[nf] = fdist;
                 ++nf;
 
-                // TODO: backface culling issue here!
-
                 clip_faces[nclipf + 0] = nv - 2;
                 clip_faces[nclipf + 1] = ib;
                 clip_faces[nclipf + 2] = ic;
@@ -409,13 +408,15 @@ static uint8_t render_scene(
         // multiply x and y by FB_FRAC_COEF/4 / z
         if(dv.z >= ZNEAR)
         {
-            static constexpr int32_t CLAMP_VAL =
-                (int32_t)INT16_MAX * 240 / FB_FRAC_COEF * 1024;
             uint16_t invz = inv16(dv.z);
             int32_t nx = int32_t(invz) * dv.x;
             int32_t ny = int32_t(invz) * dv.y;
+#if FB_FRAC_BITS > 2
+            static constexpr int32_t CLAMP_VAL =
+                (int32_t)INT16_MAX * 240 / FB_FRAC_COEF * 1024;
             nx = tclamp<int32_t>(nx, -CLAMP_VAL, CLAMP_VAL);
             ny = tclamp<int32_t>(ny, -CLAMP_VAL, CLAMP_VAL);
+#endif
             dv.x = int16_t(uint32_t(nx) >> (18 - FB_FRAC_BITS));
             dv.y = int16_t(uint32_t(ny) >> (18 - FB_FRAC_BITS));
         }
@@ -486,7 +487,7 @@ static uint8_t render_scene(
                 ballr = uint16_t(vs[balli1].x - c.x);
                 draw_ball_filled(vs[balli0], ballr, 0xffff);
 #if !BALL_XRAY
-                draw_ball_outline(vs[balli0], ballr + 8);
+                draw_ball_outline(vs[balli0], ballr + (FB_FRAC_COEF / 2));
 #endif
             }
             continue;
@@ -504,7 +505,7 @@ static uint8_t render_scene(
     }
 #if BALL_XRAY
     if(ball_valid)
-        draw_ball_outline(vs[balli0], ballr + 8);
+        draw_ball_outline(vs[balli0], ballr + (FB_FRAC_COEF / 2));
 #endif
 
 #if PERFDOOM
@@ -552,13 +553,15 @@ dvec3 transform_point(dvec3 dv, bool ortho, int ortho_zoom)
     }
     else if(dv.z >= ZNEAR)
     {
-        static constexpr int32_t CLAMP_VAL =
-            (int32_t)INT16_MAX * 240 / FB_FRAC_COEF * 1024;
         uint16_t invz = inv16(dv.z);
         int32_t nx = int32_t(invz) * dv.x;
         int32_t ny = int32_t(invz) * dv.y;
+#if FB_FRAC_BITS > 2
+        static constexpr int32_t CLAMP_VAL =
+            (int32_t)INT16_MAX * 240 / FB_FRAC_COEF * 1024;
         nx = tclamp<int32_t>(nx, -CLAMP_VAL, CLAMP_VAL);
         ny = tclamp<int32_t>(ny, -CLAMP_VAL, CLAMP_VAL);
+#endif
         dv.x = int16_t(uint32_t(nx) >> (18 - FB_FRAC_BITS));
         dv.y = int16_t(uint32_t(ny) >> (18 - FB_FRAC_BITS));
 

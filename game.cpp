@@ -2,6 +2,9 @@
 
 // warning messy code below
 
+#define DEBUG_TITLE_CAM 0
+static constexpr uint8_t TITLE_LEVEL = 0;
+
 static constexpr uint8_t STARTING_LEVEL = 0;
 
 // alternative yaw for non camera uses
@@ -82,7 +85,7 @@ void set_level(uint8_t index)
 
 static void reset_to_title()
 {
-    set_level(0);
+    set_level(TITLE_LEVEL);
     for(auto& s : shots) s = 0;
     state = st::TITLE;
     cam = { 3331, 1664, -3451 };
@@ -192,7 +195,7 @@ void game_loop()
 
     if(state == st::TITLE)
     {
-#if 0
+#if DEBUG_TITLE_CAM
         // enable this block to adjust camera view at title screen
 
         uint8_t btns = poll_btns();
@@ -247,7 +250,7 @@ void game_loop()
     else if(state == st::LEVEL)
     {
         update_camera_look_at_fastangle(
-            { 0, 0, 0 }, yaw_level, 6000, 256 * 25, 64, 64);
+            { 0, 0, 0 }, yaw_level, 6000, 256 * 28, 64, 64);
         yaw_level += 256;
         if(practice & 1)
         {
