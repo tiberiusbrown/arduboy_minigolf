@@ -22,7 +22,7 @@ static constexpr uint16_t DIST_ROLL = 256 * 14;
 static dvec3 prev_ball;
 
 static uint8_t practice;
-static uint8_t aim_wait;
+static uint8_t ab_btn_wait;
 
 static int16_t pitch_aim;
 
@@ -229,7 +229,7 @@ void game_loop()
         }
 #else
         if(pressed & BTN_A)
-            set_level(STARTING_LEVEL);
+            ab_btn_wait = 0, set_level(STARTING_LEVEL);
         else if(pressed & (BTN_LEFT | BTN_RIGHT))
             practice ^= 1;
 #endif
@@ -259,8 +259,10 @@ void game_loop()
                 leveli = (leveli == 0 ? NUM_LEVELS - 1 : leveli - 1);
             if(pressed & BTN_RIGHT)
                 leveli = (leveli == NUM_LEVELS - 1 ? 0 : leveli + 1);
-            if(pressed & BTN_A)
-                state = st::AIM, practice = 2, aim_wait = 0;
+            if(ab_btn_wait < 32)
+                ++ab_btn_wait;
+            else if(pressed & BTN_A)
+                state = st::AIM, practice = 2, ab_btn_wait = 0;
             if(pressed & BTN_B)
                 reset_to_title();
             current_level = &LEVELS[leveli];
@@ -272,7 +274,7 @@ void game_loop()
             return;
         }
         else if(nframe == 255 || (pressed & BTN_B))
-            state = st::AIM, aim_wait = 0;
+            state = st::AIM, ab_btn_wait = 0;
     }
     else if(state == st::AIM)
     {
@@ -287,8 +289,8 @@ void game_loop()
         if(graphic_offset > 0)
             --graphic_offset;
 
-        if(aim_wait < 32)
-            ++aim_wait;
+        if(ab_btn_wait < 32)
+            ++ab_btn_wait;
         else if(btns & BTN_A)
         {
             int16_t ys = fsin16(yaw_aim);
