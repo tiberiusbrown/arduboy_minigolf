@@ -1,5 +1,7 @@
 #include "game.hpp"
 
+// warning messy code below
+
 static constexpr uint8_t STARTING_LEVEL = 0;
 
 // alternative yaw for non camera uses
@@ -10,10 +12,15 @@ uint8_t power_aim;
 static constexpr uint8_t MIN_POWER = 2;
 static constexpr uint8_t MAX_POWER = 128;
 
+static constexpr int16_t DEFAULT_PITCH_AIM = 4096;
+static constexpr uint16_t DIST_AIM = 256 * 6;
+
 static dvec3 prev_ball;
 
 static uint8_t practice;
 static uint8_t aim_wait;
+
+static int16_t pitch_aim;
 
 st state;
 uint8_t nframe;
@@ -21,6 +28,10 @@ static uint16_t yaw_level;
 
 static uint8_t graphic_offset;
 static constexpr uint8_t GRAPHIC_OFFSET_MAX = 32;
+
+static uint8_t menui;
+static uint8_t menu_offset;
+static constexpr uint8_t MENU_OFFSET_MAX = 42;
 
 static uint8_t prev_btns;
 
@@ -65,6 +76,7 @@ void set_level(uint8_t index)
     yaw_level = 0;
     yaw_aim = 0;
     power_aim = 32;
+    pitch_aim = DEFAULT_PITCH_AIM;
     state = st::LEVEL;
 }
 
@@ -77,6 +89,7 @@ static void reset_to_title()
     yaw = 57344;
     pitch = 3840;
     graphic_offset = GRAPHIC_OFFSET_MAX;
+    menu_offset = MENU_OFFSET_MAX;
     update_camera_reset_velocities();
 }
 
@@ -169,6 +182,14 @@ void game_loop()
 
     ++nframe;
 
+    if(state == st::AIM || state == st::MENU || state == st::PITCH)
+    {
+        dvec3 above_ball = ball;
+        above_ball.y += (256 * 2);
+        update_camera_look_at_fastangle(
+            above_ball, yaw_aim, pitch_aim, DIST_AIM, 64, 64);
+    }
+
     if(state == st::TITLE)
     {
 #if 0
@@ -246,23 +267,11 @@ void game_loop()
             set_number2(pgm_read_byte(&PARS[leveli]), 7, 18);
             return;
         }
-        else
-        {
-            if(graphic_offset < GRAPHIC_OFFSET_MAX)
-                ++graphic_offset;
-            if(nframe == 255 || (pressed & BTN_B))
-                state = st::AIM, aim_wait = 0;
-        }
+        else if(nframe == 255 || (pressed & BTN_B))
+            state = st::AIM, aim_wait = 0;
     }
     else if(state == st::AIM)
     {
-        dvec3 above_ball = ball;
-        above_ball.y += (256 * 2);
-        int16_t pitch = 4096;
-        uint16_t dist = 256 * 6;
-        update_camera_look_at_fastangle(
-            above_ball, yaw_aim, pitch, dist, 64, 64);
-
         uint8_t btns = poll_btns();
         if(btns & BTN_LEFT ) yaw_aim -= 128;
         if(btns & BTN_RIGHT) yaw_aim += 128;
@@ -287,11 +296,7 @@ void game_loop()
         }
 
         if(pressed & BTN_B)
-        {
-            yaw_level = yaw_aim;
-            nframe = 0;
-            state = st::LEVEL;
-        }
+            state = st::MENU, menui = 0;
     }
     else if(state == st::ROLLING)
     {
@@ -317,8 +322,6 @@ void game_loop()
             nframe = 0;
         }
         update_camera_follow_ball(256 * 12, 64, 16);
-        if(graphic_offset < GRAPHIC_OFFSET_MAX)
-            ++graphic_offset;
     }
     else if(state == st::HOLE)
     {
@@ -328,8 +331,6 @@ void game_loop()
         yaw_aim += 256;
         if(nframe == 255)
             state = st::SCORE;
-        if(graphic_offset < GRAPHIC_OFFSET_MAX)
-            ++graphic_offset;
     }
     else if(state == st::SCORE)
     {
@@ -359,8 +360,44 @@ void game_loop()
         draw_graphic(GFX_QUIT, 5, 110, 1, 15, GRAPHIC_SET);
         return;
     }
+    else if(state == st::MENU)
+    {
+        if(menu_offset > 0)
+            menu_offset -= 3;
+        if(pressed & BTN_B)
+            state = st::AIM;
+        if(pressed & BTN_UP)
+            menui = (menui == 0 ? 2 : menui - 1);
+        if(pressed & BTN_DOWN)
+            menui = (menui == 2 ? 0 : menui + 1);
+        if(pressed & BTN_A)
+        {
+            if(menui == 0)
+                yaw_level = yaw_aim, nframe = 0, state = st::LEVEL;
+            if(menui == 1)
+                state = st::PITCH;
+            if(menui == 2)
+                reset_to_title();
+        }
+    }
+    else if(state == st::PITCH)
+    {
+        if(btns & BTN_UP  ) pitch_aim -= 64;
+        if(btns & BTN_DOWN) pitch_aim += 64;
+        pitch_aim = tclamp<int16_t>(pitch_aim, 0, 256 * 32);
+        if(pressed & BTN_B)
+            state = st::AIM;
+    }
 
     render_scene();
+
+    if(state != st::MENU && menu_offset < MENU_OFFSET_MAX)
+        menu_offset += 3;
+    if(state != st::AIM && graphic_offset < GRAPHIC_OFFSET_MAX)
+        ++graphic_offset;
+
+    draw_graphic(GFX_MENU, 0, -menu_offset, 3, 42, GRAPHIC_OVERWRITE);
+    draw_graphic(GFX_ARROW, menui, 36 - menu_offset, 1, 3, GRAPHIC_SET);
 
     draw_graphic(GFX_INFO_BAR, 5, -graphic_offset, 3, 28, GRAPHIC_OVERWRITE);
     {

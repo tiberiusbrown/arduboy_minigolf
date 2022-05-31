@@ -300,6 +300,8 @@ enum class st : uint8_t
     ROLLING,    // watch the ball after a shot
     HOLE,       // ball went into hole
     SCORE,      // viewing score card
+    MENU,       // in-game menu
+    PITCH,      // pitch adjustment
 };
 extern st state;
 extern uint8_t nframe;
@@ -416,11 +418,13 @@ void set_number(uint8_t n, uint8_t r, uint8_t c);
 void set_number2(uint8_t n, uint8_t r, uint8_t c);
 void set_number3(uint16_t n, uint8_t r, uint8_t c);
 extern uint8_t const GFX_INFO_BAR[] PROGMEM;
-extern uint8_t const GFX_POWER[] PROGMEM;
-extern uint8_t const GFX_TITLE[] PROGMEM;
+extern uint8_t const GFX_POWER   [] PROGMEM;
+extern uint8_t const GFX_TITLE   [] PROGMEM;
 extern uint8_t const GFX_SUBTITLE[] PROGMEM;
-extern uint8_t const GFX_NEXT[] PROGMEM;
-extern uint8_t const GFX_QUIT[] PROGMEM;
+extern uint8_t const GFX_NEXT    [] PROGMEM;
+extern uint8_t const GFX_QUIT    [] PROGMEM;
+extern uint8_t const GFX_MENU    [] PROGMEM;
+extern uint8_t const GFX_ARROW   [] PROGMEM;
 
 static inline int16_t div8s(int16_t x)
 {
