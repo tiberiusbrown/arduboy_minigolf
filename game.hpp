@@ -13,7 +13,9 @@ static constexpr int FBH = 1 * 64;
 
 #define NUM_LEVELS 18
 
-static constexpr uint16_t SAVE_VERSION = 1;
+#define FB_FRAC_BITS 2
+static constexpr uint8_t FB_FRAC_COEF = 1 << FB_FRAC_BITS;
+static constexpr uint8_t FB_FRAC_MASK = FB_FRAC_COEF - 1;
 
 // platform functionality
 uint16_t time_ms();
@@ -437,6 +439,14 @@ static inline int16_t div16s(int16_t x)
 {
     uint16_t r = (uint16_t)x >> 4;
     if (x < 0) r |= 0xf000;
+    return (int16_t)r;
+}
+
+static inline int16_t div_frac_s(int16_t x)
+{
+    static constexpr uint16_t MASK = uint16_t(0x0000ffff << (16 - FB_FRAC_BITS));
+    uint16_t r = (uint16_t)x >> FB_FRAC_BITS;
+    if(x < 0) r |= MASK;
     return (int16_t)r;
 }
 

@@ -124,13 +124,13 @@ static void draw_tri_segment(
 
     int16_t e0, e1;
     {
-        uint8_t ay0mask = uint8_t(ay0 & 15);
-        uint8_t ay1mask = uint8_t(ay1 & 15);
-        if(ay0 > by0) ay0mask = (16 - ay0mask) & 15;
-        if(ay1 > by1) ay1mask = (16 - ay1mask) & 15;
-        int8_t tax = ((ax & 15) - 8);
-        e0 = div16s(dx * (ay0mask - 16) - dy0 * tax);
-        e1 = div16s(dx * (ay1mask - 16) - dy1 * tax);
+        uint8_t ay0mask = uint8_t(ay0 & FB_FRAC_MASK);
+        uint8_t ay1mask = uint8_t(ay1 & FB_FRAC_MASK);
+        if(ay0 > by0) ay0mask = (FB_FRAC_COEF - ay0mask) & FB_FRAC_MASK;
+        if(ay1 > by1) ay1mask = (FB_FRAC_COEF - ay1mask) & FB_FRAC_MASK;
+        int8_t tax = ((ax & FB_FRAC_MASK) - (FB_FRAC_COEF / 2));
+        e0 = div_frac_s(dx * (ay0mask - FB_FRAC_COEF) - dy0 * tax);
+        e1 = div_frac_s(dx * (ay1mask - FB_FRAC_COEF) - dy1 * tax);
     }
 
     int8_t sy0 = (ay0 < by0 ? 1 : -1);
@@ -138,10 +138,10 @@ static void draw_tri_segment(
     if(ay0 > by0) ay0 -= 1;
     if(ay1 > by1) ay1 -= 1;
 
-    int16_t pxa = div16s(ax);
-    int16_t pxb = div16s(bx + 7);
-    int16_t py0 = div16s(ay0);
-    int16_t py1 = div16s(ay1);
+    int16_t pxa = div_frac_s(ax);
+    int16_t pxb = div_frac_s(bx + (FB_FRAC_COEF / 2 - 1));
+    int16_t py0 = div_frac_s(ay0);
+    int16_t py1 = div_frac_s(ay1);
 
     while(pxa != pxb)
     {
@@ -197,11 +197,11 @@ static void draw_circle_bresenham_segment_outline(
 void draw_ball_outline(dvec2 c, uint16_t r)
 {
     if(c.x < -(int16_t)r || c.y < -(int16_t)r) return;
-    if(c.x > FBW * 16 + r || c.y > FBW * 16 + r) return;
+    if(c.x > FBW * FB_FRAC_COEF + r || c.y > FBW * FB_FRAC_COEF + r) return;
 
-    c.x = div16s(c.x);
-    c.y = div16s(c.y);
-    r >>= 4;
+    c.x = div_frac_s(c.x);
+    c.y = div_frac_s(c.y);
+    r >>= FB_FRAC_BITS;
 
     int16_t dx = 12;
     int16_t dy = 8 - r * 8;
@@ -225,12 +225,12 @@ void draw_ball_outline(dvec2 c, uint16_t r)
 void draw_ball_filled(dvec2 c, uint16_t r, uint16_t pat)
 {
     if(c.x < -(int16_t)r || c.y < -(int16_t)r) return;
-    if(c.x > FBW * 16 + r || c.y > FBW * 16 + r) return;
+    if(c.x > FBW * FB_FRAC_COEF + r || c.y > FBW * FB_FRAC_COEF + r) return;
 
 #if 0
     int16_t e = 24 - r;
-    int16_t cx = div16s(c.x);
-    int16_t cy = div16s(c.y);
+    int16_t cx = div_frac_s(c.x);
+    int16_t cy = div_frac_s(c.y);
     int16_t y = (int16_t)r;
     int16_t px = 0;
     int16_t py = r >> 4;
@@ -249,9 +249,9 @@ void draw_ball_filled(dvec2 c, uint16_t r, uint16_t pat)
         }
     }
 #else
-    c.x = div16s(c.x);
-    c.y = div16s(c.y);
-    r >>= 4;
+    c.x = div_frac_s(c.x);
+    c.y = div_frac_s(c.y);
+    r >>= FB_FRAC_BITS;
 
     int16_t dx = 12;
     int16_t dy = 8 - r * 8;
@@ -307,14 +307,14 @@ static inline int8_t to8(int16_t x)
 void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati)
 {
     if(tmax(v0.y, v1.y, v2.y) < 0) return;
-    if(tmin(v0.y, v1.y, v2.y) > FBH * 16) return;
+    if(tmin(v0.y, v1.y, v2.y) > FBH * FB_FRAC_COEF) return;
 
     // sort by x coord
     if(v0.x > v1.x) swap(v0, v1);
     if(v1.x > v2.x) swap(v1, v2);
     if(v0.x > v1.x) swap(v0, v1);
 
-    if(v2.x < 0 || v0.x >= FBW * 16 || v0.x == v2.x) return;
+    if(v2.x < 0 || v0.x >= FBW * FB_FRAC_COEF || v0.x == v2.x) return;
 
     // interpolate vt.y: between v0, v2, with vt.x = v1.x
     int16_t ty = interp(v0.x, v1.x, v2.x, v0.y, v2.y);
@@ -337,9 +337,9 @@ void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati)
         }
         if(bx > FBW * 16)
         {
-            by0 = interp(ax, FBW * 16, bx, ay0, by0);
-            by1 = interp(ax, FBW * 16, bx, ay1, by1);
-            bx = FBW * 16;
+            by0 = interp(ax, FBW * FB_FRAC_COEF, bx, ay0, by0);
+            by1 = interp(ax, FBW * FB_FRAC_COEF, bx, ay1, by1);
+            bx = FBW * FB_FRAC_COEF;
         }
         draw_tri_segment(ax, ay0, ay1, bx, by0, by1, pat);
     }
@@ -360,8 +360,8 @@ void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati)
         }
         if(bx > FBW * 16)
         {
-            by0 = interp(ax, FBW * 16, bx, ay0, by0);
-            by1 = interp(ax, FBW * 16, bx, ay1, by1);
+            by0 = interp(ax, FBW * FB_FRAC_COEF, bx, ay0, by0);
+            by1 = interp(ax, FBW * FB_FRAC_COEF, bx, ay1, by1);
             bx = FBW * 16;
         }
         draw_tri_segment(ax, ay0, ay1, bx, by0, by1, pat);

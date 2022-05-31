@@ -39,22 +39,22 @@ uint8_t shots[18];
 
 static void draw_nframe_progress(uint8_t oy, uint8_t n)
 {
-    constexpr uint8_t R = 9;
+    constexpr uint8_t R = 9 * FB_FRAC_COEF;
     int8_t fs = 0;
     int8_t fc = 127;
     dvec2 vc;
-    vc.x = 117 * 16;
-    vc.y = oy * 16;
+    vc.x = 117 * FB_FRAC_COEF;
+    vc.y = oy * FB_FRAC_COEF;
     dvec2 v0;
-    v0.x = vc.x + R * 16;
+    v0.x = vc.x + R;
     v0.y = vc.y;
-    draw_ball_filled(vc, (R + 1) * 16, 0xffff);
-    draw_ball_filled(vc, (R - 1) * 16, 0x0000);
+    draw_ball_filled(vc, R + FB_FRAC_COEF, 0xffff);
+    draw_ball_filled(vc, R - FB_FRAC_COEF, 0x0000);
     for(uint8_t j = 1; j <= n; ++j)
     {
         dvec2 v1;
-        v1.x = vc.x + div16s(fmuls(fcos(j * 8), R));
-        v1.y = vc.y + div16s(fmuls(fsin(j * 8), R));
+        v1.x = vc.x + int8_t((uint16_t)fmuls(fcos(j * 8), R) >> 8);
+        v1.y = vc.y + int8_t((uint16_t)fmuls(fsin(j * 8), R) >> 8);
         draw_tri(vc, v0, v1, 4);
         v0 = v1;
     }

@@ -401,26 +401,28 @@ static uint8_t render_scene(
         if(ortho)
         {
             // divide x and y by ortho_zoom
-            dv.x = int32_t(dv.x) * ortho_zoom / 256 / 16;
-            dv.y = int32_t(dv.y) * ortho_zoom / 256 / 16;
+            dv.x = int32_t(dv.x) * ortho_zoom / 256 / FB_FRAC_COEF;
+            dv.y = int32_t(dv.y) * ortho_zoom / 256 / FB_FRAC_COEF;
         }
         else
 #endif
-        // multiply x and y by 4/z
+        // multiply x and y by FB_FRAC_COEF/4 / z
         if(dv.z >= ZNEAR)
         {
+            static constexpr int32_t CLAMP_VAL =
+                (int32_t)INT16_MAX * 240 / FB_FRAC_COEF * 1024;
             uint16_t invz = inv16(dv.z);
             int32_t nx = int32_t(invz) * dv.x;
             int32_t ny = int32_t(invz) * dv.y;
-            nx = tclamp<int32_t>(nx, (int32_t)INT16_MIN * 240 * 64, (int32_t)INT16_MAX * 240 * 64);
-            ny = tclamp<int32_t>(ny, (int32_t)INT16_MIN * 240 * 64, (int32_t)INT16_MAX * 240 * 64);
-            dv.x = int16_t(uint32_t(nx) >> 14);
-            dv.y = int16_t(uint32_t(ny) >> 14);
+            nx = tclamp<int32_t>(nx, -CLAMP_VAL, CLAMP_VAL);
+            ny = tclamp<int32_t>(ny, -CLAMP_VAL, CLAMP_VAL);
+            dv.x = int16_t(uint32_t(nx) >> (18 - FB_FRAC_BITS));
+            dv.y = int16_t(uint32_t(ny) >> (18 - FB_FRAC_BITS));
         }
 
         // center in framebuffer
-        dv.x += (FBW / 2 * 16);
-        dv.y = (FBH / 2 * 16) - dv.y;
+        dv.x += (FBW / 2 * FB_FRAC_COEF);
+        dv.y = (FBH / 2 * FB_FRAC_COEF) - dv.y;
 
         // save vertex
         vs[i] = { dv.x, dv.y };
@@ -545,22 +547,25 @@ dvec3 transform_point(dvec3 dv, bool ortho, int ortho_zoom)
 
     if(ortho)
     {
-        dv.x = int32_t(dv.x) * ortho_zoom / 256 / 16;
-        dv.y = int32_t(dv.y) * ortho_zoom / 256 / 16;
+        dv.x = int32_t(dv.x) * ortho_zoom / 256 / FB_FRAC_COEF;
+        dv.y = int32_t(dv.y) * ortho_zoom / 256 / FB_FRAC_COEF;
     }
     else if(dv.z >= ZNEAR)
     {
+        static constexpr int32_t CLAMP_VAL =
+            (int32_t)INT16_MAX * 240 / FB_FRAC_COEF * 1024;
         uint16_t invz = inv16(dv.z);
         int32_t nx = int32_t(invz) * dv.x;
         int32_t ny = int32_t(invz) * dv.y;
-        nx = tclamp<int32_t>(nx, (int32_t)INT16_MIN * 240 * 64, (int32_t)INT16_MAX * 240 * 64);
-        ny = tclamp<int32_t>(ny, (int32_t)INT16_MIN * 240 * 64, (int32_t)INT16_MAX * 240 * 64);
-        dv.x = int16_t(uint32_t(nx) >> 14);
-        dv.y = int16_t(uint32_t(ny) >> 14);
+        nx = tclamp<int32_t>(nx, -CLAMP_VAL, CLAMP_VAL);
+        ny = tclamp<int32_t>(ny, -CLAMP_VAL, CLAMP_VAL);
+        dv.x = int16_t(uint32_t(nx) >> (18 - FB_FRAC_BITS));
+        dv.y = int16_t(uint32_t(ny) >> (18 - FB_FRAC_BITS));
+
     }
 
-    dv.x += (FBW / 2 * 16);
-    dv.y = (FBH / 2 * 16) - dv.y;
+    dv.x += (FBW / 2 * FB_FRAC_COEF);
+    dv.y = (FBH / 2 * FB_FRAC_COEF) - dv.y;
 
     return dv;
 }
