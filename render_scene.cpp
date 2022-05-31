@@ -146,7 +146,7 @@ static uint8_t render_scene(
             face_order[nf] = 255;
             int16_t by = ball.y;
             uint16_t fdist = calc_fdist(nv, nv, nv, by, by, by);
-            fdist += 32;
+            fdist += 400;
             fd.fdist[nf] = fdist;
             nv += 2;
             nf += 1;

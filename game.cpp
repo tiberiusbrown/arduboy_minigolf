@@ -17,6 +17,7 @@ static constexpr uint8_t MAX_POWER = 128;
 
 static constexpr int16_t DEFAULT_PITCH_AIM = 4096;
 static constexpr uint16_t DIST_AIM = 256 * 6;
+static constexpr uint16_t DIST_ROLL = 256 * 14;
 
 static dvec3 prev_ball;
 
@@ -324,7 +325,7 @@ void game_loop()
             yaw_aim = yaw;
             nframe = 0;
         }
-        update_camera_follow_ball(256 * 12, 64, 16);
+        update_camera_follow_ball(DIST_ROLL, 64, 16);
     }
     else if(state == st::HOLE)
     {
