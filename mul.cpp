@@ -197,7 +197,13 @@ int16_t mul_f7_s16(int16_t a, int8_t b)
     asm volatile(
         "fmuls  %B[a], %[b]       \n\t"
         "movw   %A[r], r0         \n\t" // r = (A1*B0) << 1
+#if AVOID_FMULSU
+        "mulsu  %[b] , %A[a]      \n\t"
+        "add    r0   , r0         \n\t"
+        "adc    r1   , r1         \n\t"
+#else
         "fmulsu %[b] , %A[a]      \n\t"
+#endif
         "clr    r0                \n\t"
         "sbc    %B[r], r0         \n\t" // R1 -= bit15(A0*B0)
         "add    %A[r], r1         \n\t" // R0 += hi((A0*B0) << 1)
@@ -216,7 +222,6 @@ int16_t mul_f7_s16(int16_t a, int8_t b)
 
 int16_t mul_f15_s16(int16_t a, int16_t  b)
 {
-    // TODO
 #if USE_AVR_INLINE_ASM
     /*
                A1 A0
@@ -238,12 +243,24 @@ int16_t mul_f15_s16(int16_t a, int16_t  b)
         "fmul   %A[a], %A[b]      \n\t"
         "adc    %A[r], %[z]       \n\t"
         "mov    %[t] , r1         \n\t"
+#if AVOID_FMULSU
+        "mulsu  %B[a], %A[b]      \n\t"
+        "add    r0   , r0         \n\t"
+        "adc    r1   , r1         \n\t"
+#else
         "fmulsu %B[a], %A[b]      \n\t"
+#endif
         "sbc    %B[r], %[z]       \n\t"
         "add    %[t] , r0         \n\t"
         "adc    %A[r], r1         \n\t"
         "adc    %B[r], %[z]       \n\t"
+#if AVOID_FMULSU
+        "mulsu  %B[b], %A[a]      \n\t"
+        "add    r0   , r0         \n\t"
+        "adc    r1   , r1         \n\t"
+#else
         "fmulsu %B[b], %A[a]      \n\t"
+#endif
         "sbc    %B[r], %[z]       \n\t"
         "add    %[t] , r0         \n\t"
         "adc    %A[r], r1         \n\t"

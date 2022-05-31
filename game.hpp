@@ -8,6 +8,7 @@ static constexpr int FBW = 1 * 128;
 static constexpr int FBH = 1 * 64;
 
 #define USE_AVR_INLINE_ASM 1
+#define AVOID_FMULSU 0
 
 #define BALL_XRAY 1
 
