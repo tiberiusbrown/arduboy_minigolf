@@ -26,6 +26,8 @@ static uint8_t ab_btn_wait;
 
 static int16_t pitch_aim;
 
+static uint8_t yaw_speed;
+
 st state;
 uint8_t nframe;
 static uint16_t yaw_level;
@@ -92,6 +94,7 @@ static void reset_to_title()
     cam = { 3331, 1664, -3451 };
     yaw = 57344;
     pitch = 3840;
+    practice &= 1;
     graphic_offset = GRAPHIC_OFFSET_MAX;
     menu_offset = MENU_OFFSET_MAX;
     update_camera_reset_velocities();
@@ -279,8 +282,18 @@ void game_loop()
     else if(state == st::AIM)
     {
         uint8_t btns = poll_btns();
-        if(btns & BTN_LEFT ) yaw_aim -= 128;
-        if(btns & BTN_RIGHT) yaw_aim += 128;
+
+        {
+            uint16_t ys = yaw_speed;
+            if(btns & (BTN_LEFT | BTN_RIGHT))
+                ys += ys / 4 + 2;
+            else
+                ys -= (ys / 4 + 1);
+            yaw_speed = (uint8_t)tclamp<uint16_t>(ys, 1, 255);
+        }
+
+        if(btns & BTN_LEFT ) yaw_aim -= yaw_speed;
+        if(btns & BTN_RIGHT) yaw_aim += yaw_speed;
 
         if(btns & BTN_UP  ) power_aim += 2;
         if(btns & BTN_DOWN) power_aim -= 2;

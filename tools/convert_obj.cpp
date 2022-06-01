@@ -31,9 +31,9 @@ int main(int argc, char** argv)
             int n = fscanf(f, " %f %f %f\n", &x, &y, &z);
             if(n != 3)
                 goto fail;
-            int8_t ix = int8_t(roundf(x * 2));
-            int8_t iy = int8_t(roundf(y * 2));
-            int8_t iz = int8_t(roundf(z * 2));
+            int8_t ix = int8_t(roundf(x * 4));
+            int8_t iy = int8_t(roundf(y * 4));
+            int8_t iz = int8_t(roundf(z * 4));
             verts.push_back({ ix, iy, iz });
         }
         else if(c == 'f')

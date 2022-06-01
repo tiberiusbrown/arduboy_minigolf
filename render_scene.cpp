@@ -100,9 +100,9 @@ static uint8_t render_scene(
     for(uint8_t j = nv = 0; nv < num_verts; j += 3)
     {
         dvec3 dv;
-        dv.x = (int8_t)pgm_read_byte(&verts[j + 0]) * 128;
-        dv.y = (int8_t)pgm_read_byte(&verts[j + 1]) * 128;
-        dv.z = (int8_t)pgm_read_byte(&verts[j + 2]) * 128;
+        dv.x = (int8_t)pgm_read_byte(&verts[j + 0]) * 64;
+        dv.y = (int8_t)pgm_read_byte(&verts[j + 1]) * 64;
+        dv.z = (int8_t)pgm_read_byte(&verts[j + 2]) * 64;
 
         nv = add_vertex(m, dv, nv);
     }
