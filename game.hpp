@@ -257,15 +257,6 @@ struct dvec3 { int16_t x, y, z; };
 using mat3 = array<int8_t, 9>;
 using dmat3 = array<int16_t, 9>;
 
-static FORCEINLINE dvec3 vec_add(dvec3 a, dvec3 b)
-{
-    dvec3 r;
-    r.x = a.x + b.x;
-    r.y = a.y + b.y;
-    r.z = a.z + b.z;
-    return r;
-}
-
 static constexpr uint8_t BOX_SIZE_FACTOR = 16;
 static constexpr uint8_t BOX_POS_FACTOR = 64;
 struct phys_box
@@ -428,20 +419,8 @@ extern uint8_t const GFX_NEXT    [] PROGMEM;
 extern uint8_t const GFX_QUIT    [] PROGMEM;
 extern uint8_t const GFX_MENU    [] PROGMEM;
 extern uint8_t const GFX_ARROW   [] PROGMEM;
-
-static inline int16_t div8s(int16_t x)
-{
-    uint16_t y = uint16_t(x) >> 3;
-    if(x < 0) y |= 0xe000;
-    return y;
-}
-
-static inline int16_t div16s(int16_t x)
-{
-    uint16_t r = (uint16_t)x >> 4;
-    if (x < 0) r |= 0xf000;
-    return (int16_t)r;
-}
+extern uint8_t const GFX_HIO     [] PROGMEM;
+extern uint8_t const GFX_HIO_MASK[] PROGMEM;
 
 static inline int16_t div_frac_s(int16_t x)
 {

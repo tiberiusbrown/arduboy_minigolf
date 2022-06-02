@@ -2,6 +2,11 @@
 
 // warning messy code below
 
+#ifdef ARDUINO
+#pragma GCC optimize("no-move-loop-invariants")
+#pragma GCC optimize("no-inline-small-functions")
+#endif
+
 #define DEBUG_TITLE_CAM 0
 static constexpr uint8_t TITLE_LEVEL = 0;
 
@@ -381,21 +386,33 @@ void game_loop()
     }
     else if(state == st::MENU)
     {
+        uint8_t n = practice ? 3 : 2;
         if(menu_offset > 0)
             menu_offset -= 3;
         if(pressed & BTN_B)
             state = st::AIM;
         if(pressed & BTN_UP)
-            menui = (menui == 0 ? 2 : menui - 1);
+            menui = (menui == 0 ? n : menui - 1);
         if(pressed & BTN_DOWN)
-            menui = (menui == 2 ? 0 : menui + 1);
+            menui = (menui == n ? 0 : menui + 1);
         if(pressed & BTN_A)
         {
-            if(menui == 0)
+            uint8_t m = menui;
+            if(practice)
+            {
+                if(m == 0)
+                {
+                    set_level(leveli);
+                    state = st::AIM;
+                    ab_btn_wait = 0;
+                }
+                --m;
+            }
+            if(m == 0)
                 yaw_level = yaw_aim, nframe = 0, state = st::LEVEL;
-            if(menui == 1)
+            if(m == 1)
                 state = st::PITCH;
-            if(menui == 2)
+            if(m == 2)
                 reset_to_title();
         }
     }
@@ -415,7 +432,18 @@ void game_loop()
     if(state != st::AIM && graphic_offset < GRAPHIC_OFFSET_MAX)
         ++graphic_offset;
 
-    draw_graphic(GFX_MENU, 0, -menu_offset, 3, 42, GRAPHIC_OVERWRITE);
+    if(state == st::HOLE && shots[leveli] == 1)
+    {
+        constexpr uint8_t r = 5;
+        constexpr uint8_t c = 14;
+        draw_graphic(GFX_HIO_MASK, r, c, 2, 100, GRAPHIC_CLEAR);
+        draw_graphic(GFX_HIO     , r, c, 2, 100, GRAPHIC_SET);
+    }
+
+    if(practice)
+        draw_graphic(GFX_MENU, 0, -menu_offset, 4, 42, GRAPHIC_OVERWRITE);
+    else
+        draw_graphic(GFX_MENU + 42, 0, -menu_offset, 3, 42, GRAPHIC_OVERWRITE);
     draw_graphic(GFX_ARROW, menui, 36 - menu_offset, 1, 3, GRAPHIC_SET);
 
     draw_graphic(GFX_INFO_BAR, 5, -graphic_offset, 3, 28, GRAPHIC_OVERWRITE);
