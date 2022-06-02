@@ -267,7 +267,7 @@ void game_loop()
                 leveli = (leveli == 0 ? NUM_LEVELS - 1 : leveli - 1);
             if(pressed & BTN_RIGHT)
                 leveli = (leveli == NUM_LEVELS - 1 ? 0 : leveli + 1);
-            if(ab_btn_wait < 32)
+            if(ab_btn_wait < 8)
                 ++ab_btn_wait;
             else if(pressed & BTN_A)
                 state = st::AIM, practice = 2, ab_btn_wait = 0;
@@ -307,9 +307,9 @@ void game_loop()
         if(graphic_offset > 0)
             --graphic_offset;
 
-        if(ab_btn_wait < 32)
+        if(ab_btn_wait < 8)
             ++ab_btn_wait;
-        else if(btns & BTN_A)
+        else if(pressed & BTN_A)
         {
             int16_t ys = fsin16(yaw_aim);
             int16_t yc = -fcos16(yaw_aim);
