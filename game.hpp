@@ -33,12 +33,15 @@ void game_loop();
 #if defined(__GNUC__)
 #define FORCEINLINE __attribute__((always_inline)) inline
 #define NOINLINE __attribute__((noinline))
+#define CONST_FUNC __attribute__((const))
 #elif defined(_MSC_VER)
 #define FORCEINLINE __forceinline
 #define NOINLINE __declspec(noinline)
+#define CONST_FUNC
 #else
 #define FORCEINLINE inline
 #define NOINLINE
+#define CONST_FUNC
 #endif
 
 #ifdef ARDUINO
@@ -356,8 +359,8 @@ dvec3 transform_point(dvec3 dv, bool ortho, int ortho_zoom);
 #endif
 
 // sincos.cpp
-int8_t fsin(uint8_t angle); // output is signed 1.7
-int8_t fcos(uint8_t angle); // output is signed 1.7
+int8_t fsin(uint8_t angle) CONST_FUNC; // output is signed 1.7
+int8_t fcos(uint8_t angle) CONST_FUNC; // output is signed 1.7
 int16_t fsin16(uint16_t angle);
 int16_t fcos16(uint16_t angle);
 int16_t atan2(int16_t y, int16_t x);
@@ -375,8 +378,8 @@ dvec3 normalized(dvec3 v);       // normalize to 8.8
 int16_t dot(dvec3 a, dvec3 b);
 
 // div.cpp
-uint16_t inv8(uint8_t x);   // approximates 2^16 / x
-uint16_t inv16(uint16_t x); // (x >= 256) approximates 2^24 / x
+uint16_t inv8(uint8_t x)   CONST_FUNC;   // approximates 2^16 / x
+uint16_t inv16(uint16_t x) CONST_FUNC; // (x >= 256) approximates 2^24 / x
 
 // mul.cpp
 // key: mul_f[shift]_[dst]

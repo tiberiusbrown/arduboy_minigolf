@@ -27,7 +27,7 @@ static constexpr uint8_t STOP_VEL_MAX_STEPS = 30;
 // square unsigned (x >= 0)
 static constexpr uint32_t FORCEINLINE squ(int16_t x)
 {
-    return int32_t(x) * x;
+    return uint32_t(int32_t(x) * x);
 }
 
 static constexpr uint32_t BALL_RADIUS_SQ = squ(BALL_RADIUS);

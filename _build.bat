@@ -1,0 +1,27 @@
+@echo off
+
+set dir=%temp%/arduboy_minigolf_build
+arduino-cli.exe compile -v --log-level info ^
+    -b arduboy:avr:arduboy . ^
+    --output-dir "%dir%" ^
+    --build-property compiler.c.elf.extra_flags="-Wl,--relax" ^
+    --build-property compiler.c.extra_flags="-mcall-prologues" ^
+    --build-property compiler.cpp.extra_flags="{compiler.c.extra_flags}"
+
+if %errorlevel%==0 goto postbuild
+
+pause
+exit /b 1
+
+:postbuild
+
+rem copy hex file to dir
+echo F|xcopy /S /Q /Y /F "%dir%/arduboy_minigolf.ino.hex" "ardugolf.hex" > nul
+
+rem create _asm.txt file
+"C:\Program Files (x86)\Arduino\hardware\tools\avr\bin\avr-objdump.exe" -S "%dir%/arduboy_minigolf.ino.elf" > _asm.txt
+
+rem create _sizes.txt
+"C:\Program Files (x86)\Arduino\hardware\tools\avr\bin\avr-nm.exe" --size-sort -C -r -t d "%dir%/arduboy_minigolf.ino.elf" > _sizes.txt
+
+pause
