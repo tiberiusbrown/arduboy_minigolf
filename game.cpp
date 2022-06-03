@@ -186,6 +186,43 @@ static void draw_scorecard(uint8_t r, uint8_t i)
     }
 }
 
+static void draw_hole_in_one_overlay()
+{
+    constexpr uint8_t r = 5;
+    constexpr uint8_t c = 14;
+
+    static uint16_t const PATS[8] PROGMEM =
+    {
+        0xaaff, 0xaa55, 0x0011, 0x0000, 0x0011, 0xaa55, 0xaaff, 0xffff,
+    };
+    uint16_t pat = pgm_read_word(&PATS[tmin<uint8_t>(nframe & 15, 7)]);
+
+    uint8_t* b = &buf[0] + (r * FBW + c);
+    uint8_t const* p = GFX_HIO;
+    uint16_t t[3];
+    t[0] = 0;
+    t[1] = pgm_read_byte(p);
+    t[1] |= ((uint16_t)pgm_read_byte(p + 101) << 8);
+    ++p;
+    for(uint8_t i = 0; i < 100; ++i)
+    {
+        t[2] = pgm_read_byte(p);
+        t[2] |= ((uint16_t)pgm_read_byte(p + 101) << 8);
+        ++p;
+        uint16_t clear = t[0] | t[1] | t[2];
+        clear |= (clear << 1);
+        clear |= (clear >> 1);
+        b[0] &= ~uint8_t(clear);
+        b[0] |= uint8_t(t[1]) & uint8_t(pat);
+        b[FBW] &= ~uint8_t(clear >> 8);
+        b[FBW] |= uint8_t(t[1] >> 8) & uint8_t(pat);
+        ++b;
+        t[0] = t[1];
+        t[1] = t[2];
+        pat = (pat << 8) | (pat >> 8);
+    }
+}
+
 void game_loop()
 {
     uint8_t btns = poll_btns();
@@ -433,12 +470,7 @@ void game_loop()
         ++graphic_offset;
 
     if(state == st::HOLE && shots[leveli] == 1)
-    {
-        constexpr uint8_t r = 5;
-        constexpr uint8_t c = 14;
-        draw_graphic(GFX_HIO_MASK, r, c, 2, 100, GRAPHIC_CLEAR);
-        draw_graphic(GFX_HIO     , r, c, 2, 100, GRAPHIC_SET);
-    }
+        draw_hole_in_one_overlay();
 
     if(practice)
         draw_graphic(GFX_MENU, 0, -menu_offset, 4, 42, GRAPHIC_OVERWRITE);

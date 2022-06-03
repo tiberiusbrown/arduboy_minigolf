@@ -423,7 +423,6 @@ extern uint8_t const GFX_QUIT    [] PROGMEM;
 extern uint8_t const GFX_MENU    [] PROGMEM;
 extern uint8_t const GFX_ARROW   [] PROGMEM;
 extern uint8_t const GFX_HIO     [] PROGMEM;
-extern uint8_t const GFX_HIO_MASK[] PROGMEM;
 
 static inline int16_t div_frac_s(int16_t x)
 {
