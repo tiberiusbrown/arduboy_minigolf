@@ -14,8 +14,6 @@ static constexpr int FBR = FBH / 8;
 
 #define BALL_XRAY 1
 
-#define NUM_LEVELS 18
-
 #define FB_FRAC_BITS 3
 static constexpr uint8_t FB_FRAC_COEF = 1 << FB_FRAC_BITS;
 static constexpr uint8_t FB_FRAC_MASK = FB_FRAC_COEF - 1;
@@ -271,8 +269,6 @@ struct level_info
 };
 
 // levels.cpp
-extern level_info const LEVELS[NUM_LEVELS] PROGMEM;
-extern uint8_t const PARS[NUM_LEVELS] PROGMEM;
 extern uint8_t leveli;
 extern level_info const* current_level;
 
@@ -342,7 +338,17 @@ extern array<dvec2, MAX_VERTS> vs;
 void clear_buf();
 uint8_t render_scene();
 #ifndef ARDUINO
-uint8_t render_scene_ortho(int zoom);
+uint8_t render_scene_persp(
+    int8_t const* verts,
+    uint8_t const* faces,
+    uint8_t num_verts,
+    uint8_t const* num_faces);
+uint8_t render_scene_ortho(
+    int zoom,
+    int8_t const* verts,
+    uint8_t const* faces,
+    uint8_t num_verts,
+    uint8_t const* num_faces);
 dvec3 transform_point(dvec3 dv, bool ortho, int ortho_zoom);
 #endif
 

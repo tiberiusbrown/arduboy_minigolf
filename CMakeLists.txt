@@ -52,23 +52,7 @@ set(MINIGOLF_SOURCES
     render_scene.cpp
     mat.cpp
     game.cpp
-    levels.cpp
 )
-
-add_executable(convert_obj tools/convert_obj.cpp)
-set(LEVELN 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17)
-foreach(N ${LEVELN})
-    set(LEVEL_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}.obj")
-    set(LEVEL_HPP "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}.hpp")
-    set(LEVEL_INFO_HPP "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_${N}_info.hpp")
-    add_custom_command(
-        OUTPUT "${LEVEL_HPP}"
-        COMMAND convert_obj "${LEVEL_OBJ}" "${LEVEL_HPP}" "${N}"
-        DEPENDS convert_obj "${LEVEL_OBJ}"
-    )
-    list(APPEND MINIGOLF_SOURCES "${LEVEL_HPP}")
-    list(APPEND MINIGOLF_SOURCES "${LEVEL_INFO_HPP}")
-endforeach()
 
 add_executable(
     ${PROJECT_NAME} ${WINFLAG}

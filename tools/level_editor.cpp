@@ -26,12 +26,27 @@ static constexpr int WH = 64 * ZOOM;
 #define FMT_HEADER_ONLY
 #include <fmt/format.h>
 
-static std::vector<phys_box> editor_boxes[NUM_LEVELS];
-static level_info editor_levels[NUM_LEVELS];
+struct editor_level_info
+{
+    std::vector<int8_t> verts;
+    std::vector<uint8_t> faces[5];
+    std::vector<phys_box> boxes;
+    dvec3 ball_pos;
+    dvec3 flag_pos;
+};
+
+static std::string course_name;
+static std::vector<editor_level_info> editor_levels;
 static int level_index = 0;
 
+static level_info dummy_level;
+
 static bool ortho = false;
-static int ortho_zoom = 500;
+static int ortho_zoom = 200;
+
+void save_audio_on_off() {}
+void toggle_audio() {}
+bool audio_enabled() { return false; }
 
 static ImVec2 dvec2imvec(dvec2 v)
 {
@@ -94,39 +109,215 @@ static double c2f(int16_t x)
 
 static int editor_boxi = 0;
 
-static std::string editor_get_string()
+static void editor_load_file(char const* fname)
 {
-    std::string r;
+    FILE* f = fopen(fname, "r");
+    if(!f) return;
+    int n0, n1, n2, n3, n4, n5, n6, n7;
 
-    r += "#pragma once\n";
+    course_name.clear();
+    while((n0 = fgetc(f)) != '\n')
+        course_name += char(n0);
 
+    fscanf(f, "%d\n", &n0);
+    editor_levels.clear();
+    editor_levels.resize(n0);
+
+    for(auto& info : editor_levels)
     {
-        int i = level_index;
-        auto const& boxes = editor_boxes[i];
-        r += fmt::format(
-            "\nstatic constexpr phys_box LEVEL_{:02d}_BOXES[{}] PROGMEM =\n{{\n",
-            i, (int)boxes.size());
-        for(auto const& box : boxes)
+        fscanf(f, "%d %d %d\n", &n0, &n1, &n2);
+        info.ball_pos.x = n0;
+        info.ball_pos.y = n1;
+        info.ball_pos.z = n2;
+        fscanf(f, "%d %d %d\n", &n0, &n1, &n2);
+        info.flag_pos.x = n0;
+        info.flag_pos.y = n1;
+        info.flag_pos.z = n2;
         {
-            r += fmt::format(
-                "    {{ {{ {}, {}, {} }}, {{ {}, {}, {} }}, {}, {} }},\n",
-                box.size.x, box.size.y, box.size.z,
-                box.pos.x , box.pos.y , box.pos.z ,
-                box.yaw, box.pitch);
+            auto& boxes = info.boxes;
+            fscanf(f, "%d\n", &n0);
+            boxes.resize(n0);
+            for(auto& b : boxes)
+            {
+                fscanf(f, "%d %d %d %d %d %d %d %d\n",
+                    &n0, &n1, &n2, &n3, &n4, &n5, &n6, &n7);
+                b.pos.x  = n0;
+                b.pos.y  = n1;
+                b.pos.z  = n2;
+                b.size.x = n3;
+                b.size.y = n4;
+                b.size.z = n5;
+                b.yaw    = n6;
+                b.pitch  = n7;
+            }
         }
-        r += "};\n";
-        auto const& info = editor_levels[i];
-        r += fmt::format(
-            "static constexpr dvec3 LEVEL_{:02d}_BALL_POS = "
-            "{{ {}, {}, {} }};\n",
-            i, info.ball_pos.x, info.ball_pos.y, info.ball_pos.z);
-        r += fmt::format(
-            "static constexpr dvec3 LEVEL_{:02d}_FLAG_POS = "
-            "{{ {}, {}, {} }};\n",
-            i, info.flag_pos.x, info.flag_pos.y, info.flag_pos.z);
+        fscanf(f, "%d\n", &n0);
+        info.verts.resize(n0 * 3);
+        for(int j = 0; j < (int)info.verts.size() / 3; ++j)
+        {
+            fscanf(f, "%d %d %d\n", &n0, &n1, &n2);
+            info.verts[j * 3 + 0] = n0;
+            info.verts[j * 3 + 1] = n1;
+            info.verts[j * 3 + 2] = n2;
+        }
+        for(int j = 0; j < 5; ++j)
+        {
+            fscanf(f, "%d\n", &n0);
+            info.faces[j].resize(n0 * 3);
+            for(int k = 0; k < info.faces[j].size() / 3; ++k)
+            {
+                fscanf(f, "%d %d %d\n", &n0, &n1, &n2);
+                info.faces[j][k * 3 + 0] = n0;
+                info.faces[j][k * 3 + 1] = n1;
+                info.faces[j][k * 3 + 2] = n2;
+            }
+        }
     }
 
-    return r;
+    fclose(f);
+}
+
+static void editor_save_file(char const* fname)
+{
+    FILE* f = fopen(fname, "w");
+    if(!f) return;
+
+    fprintf(f, "%s\n", course_name.c_str());
+
+    fprintf(f, "%d\n", (int)editor_levels.size());
+
+    for(auto const& info : editor_levels)
+    {
+        fprintf(f, "%d %d %d\n",
+            (int)info.ball_pos.x,
+            (int)info.ball_pos.y,
+            (int)info.ball_pos.z);
+        fprintf(f, "%d %d %d\n",
+            (int)info.flag_pos.x,
+            (int)info.flag_pos.y,
+            (int)info.flag_pos.z);
+        {
+            auto const& boxes = info.boxes;
+            fprintf(f, "%d\n", (int)boxes.size());
+            for(auto b : boxes)
+            {
+                fprintf(f, "%d %d %d %d %d %d %d %d\n",
+                    (int)b.pos.x, (int)b.pos.y, (int)b.pos.z,
+                    (int)b.size.x, (int)b.size.y, (int)b.size.z,
+                    (int)b.yaw, (int)b.pitch);
+            }
+        }
+        fprintf(f, "%d\n", (int)info.verts.size() / 3);
+        for(int j = 0; j < info.verts.size() / 3; ++j)
+        {
+            fprintf(f, "%d %d %d\n",
+                (int)info.verts[j * 3 + 0],
+                (int)info.verts[j * 3 + 1],
+                (int)info.verts[j * 3 + 2]);
+        }
+        for(int j = 0; j < 5; ++j)
+        {
+            fprintf(f, "%d\n", (int)info.faces[j].size() / 3);
+            for(int k = 0; k < info.faces[j].size() / 3; ++k)
+            {
+                fprintf(f, "%d %d %d\n",
+                    (int)info.faces[j][k * 3 + 0],
+                    (int)info.faces[j][k * 3 + 1],
+                    (int)info.faces[j][k * 3 + 2]);
+            }
+        }
+    }
+  
+    fclose(f);
+}
+
+static void editor_save_header(char const* fname)
+{
+    FILE* f = fopen(fname, "w");
+    if(!f) return;
+
+    fprintf(f, "#pragma once\n\n");
+    fprintf(f, "// generated file: do not edit\n\n");
+
+    for(int i = 0; i < (int)editor_levels.size(); ++i)
+    {
+        auto const& info = editor_levels[i];
+
+        fprintf(f, "static int8_t const LEVELS_%s_%02d_VERTS[%d * 3] PROGMEM =\n{\n",
+            course_name.c_str(), i, (int)info.verts.size() / 3);
+        for(int j = 0; j < (int)info.verts.size() / 3; ++j)
+        {
+            fprintf(f, "    %d, %d, %d,\n",
+                (int)info.verts[j * 3 + 0],
+                (int)info.verts[j * 3 + 1],
+                (int)info.verts[j * 3 + 2]);
+        }
+        fprintf(f, "};\n\n");
+
+        {
+            int num_faces = 0;
+            for(int k = 0; k < 5; ++k)
+                num_faces += (int)info.faces[k].size() / 3;
+            fprintf(f, "static uint8_t const LEVELS_%s_%02d_FACES[%d * 3] PROGMEM =\n{\n",
+                course_name.c_str(), i, num_faces);
+        }
+        for(int k = 0; k < 5; ++k)
+        {
+            for(int j = 0; j < (int)info.faces[k].size() / 3; ++j)
+            {
+                fprintf(f, "    %d, %d, %d,\n",
+                    (int)info.faces[k][j * 3 + 0],
+                    (int)info.faces[k][j * 3 + 1],
+                    (int)info.faces[k][j * 3 + 2]);
+            }
+        }
+        fprintf(f, "};\n\n");
+
+        fprintf(f, "static phys_box const LEVELS_%s_%02d_BOXES[%d] PROGMEM =\n{\n",
+            course_name.c_str(), i, (int)info.boxes.size());
+        for(auto const& b : info.boxes)
+        {
+            fprintf(f, "    { { %d, %d, %d }, { %d, %d, %d }, %d, %d },\n",
+                (int)b.size.x, (int)b.size.y, (int)b.size.z,
+                (int)b.pos.x, (int)b.pos.y, (int)b.pos.z,
+                (int)b.yaw, (int)b.pitch);
+        }
+        fprintf(f, "};\n\n");
+    }
+
+    fprintf(f, "static level_info const LEVELS_%s[%d] PROGMEM =\n{\n\n",
+        course_name.c_str(), (int)editor_levels.size());
+
+    for(int i = 0; i < (int)editor_levels.size(); ++i)
+    {
+        auto const& info = editor_levels[i];
+
+        fprintf(f, "{\n");
+        fprintf(f, "    LEVELS_%s_%02d_VERTS,\n", course_name.c_str(), i);
+        fprintf(f, "    LEVELS_%s_%02d_FACES,\n", course_name.c_str(), i);
+        fprintf(f, "    LEVELS_%s_%02d_BOXES,\n", course_name.c_str(), i);
+        fprintf(f, "    %d,\n", (int)info.verts.size() / 3);
+        fprintf(f, "    { %d, %d, %d, %d, %d, },\n",
+            (int)info.faces[0].size() / 3,
+            (int)info.faces[1].size() / 3,
+            (int)info.faces[2].size() / 3,
+            (int)info.faces[3].size() / 3,
+            (int)info.faces[4].size() / 3);
+        fprintf(f, "    %d,\n", (int)info.boxes.size());
+        fprintf(f, "    { %d, %d, %d },\n",
+            (int)info.ball_pos.x,
+            (int)info.ball_pos.y,
+            (int)info.ball_pos.z);
+        fprintf(f, "    { %d, %d, %d },\n",
+            (int)info.flag_pos.x,
+            (int)info.flag_pos.y,
+            (int)info.flag_pos.z);
+        fprintf(f, "},\n\n");
+    }
+
+    fprintf(f, "};\n");
+
+    fclose(f);
 }
 
 static void editor_gui()
@@ -138,29 +329,32 @@ static void editor_gui()
     SameLine();
     InputInt("Ortho Zoom", &ortho_zoom, 100);
     InputInt("Level Index", &level_index);
-    if(Button("Copy level info to clipboard"))
+    if(Button("Load from file"))
     {
-        std::string s = editor_get_string();
-        SetClipboardText(s.c_str());
+        editor_load_file(BASE_DIR "/levels/all_levels.txt");
     }
     SameLine();
-    if(Button("Save to info header"))
+    if(Button("Save to file"))
     {
-        std::string fname = fmt::format(
-            BASE_DIR "/levels/level_{:02d}_info.hpp", level_index);
-        std::string s = editor_get_string();
-        FILE* f = fopen(fname.c_str(), "w");
-        if(f)
-        {
-            fputs(s.c_str(), f);
-            fclose(f);
-        }
+        editor_save_file(BASE_DIR "/levels/all_levels.txt");
+    }
+    SameLine();
+    if(Button("Save to header"))
+    {
+        editor_save_header(BASE_DIR "/levels/all_levels.hpp");
     }
 
-    level_index = tclamp(level_index, 0, NUM_LEVELS - 1);
-    current_level = &editor_levels[level_index];
+    level_index = tclamp(level_index, 0, (int)editor_levels.size() - 1);
+    if(editor_levels.empty())
+    {
+        End();
+        return;
+    }
     auto& level = editor_levels[level_index];
-    int num_boxes = (int)editor_boxes[level_index].size();
+    int num_boxes = (int)level.boxes.size();
+
+    dummy_level.ball_pos = level.ball_pos;
+    dummy_level.flag_pos = level.flag_pos;
 
     AlignTextToFramePadding(); Text("Ball:"); SameLine();
     input_coord16("x##ballx", level.ball_pos.x); SameLine();
@@ -175,7 +369,7 @@ static void editor_gui()
     std::vector<char const*> boxstrs2;
     for(int i = 0; i < num_boxes; ++i)
     {
-        phys_box const& box = editor_boxes[level_index][i];
+        phys_box const& box = level.boxes[i];
         boxstrs.push_back(fmt::format(
             "Box {:02d}: {:4.1f} {:4.1f} {:4.1f}   {}/{}",
             i,
@@ -185,7 +379,7 @@ static void editor_gui()
     }
     for(size_t i = 0; i < boxstrs.size(); ++i)
         boxstrs2.push_back(boxstrs[i].c_str());
-    auto& boxes = editor_boxes[level_index];
+    auto& boxes = level.boxes;
     if(Button("Clone Box"))
     {
         boxes.push_back(boxes[editor_boxi]);
@@ -284,7 +478,7 @@ static void editor_draw_box(phys_box box, ImU32 col)
 
 static void editor_draw_boxes()
 {
-    auto const& boxes = editor_boxes[level_index];
+    auto const& boxes = editor_levels[level_index].boxes;
     for(int j, i = 0; i < (int)boxes.size(); ++i)
     {
         auto const& box = boxes[i];
@@ -351,16 +545,7 @@ int main(int, char**)
     // Our state
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-    memcpy(editor_levels, LEVELS, sizeof(LEVELS));
-    for(int i = 0; i < NUM_LEVELS; ++i)
-    {
-        editor_boxes[i].resize(LEVELS[i].num_boxes);
-        memcpy(editor_boxes[i].data(), LEVELS[i].boxes,
-            editor_boxes[i].size() * sizeof(phys_box));
-        editor_levels[i].boxes = editor_boxes[i].data();
-    }
-
-    current_level = &editor_levels[level_index];
+    current_level = &dummy_level;
     yaw = pitch = 0;
     cam = { 0, 8 * 256, 24 * 256 };
     ball = { 256 * 16, 256 * 2, 256 * 1 };
@@ -442,14 +627,39 @@ int main(int, char**)
 
         editor_gui();
 
+        if(!editor_levels.empty())
         {
+            auto const& info = editor_levels[level_index];
+            std::vector<uint8_t> faces;
+            uint8_t num_faces[5];
+            for(int i = 0; i < 5; ++i)
+            {
+                num_faces[i] = info.faces[i].size() / 3;
+                faces.insert(faces.end(), info.faces[i].begin(), info.faces[i].end());
+            }
             uint8_t nfpat[4];
-            nfpat[0] =            pgm_read_byte(&current_level->num_faces[0]);
-            nfpat[1] = nfpat[0] + pgm_read_byte(&current_level->num_faces[1]);
-            nfpat[2] = nfpat[1] + pgm_read_byte(&current_level->num_faces[2]);
-            nfpat[3] = nfpat[2] + pgm_read_byte(&current_level->num_faces[3]);
-            auto const* faces = current_level->faces;
-            uint8_t nf = ortho ? render_scene_ortho(ortho_zoom) : render_scene();
+            nfpat[0] = num_faces[0];
+            nfpat[1] = nfpat[0] + num_faces[1];
+            nfpat[2] = nfpat[1] + num_faces[2];
+            nfpat[3] = nfpat[2] + num_faces[3];
+            uint8_t nf;
+            if(ortho)
+            {
+                nf = render_scene_ortho(
+                    ortho_zoom,
+                    info.verts.data(),
+                    faces.data(),
+                    uint8_t(info.verts.size() / 3),
+                    num_faces);
+            }
+            else
+            {
+                nf = render_scene_persp(
+                    info.verts.data(),
+                    faces.data(),
+                    uint8_t(info.verts.size() / 3),
+                    num_faces);
+            }
             auto* draw = ImGui::GetBackgroundDrawList();
             for(uint8_t i = 0; i < nf; ++i)
             {
@@ -506,7 +716,7 @@ int main(int, char**)
             editor_draw_boxes();
 
             {
-                auto ball = current_level->ball_pos;
+                auto ball = info.ball_pos;
                 uint8_t r = BALL_RADIUS / BOX_SIZE_FACTOR;
                 vec3 bp;
                 bp.x = ball.x / BOX_POS_FACTOR;
@@ -517,7 +727,7 @@ int main(int, char**)
                     ImGui::ColorConvertFloat4ToU32(ImVec4(0.f, 1.f, 0.5f, 1.f)));
             }
             {
-                auto flag = current_level->flag_pos;
+                auto flag = info.flag_pos;
                 uint8_t r = FLAG_RADIUS / BOX_SIZE_FACTOR;
                 vec3 fp;
                 fp.x = flag.x / BOX_POS_FACTOR;

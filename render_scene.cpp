@@ -525,14 +525,23 @@ uint8_t render_scene()
 }
 
 #ifndef ARDUINO
-uint8_t render_scene_ortho(int zoom)
+uint8_t render_scene_persp(
+    int8_t const* verts,
+    uint8_t const* faces,
+    uint8_t num_verts,
+    uint8_t const* num_faces)
+{
+    return render_scene<false>(verts, faces, num_verts, num_faces);
+}
+uint8_t render_scene_ortho(
+    int zoom,
+    int8_t const* verts,
+    uint8_t const* faces,
+    uint8_t num_verts,
+    uint8_t const* num_faces)
 {
     ortho_zoom = zoom;
-    return render_scene<true>(
-        pgmptr(&current_level->verts),
-        pgmptr(&current_level->faces),
-        pgm_read_byte(&current_level->num_verts),
-        current_level->num_faces);
+    return render_scene<true>(verts, faces, num_verts, num_faces);
 }
 dvec3 transform_point(dvec3 dv, bool ortho, int ortho_zoom)
 {

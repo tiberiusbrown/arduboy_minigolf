@@ -4,7 +4,11 @@
 #include <cmath>
 
 #include "../game.hpp"
+
 uint8_t poll_btns() { return 0; }
+void save_audio_on_off() {}
+void toggle_audio() {}
+bool audio_enabled() { return false; }
 
 int main()
 {

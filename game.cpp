@@ -7,6 +7,20 @@
 #pragma GCC optimize("no-inline-small-functions")
 #endif
 
+#include "levels/levels_default.hpp"
+
+static auto const* const LEVELS = LEVELS_DEFAULT;
+static constexpr uint8_t NUM_LEVELS =
+    sizeof(LEVELS_DEFAULT) / sizeof(LEVELS_DEFAULT[0]);
+
+static uint8_t const PARS[NUM_LEVELS] PROGMEM =
+{
+    2, 3, 3, 4, 4, 4, 5, 4, 4, 3, 4, 4, 5, 5, 4, 5, 6, 6,
+};
+
+uint8_t leveli;
+level_info const* current_level;
+
 #define DEBUG_TITLE_CAM 0
 static constexpr uint8_t TITLE_LEVEL = 0;
 
