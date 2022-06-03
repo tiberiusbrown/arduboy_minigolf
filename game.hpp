@@ -23,6 +23,9 @@ static constexpr uint8_t FB_FRAC_MASK = FB_FRAC_COEF - 1;
 // platform functionality
 uint16_t time_ms();
 uint8_t poll_btns();
+void save_audio_on_off();
+void toggle_audio();
+bool audio_enabled();
 
 // game logic
 void game_setup();
@@ -47,37 +50,17 @@ void game_loop();
 #endif
 
 #ifdef ARDUINO
+
 #include <Arduino.h>
 
-#if 1
-// http://michael-buschbeck.github.io/arduino/2013/10/20/string-merging-pstr/
-// limitation: cannot use string literal concatenation: PSTR("hi " "there")
-#undef PSTR
-#define PSTR(str_) \
-    (__extension__({ \
-        char const* ptr;  \
-        asm volatile \
-        ( \
-            ".pushsection .progmem.pstrs, \"SM\", @progbits, 1" "\n\t" \
-            "PSTR%=: .string " #str_                            "\n\t" \
-            ".type PSTR%= STT_OBJECT"                           "\n\t" \
-            ".popsection"                                       "\n\t" \
-            "ldi %A0, lo8(PSTR%=)"                              "\n\t" \
-            "ldi %B0, hi8(PSTR%=)"                              "\n\t" \
-            : "=d" (ptr) \
-        ); \
-        ptr; \
-    }))
-#endif
-
-#define PSTR2(str_) \
-    (__extension__({ static char const PROGSTR_[] PROGMEM = str_; PROGSTR_; }))
+#include <ArduboyTones.h>
+extern ArduboyTones sound;
+#define play_tone sound.tone
 
 #define myassert(...)
 
 #else
-#define PSTR(str_) str_
-#define PSTR2(str_) str_
+
 #define PROGMEM
 inline uint8_t pgm_read_byte(void const* p) { return *(uint8_t*)p; }
 inline uint16_t pgm_read_word(void const* p) { return *(uint16_t*)p; }
@@ -88,6 +71,9 @@ inline void const* pgm_read_ptr(void const* p) { return *(void const**)p; }
 
 #include <string.h>
 #define memcpy_P memcpy
+
+#define play_tone(...)
+
 #endif
 
 #if !defined(__AVR__)
@@ -425,6 +411,7 @@ extern uint8_t const GFX_QUIT    [] PROGMEM;
 extern uint8_t const GFX_MENU    [] PROGMEM;
 extern uint8_t const GFX_ARROW   [] PROGMEM;
 extern uint8_t const GFX_HIO     [] PROGMEM;
+extern uint8_t const GFX_AUDIO   [] PROGMEM;
 
 static inline int16_t div_frac_s(int16_t x)
 {

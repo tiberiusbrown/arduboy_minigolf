@@ -60,6 +60,8 @@ static bool gif_recording = false;
 #endif
 static uint64_t gif_frame_time = 0;
 
+void save_audio_on_off() {}
+
 uint8_t read_persistent(uint16_t addr)
 {
     return persistent_data[addr % 1024];
@@ -68,6 +70,18 @@ uint8_t read_persistent(uint16_t addr)
 void update_persistent(uint16_t addr, uint8_t data)
 {
     persistent_data[addr % 1024] = data;
+}
+
+static bool audio = false;
+
+void toggle_audio()
+{
+    audio = !audio;
+}
+
+bool audio_enabled()
+{
+    return audio;
 }
 
 void flush_persistent()

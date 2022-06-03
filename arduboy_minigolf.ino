@@ -3,17 +3,35 @@
 #include <SPI.h>
 #include <EEPROM.h>
 #include <Arduboy2.h>
+#include <ArduboyTones.h>
 #include <Arduino.h>
 
 #define FPS_SET 1
 #define SHOW_FPS 0
 
 #if SHOW_FPS
-Arduboy2 a;
+static Arduboy2 a;
 #else
-Arduboy2Base a;
+static Arduboy2Base a;
 #endif
 uint8_t* const buf = Arduboy2Base::sBuffer;
+
+ArduboyTones sound(a.audio.enabled);
+
+void save_audio_on_off()
+{
+    a.audio.saveOnOff();
+}
+
+void toggle_audio()
+{
+    a.audio.toggle();
+}
+
+bool audio_enabled() 
+{
+    return a.audio.enabled();
+}
 
 uint16_t time_ms()
 {
@@ -33,6 +51,7 @@ void setup()
 #endif
 {
     Arduboy2Base::boot();
+    a.audio.begin();
 #if REMOVE_USB
 
     if(Arduboy2Core::buttonsState() & DOWN_BUTTON)

@@ -157,6 +157,9 @@ static void physics_collision(phys_box b)
     if(normdot > 0)
         return;
 
+    if(normdot < -256 * 4)
+        play_tone(120, 50);
+
     // attempt to resolve penetration
 #if 0
     ball.x -= mul_f16_s16(normal.x, normdot);

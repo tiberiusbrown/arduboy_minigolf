@@ -274,7 +274,13 @@ void game_loop()
         }
 #else
         if(pressed & BTN_A)
-            ab_btn_wait = 0, set_level(STARTING_LEVEL);
+        {
+            ab_btn_wait = 0;
+            set_level(STARTING_LEVEL);
+            save_audio_on_off();
+        }
+        else if(pressed & BTN_B)
+            toggle_audio();
         else if(pressed & (BTN_LEFT | BTN_RIGHT))
             practice ^= 1;
 #endif
@@ -291,6 +297,10 @@ void game_loop()
                 inv_pixel(x0, y);
             ++x0;
         }
+        draw_graphic(
+            GFX_AUDIO, FBR - 1, FBW - 29, 1,
+            audio_enabled() ? 29 : 24,
+            GRAPHIC_OVERWRITE);
         return;
     }
     else if(state == st::LEVEL)
@@ -354,6 +364,7 @@ void game_loop()
             ball_vel.x = mul_f8_s16(ys, power_aim);
             ball_vel.z = mul_f8_s16(yc, power_aim);
             state = st::ROLLING;
+            play_tone(180, 100);
         }
 
         if(pressed & BTN_B)
@@ -381,6 +392,7 @@ void game_loop()
             state = st::HOLE;
             yaw_aim = yaw;
             nframe = 0;
+            play_tone(180, 100, 300, 100);
         }
         update_camera_follow_ball(DIST_ROLL, 64, 16);
     }
