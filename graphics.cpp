@@ -136,7 +136,7 @@ void draw_graphic(
     uint8_t op)
 {
     uint8_t* br = &buf[0] + r * FBW;
-    for(uint8_t y = 0; y < h; ++y, br += 128)
+    for(uint8_t y = 0; y < h; ++y, br += FBW)
     {
         for(uint8_t x = 0; x < w; ++x)
         {

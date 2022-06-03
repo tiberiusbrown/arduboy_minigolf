@@ -313,9 +313,9 @@ void game_loop()
             current_level = &LEVELS[leveli];
             reset_ball();
             render_scene();
-            draw_graphic(GFX_INFO_BAR, 6, 0, 2, 28, GRAPHIC_OVERWRITE);
-            set_number2(leveli + 1, 6, 18);
-            set_number2(pgm_read_byte(&PARS[leveli]), 7, 18);
+            draw_graphic(GFX_INFO_BAR, FBR - 2, 0, 2, 28, GRAPHIC_OVERWRITE);
+            set_number2(leveli + 1, FBR - 2, 18);
+            set_number2(pgm_read_byte(&PARS[leveli]), FBR - 1, 18);
             return;
         }
         else if(nframe == 255 || (pressed & BTN_B))
@@ -418,7 +418,7 @@ void game_loop()
             draw_graphic(GFX_NEXT, 2, 110, 1, 15, GRAPHIC_SET);
         }
         draw_nframe_progress(21 + 24, progb);
-        draw_graphic(GFX_QUIT, 5, 110, 1, 15, GRAPHIC_SET);
+        draw_graphic(GFX_QUIT, FBR - 3, 110, 1, 15, GRAPHIC_SET);
         return;
     }
     else if(state == st::MENU)
@@ -478,12 +478,12 @@ void game_loop()
         draw_graphic(GFX_MENU + 42, 0, -menu_offset, 3, 42, GRAPHIC_OVERWRITE);
     draw_graphic(GFX_ARROW, menui, 36 - menu_offset, 1, 3, GRAPHIC_SET);
 
-    draw_graphic(GFX_INFO_BAR, 5, -graphic_offset, 3, 28, GRAPHIC_OVERWRITE);
+    draw_graphic(GFX_INFO_BAR, FBR - 3, -graphic_offset, 3, 28, GRAPHIC_OVERWRITE);
     {
         uint8_t nx = 18 - graphic_offset;
-        set_number2(leveli + 1, 5, nx);
-        set_number2(pgm_read_byte(&PARS[leveli]), 6, nx);
-        set_number2(shots[leveli] + 1, 7, nx);
+        set_number2(leveli + 1, FBR - 3, nx);
+        set_number2(pgm_read_byte(&PARS[leveli]), FBR - 2, nx);
+        set_number2(shots[leveli] + 1, FBR - 1, nx);
     }
 
     if(graphic_offset < 5)
@@ -501,5 +501,5 @@ void game_loop()
             for(uint8_t x = t; x < 128; ++x)
                 set_pixel(x, y);
     }
-    draw_graphic(GFX_POWER, 7, 100 + graphic_offset, 1, 24, GRAPHIC_OVERWRITE);
+    draw_graphic(GFX_POWER, FBR - 1, 100 + graphic_offset, 1, 24, GRAPHIC_OVERWRITE);
 }
