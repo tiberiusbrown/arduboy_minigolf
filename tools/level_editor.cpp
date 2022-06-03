@@ -17,6 +17,8 @@ static constexpr int WH = 64 * ZOOM;
 #include <d3d9.h>
 #include <tchar.h>
 
+#include <nfd.h>
+
 #pragma comment(lib, "d3d9.lib")
 
 #include <vector>
@@ -331,17 +333,35 @@ static void editor_gui()
     InputInt("Level Index", &level_index);
     if(Button("Load from file"))
     {
-        editor_load_file(BASE_DIR "/levels/all_levels.txt");
+        nfdchar_t* path;
+        auto r = NFD_OpenDialog("txt", BASE_DIR "\\levels", &path);
+        if(r == NFD_OKAY)
+        {
+            editor_load_file(path);
+            free(path);
+        }
     }
     SameLine();
     if(Button("Save to file"))
     {
-        editor_save_file(BASE_DIR "/levels/all_levels.txt");
+        nfdchar_t* path;
+        auto r = NFD_SaveDialog("txt", BASE_DIR "\\levels", &path);
+        if(r == NFD_OKAY)
+        {
+            editor_save_file(path);
+            free(path);
+        }
     }
     SameLine();
     if(Button("Save to header"))
     {
-        editor_save_header(BASE_DIR "/levels/all_levels.hpp");
+        nfdchar_t* path;
+        auto r = NFD_SaveDialog("hpp", BASE_DIR "\\levels", &path);
+        if(r == NFD_OKAY)
+        {
+            editor_save_header(path);
+            free(path);
+        }
     }
 
     level_index = tclamp(level_index, 0, (int)editor_levels.size() - 1);

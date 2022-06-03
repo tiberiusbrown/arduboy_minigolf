@@ -71,14 +71,24 @@ if(WIN32)
         tools/imgui/backends/imgui_impl_win32.h
         tools/imgui/backends/imgui_impl_dx9.h
         tools/imgui/backends/imgui_impl_dx9.cpp
+        tools/nativefiledialog/nfd_win.cpp
+        tools/nativefiledialog/nfd_common.c
+        tools/nativefiledialog/nfd_common.h
+        tools/nativefiledialog/common.h
+        tools/nativefiledialog/include/nfd.h
         ${MINIGOLF_SOURCES}
     )
     target_include_directories(level_editor PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/imgui"
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/fmt"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/nativefiledialog/include"
     )
+    set(BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+    if(WIN32)
+        string(REGEX REPLACE "/" "\\\\\\\\" BASE_DIR "${BASE_DIR}")
+    endif()
     target_compile_definitions(level_editor PUBLIC
-        -DBASE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+        -DBASE_DIR="${BASE_DIR}")
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC git)
