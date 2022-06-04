@@ -63,7 +63,8 @@ add_executable(
     ${MINIGOLF_SOURCES}
 )
 
-if(WIN32)
+if(MSVC)
+
     add_executable(
         level_editor
         tools/level_editor.cpp
@@ -83,12 +84,15 @@ if(WIN32)
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/fmt"
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/nativefiledialog/include"
     )
+    set_property(TARGET level_editor PROPERTY
+        MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     set(BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
     if(WIN32)
         string(REGEX REPLACE "/" "\\\\\\\\" BASE_DIR "${BASE_DIR}")
     endif()
     target_compile_definitions(level_editor PUBLIC
         -DBASE_DIR="${BASE_DIR}")
+
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC git)

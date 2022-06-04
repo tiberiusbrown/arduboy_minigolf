@@ -114,8 +114,8 @@ static void draw_tri_segment(
 
     if(ay0 > ay1 || by0 > by1)
     {
-        swap(ay0, ay1);
-        swap(by0, by1);
+        tswap(ay0, ay1);
+        tswap(by0, by1);
     }
 
     int16_t dx = bx - ax;
@@ -310,9 +310,9 @@ void draw_tri(dvec2 v0, dvec2 v1, dvec2 v2, uint8_t pati)
     if(tmin(v0.y, v1.y, v2.y) > FBH * FB_FRAC_COEF) return;
 
     // sort by x coord
-    if(v0.x > v1.x) swap(v0, v1);
-    if(v1.x > v2.x) swap(v1, v2);
-    if(v0.x > v1.x) swap(v0, v1);
+    if(v0.x > v1.x) tswap(v0, v1);
+    if(v1.x > v2.x) tswap(v1, v2);
+    if(v0.x > v1.x) tswap(v0, v1);
 
     if(v2.x < 0 || v0.x >= FBW * FB_FRAC_COEF || v0.x == v2.x) return;
 

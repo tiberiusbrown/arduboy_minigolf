@@ -113,7 +113,7 @@ private:
 };
 
 template<class T>
-FORCEINLINE void swap(T& a, T& b)
+FORCEINLINE void tswap(T& a, T& b)
 {
     T c = a;
     a = b;

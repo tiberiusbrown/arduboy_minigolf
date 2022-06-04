@@ -8,10 +8,6 @@ static constexpr int WH = 64 * ZOOM;
 #define IMGUI_IMPLEMENTATION
 #include <misc/single_file/imgui_single_file.h>
 
-// Dear ImGui: standalone example application for DirectX 9
-// If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
-// Read online: https://github.com/ocornut/imgui/tree/master/docs
-
 #include <backends/imgui_impl_dx9.h>
 #include <backends/imgui_impl_win32.h>
 #include <d3d9.h>
@@ -23,13 +19,17 @@ static constexpr int WH = 64 * ZOOM;
 
 #include <vector>
 #include <string>
+#include <fstream>
+#include <sstream>
 #include <cmath>
+#include <cctype>
 
 #define FMT_HEADER_ONLY
 #include <fmt/format.h>
 
 struct editor_level_info
 {
+    std::string name;
     std::vector<int8_t> verts;
     std::vector<uint8_t> faces[5];
     std::vector<phys_box> boxes;
@@ -58,6 +58,19 @@ static ImVec2 dvec2imvec(dvec2 v)
 static ImVec2 dvec2imvec(dvec3 v)
 {
     return dvec2imvec(dvec2{ v.x, v.y });
+}
+
+static std::string read_line(FILE* f)
+{
+    int c;
+    std::string r;
+    while(!feof(f))
+    {
+        c = fgetc(f);
+        if(c == '\n') break;
+        r += c;
+    }
+    return r;
 }
 
 static void input_coord16(char const* label, int16_t& v)
@@ -115,34 +128,39 @@ static void editor_load_file(char const* fname)
 {
     FILE* f = fopen(fname, "r");
     if(!f) return;
-    int n0, n1, n2, n3, n4, n5, n6, n7;
+    int r, n0, n1, n2, n3, n4, n5, n6, n7;
 
-    course_name.clear();
-    while((n0 = fgetc(f)) != '\n')
-        course_name += char(n0);
+    course_name = read_line(f);
 
-    fscanf(f, "%d\n", &n0);
+    r = fscanf(f, "%d", &n0);
+    if(r != 1) goto error;
     editor_levels.clear();
     editor_levels.resize(n0);
 
     for(auto& info : editor_levels)
     {
-        fscanf(f, "%d %d %d\n", &n0, &n1, &n2);
+        info.name = read_line(f);
+
+        r = fscanf(f, "%d %d %d", &n0, &n1, &n2);
+        if(r != 3) goto error;
         info.ball_pos.x = n0;
         info.ball_pos.y = n1;
         info.ball_pos.z = n2;
-        fscanf(f, "%d %d %d\n", &n0, &n1, &n2);
+        r = fscanf(f, "%d %d %d", &n0, &n1, &n2);
+        if(r != 3) goto error;
         info.flag_pos.x = n0;
         info.flag_pos.y = n1;
         info.flag_pos.z = n2;
         {
             auto& boxes = info.boxes;
-            fscanf(f, "%d\n", &n0);
+            r = fscanf(f, "%d", &n0);
+            if(r != 1) goto error;
             boxes.resize(n0);
             for(auto& b : boxes)
             {
-                fscanf(f, "%d %d %d %d %d %d %d %d\n",
+                r = fscanf(f, "%d %d %d %d %d %d %d %d",
                     &n0, &n1, &n2, &n3, &n4, &n5, &n6, &n7);
+                if(r != 8) goto error;
                 b.pos.x  = n0;
                 b.pos.y  = n1;
                 b.pos.z  = n2;
@@ -153,22 +171,26 @@ static void editor_load_file(char const* fname)
                 b.pitch  = n7;
             }
         }
-        fscanf(f, "%d\n", &n0);
+        r = fscanf(f, "%d", &n0);
+        if(r != 1) goto error;
         info.verts.resize(n0 * 3);
         for(int j = 0; j < (int)info.verts.size() / 3; ++j)
         {
-            fscanf(f, "%d %d %d\n", &n0, &n1, &n2);
+            r = fscanf(f, "%d %d %d", &n0, &n1, &n2);
+            if(r != 3) goto error;
             info.verts[j * 3 + 0] = n0;
             info.verts[j * 3 + 1] = n1;
             info.verts[j * 3 + 2] = n2;
         }
         for(int j = 0; j < 5; ++j)
         {
-            fscanf(f, "%d\n", &n0);
+            r = fscanf(f, "%d", &n0);
+            if(r != 1) goto error;
             info.faces[j].resize(n0 * 3);
             for(int k = 0; k < info.faces[j].size() / 3; ++k)
             {
-                fscanf(f, "%d %d %d\n", &n0, &n1, &n2);
+                r = fscanf(f, "%d %d %d", &n0, &n1, &n2);
+                if(r != 3) goto error;
                 info.faces[j][k * 3 + 0] = n0;
                 info.faces[j][k * 3 + 1] = n1;
                 info.faces[j][k * 3 + 2] = n2;
@@ -177,6 +199,10 @@ static void editor_load_file(char const* fname)
     }
 
     fclose(f);
+    return;
+
+error:
+    editor_levels.clear();
 }
 
 static void editor_save_file(char const* fname)
@@ -190,6 +216,7 @@ static void editor_save_file(char const* fname)
 
     for(auto const& info : editor_levels)
     {
+        fprintf(f, "%s\n", info.name.c_str());
         fprintf(f, "%d %d %d\n",
             (int)info.ball_pos.x,
             (int)info.ball_pos.y,
@@ -322,30 +349,109 @@ static void editor_save_header(char const* fname)
     fclose(f);
 }
 
+static int get_pattern_of_material(char const* mat_name)
+{
+    for(;;)
+    {
+        char c = *mat_name++;
+        if(c == '\0') break;
+        if(c >= '0' && c <= '4')
+            return c - '0';
+    }
+    return 0;
+}
+
+static void load_mesh(char const* fname)
+{
+    std::ifstream f(fname);
+    if(f.fail()) return;
+    std::string s;
+
+    auto& info = editor_levels[level_index];
+    info.verts.clear();
+    for(auto& f : info.faces) f.clear();
+    int pat = 0;
+
+    while(!f.eof())
+    {
+        std::getline(f, s);
+        std::stringstream ss(s);
+        std::string word;
+        std::getline(ss, word, ' ');
+        if(word == "v")
+        {
+            double x, y, z;
+            ss >> x >> y >> z;
+            info.verts.push_back(int8_t(round(x * 4)));
+            info.verts.push_back(int8_t(round(y * 4)));
+            info.verts.push_back(int8_t(round(z * 4)));
+        }
+        else if(word == "f")
+        {
+            char dummy;
+            int i0, i1, i2;
+            ss >> i0;
+            while(ss.peek() > ' ') ss >> dummy;
+            ss >> i1;
+            while(ss.peek() > ' ') ss >> dummy;
+            ss >> i2;
+            while(ss.peek() > ' ') ss >> dummy;
+            info.faces[pat].push_back(uint8_t(i0 - 1));
+            info.faces[pat].push_back(uint8_t(i1 - 1));
+            info.faces[pat].push_back(uint8_t(i2 - 1));
+        }
+        else if(word == "usemtl")
+        {
+            pat = 0;
+            for(char c : s)
+            {
+                if(c >= '0' && c <= '4')
+                {
+                    pat = c - '0';
+                    break;
+                } 
+            }
+        }
+    }
+}
+
+static int total_faces(editor_level_info const& info)
+{
+    int r = 0;
+    for(int i = 0; i < 5; ++i)
+        r += (int)info.faces[i].size() / 3;
+    return r;
+}
+
 static void editor_gui()
 {
     using namespace ImGui;
     SetNextWindowSize({ 500, 600 }, ImGuiCond_FirstUseEver);
     Begin("Editor", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-    Checkbox("Ortho", &ortho);
-    SameLine();
-    InputInt("Ortho Zoom", &ortho_zoom, 100);
-    InputInt("Level Index", &level_index);
     if(Button("Load from file"))
     {
         nfdchar_t* path;
         auto r = NFD_OpenDialog("txt", BASE_DIR "\\levels", &path);
+        if(r == NFD_ERROR)
+            r = NFD_OpenDialog("txt", nullptr, &path);
         if(r == NFD_OKAY)
         {
             editor_load_file(path);
             free(path);
         }
     }
+    if(editor_levels.empty())
+    {
+        End();
+        return;
+    } 
     SameLine();
     if(Button("Save to file"))
     {
         nfdchar_t* path;
         auto r = NFD_SaveDialog("txt", BASE_DIR "\\levels", &path);
+        if(r == NFD_ERROR)
+            r = NFD_SaveDialog("txt", nullptr, &path);
         if(r == NFD_OKAY)
         {
             editor_save_file(path);
@@ -357,6 +463,8 @@ static void editor_gui()
     {
         nfdchar_t* path;
         auto r = NFD_SaveDialog("hpp", BASE_DIR "\\levels", &path);
+        if(r == NFD_ERROR)
+            r = NFD_SaveDialog("hpp", nullptr, &path);
         if(r == NFD_OKAY)
         {
             editor_save_header(path);
@@ -364,14 +472,53 @@ static void editor_gui()
         }
     }
 
-    level_index = tclamp(level_index, 0, (int)editor_levels.size() - 1);
-    if(editor_levels.empty())
+    Checkbox("Ortho", &ortho);
+    SameLine();
+    InputInt("Ortho Zoom", &ortho_zoom, 100);
+
+    std::vector<std::string> levelstrs;
+    std::vector<char const*> levelstrs2;
+    for(int i = 0; i < (int)editor_levels.size(); ++i)
     {
-        End();
-        return;
+        auto const& info = editor_levels[i];
+        levelstrs.push_back(fmt::format(
+            "Level {:02} [{:2}v {:2}f {:2}b] {}", i,
+            (int)info.verts.size() / 3,
+            total_faces(info),
+            (int)info.boxes.size(),
+            info.name));
+        levelstrs2.push_back(levelstrs.back().c_str());
     }
+    SetNextItemWidth(-1);
+    ListBox("##Levels", &level_index, levelstrs2.data(), (int)levelstrs2.size());
+    //InputInt("Level Index", &level_index);
+
+    level_index = tclamp(level_index, 0, (int)editor_levels.size() - 1);
     auto& level = editor_levels[level_index];
     int num_boxes = (int)level.boxes.size();
+
+    {
+        char buf[256];
+        strncpy(buf, level.name.c_str(), sizeof(buf));
+        InputText("Name", buf, sizeof(buf));
+        level.name = buf;
+        for(auto& c : level.name)
+            if(!isalnum(c)) c = '_';
+    }
+
+    if(Button("Load mesh from file"))
+    {
+        nfdchar_t* path;
+        char const* filters = "obj";
+        auto r = NFD_OpenDialog(filters, BASE_DIR "\\levels", &path);
+        if(r == NFD_ERROR)
+            r = NFD_OpenDialog(filters, nullptr, &path);
+        if(r == NFD_OKAY)
+        {
+            load_mesh(path);
+            free(path);
+        }
+    }
 
     dummy_level.ball_pos = level.ball_pos;
     dummy_level.flag_pos = level.flag_pos;
@@ -566,8 +713,9 @@ int main(int, char**)
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     current_level = &dummy_level;
-    yaw = pitch = 0;
-    cam = { 0, 8 * 256, 24 * 256 };
+    yaw = 0;
+    pitch = 4000;
+    cam = { 0, 12 * 256, 32 * 256 };
     ball = { 256 * 16, 256 * 2, 256 * 1 };
 
     // Main loop

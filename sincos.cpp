@@ -90,7 +90,7 @@ int16_t atan2(int16_t y, int16_t x)
     if(x < y)
     {
         f |= 4;
-        swap(x, y);
+        tswap(x, y);
     }
 
     uint16_t ratio;
