@@ -7,13 +7,16 @@
 static constexpr int FBW = 1 * 128;
 static constexpr int FBH = 1 * 64;
 
-static constexpr int FBR = FBH / 8;
-
 #define USE_AVR_INLINE_ASM 1
 #define AVOID_FMULSU 1
 
+// draw ball outline behind walls
 #define BALL_XRAY 1
 
+// don't include button "B" icon behind audio graphic in main menu
+#define SHORTENED_AUDIO_GRAPHIC 1
+
+// rasterizer subpixel bits
 #define FB_FRAC_BITS 3
 static constexpr uint8_t FB_FRAC_COEF = 1 << FB_FRAC_BITS;
 static constexpr uint8_t FB_FRAC_MASK = FB_FRAC_COEF - 1;
@@ -28,6 +31,8 @@ bool audio_enabled();
 // game logic
 void game_setup();
 void game_loop();
+
+static constexpr int FBR = FBH / 8;
 
 #if !(__cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1900))
 #error "Building minigolf requires support for at least C++11"
@@ -176,9 +181,8 @@ extern array<uint8_t, BUF_BYTES> buf;
 static constexpr int16_t BALL_RADIUS = 256 * 0.5;
 static constexpr int16_t FLAG_RADIUS = 256 * 1.0;
 
-static constexpr uint8_t MAX_VERTS = 150;
-static constexpr uint8_t MAX_FACES = 150;
-static constexpr uint8_t MAX_CLIP_FACES = 48;
+static constexpr uint8_t MAX_VERTS = 128;
+static constexpr uint8_t MAX_FACES = 128;
 struct face_sorting_data
 {
     array<int16_t, MAX_VERTS> vz;     // camera space z
@@ -332,8 +336,8 @@ void draw_ball_filled(dvec2 c, uint16_t r, uint16_t pat);
 void draw_ball_outline(dvec2 c, uint16_t r);
 
 // render_scene.cpp
-extern array<uint8_t, MAX_FACES> face_order;
-extern array<uint8_t, MAX_CLIP_FACES * 4> clip_faces;
+struct face { uint8_t i0, i1, i2, pt; };
+extern array<face, MAX_FACES> fs;
 extern array<dvec2, MAX_VERTS> vs;
 void clear_buf();
 uint8_t render_scene();

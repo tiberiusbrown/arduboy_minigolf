@@ -311,9 +311,10 @@ void game_loop()
                 inv_pixel(x0, y);
             ++x0;
         }
+        constexpr uint8_t SHORTEN = SHORTENED_AUDIO_GRAPHIC ? 20 : 0;
         draw_graphic(
-            GFX_AUDIO, FBR - 1, FBW - 29, 1,
-            audio_enabled() ? 29 : 24,
+            GFX_AUDIO, FBR - 1, FBW - 29 + SHORTEN, 1,
+            (audio_enabled() ? 29 : 24) - SHORTEN,
             GRAPHIC_OVERWRITE);
         return;
     }

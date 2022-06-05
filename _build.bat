@@ -24,4 +24,7 @@ rem create _asm.txt file
 rem create _sizes.txt
 "C:\Program Files (x86)\Arduino\hardware\tools\avr\bin\avr-nm.exe" --size-sort -C -r -t d "%dir%/arduboy_minigolf.ino.elf" > _sizes.txt
 
+rem create _ram.txt
+findstr /c:" b " /c:" B " /c:" d " /c:" D " _sizes.txt > _ram.txt
+
 pause

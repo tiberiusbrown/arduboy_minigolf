@@ -8,13 +8,12 @@ static constexpr int16_t ZNEAR = 256;  // near
 
 static constexpr uint8_t FLAG_HEIGHT = 4;
 static constexpr uint8_t FLAG_SIZE = 2;
-static constexpr uint8_t FLAG_POLE_PAT = 4;
+static constexpr uint8_t FLAG_POLE_PAT = 4; // 3? more visible against flat
 static constexpr uint8_t FLAG_PAT = 3;
 
 static uint8_t flag_anim = 0;
 
-array<uint8_t, MAX_FACES> face_order;
-array<uint8_t, MAX_CLIP_FACES * 4> clip_faces;
+array<face, MAX_FACES> fs;
 array<dvec2, MAX_VERTS> vs;
 
 static dvec2 interpz(dvec2 a, int16_t az, dvec2 b, int16_t bz)
@@ -94,7 +93,6 @@ static uint8_t render_scene(
 
     uint8_t nv = 0;
     uint8_t nf = 0;
-    uint8_t nclipf = 0;
 
     // translate and rotate vertices
     for(uint8_t j = nv = 0; nv < num_verts; j += 3)
@@ -108,6 +106,7 @@ static uint8_t render_scene(
     }
 
     // ball vertices (center and right side) and face
+    // ball "face" is index 0
     uint8_t balli0, balli1; // ball face indices
     bool ball_valid = false;
     if(!ball_in_hole())
@@ -119,20 +118,6 @@ static uint8_t render_scene(
         dv = matvec(m, dv);
         dv.z = -dv.z;
 
-//        dv.y += 32;
-//        dv.z -= 96;
-//        int32_t fdist = 0;
-//        fdist += int32_t(dv.x) * dv.x;
-//        fdist += int32_t(dv.y) * dv.y;
-//        fdist += int32_t(dv.z) * dv.z;
-//        fdist *= 3;
-//#if FDIST_CAMY_MOD
-//        {
-//            int16_t dy = dv.y - cam.y;
-//            fdist += int32_t(dy) * dy * 4;
-//        }
-//#endif
-
         if(dv.z >= ZNEAR)
         {
             myassert(nv + 1 <= MAX_VERTS);
@@ -143,11 +128,12 @@ static uint8_t render_scene(
             balli0 = nv;
             balli1 = nv + 1;
             ball_valid = true;
-            face_order[nf] = 255;
             int16_t by = ball.y;
             uint16_t fdist = calc_fdist(nv, nv, nv, by, by, by);
             fdist += 400;
-            fd.fdist[nf] = fdist;
+            myassert(nf == 0);
+            fd.fdist[0] = fdist;
+            fs[0].pt = 255;
             nv += 2;
             nf += 1;
         }
@@ -192,38 +178,23 @@ static uint8_t render_scene(
 
         if(flag_valid)
         {
-            face_order[nf] = MAX_FACES + (nclipf >> 2);
             fd.fdist[nf] = calc_fdist(
                 fi + 0, fi + 1, fi + 2,
                 dvy0, dvy0, dvy1);
+            fs[nf] = { uint8_t(fi + 0), uint8_t(fi + 1), uint8_t(fi + 2), FLAG_POLE_PAT };
             ++nf;
-            clip_faces[nclipf + 0] = fi + 0;
-            clip_faces[nclipf + 1] = fi + 1;
-            clip_faces[nclipf + 2] = fi + 2;
-            clip_faces[nclipf + 3] = FLAG_POLE_PAT;
-            nclipf += 4;
 
-            face_order[nf] = MAX_FACES + (nclipf >> 2);
             fd.fdist[nf] = calc_fdist(
                 fi + 1, fi + 2, fi + 3,
                 dvy0, dvy1, dvy1);
+            fs[nf] = { uint8_t(fi + 1), uint8_t(fi + 2), uint8_t(fi + 3), FLAG_POLE_PAT };
             ++nf;
-            clip_faces[nclipf + 0] = fi + 1;
-            clip_faces[nclipf + 1] = fi + 2;
-            clip_faces[nclipf + 2] = fi + 3;
-            clip_faces[nclipf + 3] = FLAG_POLE_PAT;
-            nclipf += 4;
 
-            face_order[nf] = MAX_FACES + (nclipf >> 2);
             fd.fdist[nf] = calc_fdist(
                 fi + 3, fi + 4, fi + 5,
                 dvy1, dvy1, dvy1);
+            fs[nf] = { uint8_t(fi + 2), uint8_t(fi + 4), uint8_t(fi + 5), FLAG_PAT };
             ++nf;
-            clip_faces[nclipf + 0] = fi + 2;
-            clip_faces[nclipf + 1] = fi + 4;
-            clip_faces[nclipf + 2] = fi + 5;
-            clip_faces[nclipf + 3] = FLAG_PAT;
-            nclipf += 4;
         }
     }
 
@@ -267,7 +238,7 @@ static uint8_t render_scene(
             {
                 if(nv + 2 > MAX_VERTS)
                     continue;
-                if(nclipf + 4 > MAX_CLIP_FACES * 4)
+                if(nf + 2 > MAX_FACES)
                     continue;
 
                 dvec2 newv0, newv1;
@@ -306,14 +277,9 @@ static uint8_t render_scene(
                 ++nv;
 
                 // add clip face
-                face_order[nf] = MAX_FACES + (nclipf >> 2);
                 fd.fdist[nf] = fdist;
+                fs[nf] = { ibase, uint8_t(nv - 1), uint8_t(nv - 2), pat };
                 ++nf;
-                clip_faces[nclipf + 0] = ibase;
-                clip_faces[nclipf + 1] = nv - 1;
-                clip_faces[nclipf + 2] = nv - 2;
-                clip_faces[nclipf + 3] = pat;
-                nclipf += 4;
 
                 continue;
             }
@@ -323,7 +289,7 @@ static uint8_t render_scene(
             {
                 if(nv + 2 > MAX_VERTS)
                     continue;
-                if(nclipf + 8 > MAX_CLIP_FACES * 4)
+                if(nf + 2 > MAX_FACES)
                     continue;
 
                 uint8_t ia, ib, ic; // winding order indices
@@ -363,30 +329,19 @@ static uint8_t render_scene(
                 fd.vz[nv] = ZNEAR;
                 ++nv;
 
-                face_order[nf] = MAX_FACES + (nclipf >> 2);
                 fd.fdist[nf] = fdist;
-                ++nf;
-                face_order[nf] = MAX_FACES + (nclipf >> 2) + 1;
-                fd.fdist[nf] = fdist;
+                fs[nf] = { uint8_t(nv - 2), ib, ic, pat };
                 ++nf;
 
-                clip_faces[nclipf + 0] = nv - 2;
-                clip_faces[nclipf + 1] = ib;
-                clip_faces[nclipf + 2] = ic;
-                clip_faces[nclipf + 3] = pat;
-                nclipf += 4;
-
-                clip_faces[nclipf + 0] = nv - 2;
-                clip_faces[nclipf + 1] = ic;
-                clip_faces[nclipf + 2] = nv - 1;
-                clip_faces[nclipf + 3] = pat;
-                nclipf += 4;
+                fd.fdist[nf] = fdist;
+                fs[nf] = { uint8_t(nv - 2), ic, uint8_t(nv - 1), pat };
+                ++nf;
 
                 continue;
             }
 
-            face_order[nf] = i;
             fd.fdist[nf] = fdist;
+            fs[nf] = { i0, i1, i2, pat };
             ++nf;
         }
     }
@@ -436,16 +391,16 @@ static uint8_t render_scene(
         while(i < nf)
         {
             int16_t d = fd.fdist[i];
-            uint8_t f = face_order[i];
+            face f = fs[i];
             uint8_t j = i;
             while(j > 0 && fd.fdist[j - 1] < d)
             {
                 fd.fdist[j] = fd.fdist[j - 1];
-                face_order[j] = face_order[j - 1];
+                fs[j] = fs[j - 1];
                 j -= 1;
             }
             fd.fdist[j] = d;
-            face_order[j] = f;
+            fs[j] = f;
             i += 1;
         }
     }
@@ -463,22 +418,8 @@ static uint8_t render_scene(
     nfpat[3] = nfpat[2] + pgm_read_byte(&num_faces[3]);
     for(uint8_t i = 0; i < nf; ++i)
     {
-        uint8_t t = face_order[i];
-        uint8_t i0, i1, i2, pt;
-        if(t < MAX_FACES)
-        {
-            // normal face
-            uint16_t j = uint16_t(t) * 3;
-            i0 = pgm_read_byte(&faces[j + 0]);
-            i1 = pgm_read_byte(&faces[j + 1]);
-            i2 = pgm_read_byte(&faces[j + 2]);
-            if     (t >= nfpat[3]) pt = 4;
-            else if(t >= nfpat[2]) pt = 3;
-            else if(t >= nfpat[1]) pt = 2;
-            else if(t >= nfpat[0]) pt = 1;
-            else                   pt = 0;
-        }
-        else if(t == 255)
+        face f = fs[i];
+        if(f.pt == 255)
         {
             // ball
             if(ball_valid)
@@ -494,14 +435,8 @@ static uint8_t render_scene(
         }
         else
         {
-            // clip face
-            uint16_t j = uint8_t(t - MAX_FACES) * 4;
-            i0 = clip_faces[j + 0];
-            i1 = clip_faces[j + 1];
-            i2 = clip_faces[j + 2];
-            pt = clip_faces[j + 3];
+            draw_tri(vs[f.i0], vs[f.i1], vs[f.i2], f.pt);
         }
-        draw_tri(vs[i0], vs[i1], vs[i2], pt);
     }
 #if BALL_XRAY
     if(ball_valid)

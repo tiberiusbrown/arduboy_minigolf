@@ -132,7 +132,7 @@ static void editor_load_file(char const* fname)
 
     course_name = read_line(f);
 
-    r = fscanf(f, "%d", &n0);
+    r = fscanf(f, "%d\n", &n0);
     if(r != 1) goto error;
     editor_levels.clear();
     editor_levels.resize(n0);
@@ -141,24 +141,24 @@ static void editor_load_file(char const* fname)
     {
         info.name = read_line(f);
 
-        r = fscanf(f, "%d %d %d", &n0, &n1, &n2);
+        r = fscanf(f, "%d %d %d\n", &n0, &n1, &n2);
         if(r != 3) goto error;
         info.ball_pos.x = n0;
         info.ball_pos.y = n1;
         info.ball_pos.z = n2;
-        r = fscanf(f, "%d %d %d", &n0, &n1, &n2);
+        r = fscanf(f, "%d %d %d\n", &n0, &n1, &n2);
         if(r != 3) goto error;
         info.flag_pos.x = n0;
         info.flag_pos.y = n1;
         info.flag_pos.z = n2;
         {
             auto& boxes = info.boxes;
-            r = fscanf(f, "%d", &n0);
+            r = fscanf(f, "%d\n", &n0);
             if(r != 1) goto error;
             boxes.resize(n0);
             for(auto& b : boxes)
             {
-                r = fscanf(f, "%d %d %d %d %d %d %d %d",
+                r = fscanf(f, "%d %d %d %d %d %d %d %d\n",
                     &n0, &n1, &n2, &n3, &n4, &n5, &n6, &n7);
                 if(r != 8) goto error;
                 b.pos.x  = n0;
@@ -171,12 +171,12 @@ static void editor_load_file(char const* fname)
                 b.pitch  = n7;
             }
         }
-        r = fscanf(f, "%d", &n0);
+        r = fscanf(f, "%d\n", &n0);
         if(r != 1) goto error;
         info.verts.resize(n0 * 3);
         for(int j = 0; j < (int)info.verts.size() / 3; ++j)
         {
-            r = fscanf(f, "%d %d %d", &n0, &n1, &n2);
+            r = fscanf(f, "%d %d %d\n", &n0, &n1, &n2);
             if(r != 3) goto error;
             info.verts[j * 3 + 0] = n0;
             info.verts[j * 3 + 1] = n1;
@@ -184,12 +184,12 @@ static void editor_load_file(char const* fname)
         }
         for(int j = 0; j < 5; ++j)
         {
-            r = fscanf(f, "%d", &n0);
+            r = fscanf(f, "%d\n", &n0);
             if(r != 1) goto error;
             info.faces[j].resize(n0 * 3);
             for(int k = 0; k < info.faces[j].size() / 3; ++k)
             {
-                r = fscanf(f, "%d %d %d", &n0, &n1, &n2);
+                r = fscanf(f, "%d %d %d\n", &n0, &n1, &n2);
                 if(r != 3) goto error;
                 info.faces[j][k * 3 + 0] = n0;
                 info.faces[j][k * 3 + 1] = n1;
@@ -831,41 +831,8 @@ int main(int, char**)
             auto* draw = ImGui::GetBackgroundDrawList();
             for(uint8_t i = 0; i < nf; ++i)
             {
-                uint8_t t = face_order[i];
-                uint8_t i0, i1, i2, pt;
-                if(t < MAX_FACES)
-                {
-                    // normal face
-                    uint16_t j = uint16_t(t) * 3;
-                    i0 = pgm_read_byte(&faces[j + 0]);
-                    i1 = pgm_read_byte(&faces[j + 1]);
-                    i2 = pgm_read_byte(&faces[j + 2]);
-                    if     (t >= nfpat[3]) pt = 4;
-                    else if(t >= nfpat[2]) pt = 3;
-                    else if(t >= nfpat[1]) pt = 2;
-                    else if(t >= nfpat[0]) pt = 1;
-                    else                   pt = 0;
-                }
-                else if(t == 255)
-                {
-                    // ball
-                    //if(ball_valid)
-                    //{
-                    //    dvec2 c = vs[balli0];
-                    //    ballr = uint16_t(vs[balli1].x - c.x);
-                    //    draw_ball_filled(vs[balli0], ballr);
-                    //}
-                    continue;
-                }
-                else
-                {
-                    // clip face
-                    uint16_t j = uint8_t(t - MAX_FACES) * 4;
-                    i0 = clip_faces[j + 0];
-                    i1 = clip_faces[j + 1];
-                    i2 = clip_faces[j + 2];
-                    pt = clip_faces[j + 3];
-                }
+                auto f = fs[i];
+                if(f.pt == 255) continue;
                 static ImU32 const COLORS[5] =
                 {
                     ImGui::ColorConvertFloat4ToU32(ImVec4(0.00f, 0.00f, 0.00f, 1.f)),
@@ -875,10 +842,10 @@ int main(int, char**)
                     ImGui::ColorConvertFloat4ToU32(ImVec4(1.00f, 1.00f, 1.00f, 1.f)),
                 };
                 draw->AddTriangleFilled(
-                    dvec2imvec(vs[i0]),
-                    dvec2imvec(vs[i1]),
-                    dvec2imvec(vs[i2]),
-                    COLORS[pt]);
+                    dvec2imvec(vs[f.i0]),
+                    dvec2imvec(vs[f.i1]),
+                    dvec2imvec(vs[f.i2]),
+                    COLORS[f.pt]);
             }
 
             editor_draw_boxes();
