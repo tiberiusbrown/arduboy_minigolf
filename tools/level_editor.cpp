@@ -515,9 +515,13 @@ static void editor_gui()
     //InputInt("Level Index", &level_index);
 
     level_index = tclamp(level_index, 0, (int)editor_levels.size() - 1);
-    auto& level = editor_levels[level_index];
-    int num_boxes = (int)level.boxes.size();
 
+    if(Button("Add Level"))
+    {
+        editor_levels.insert(editor_levels.begin() + (level_index + 1), 1, {});
+        ++level_index;
+    }
+    SameLine();
     if(Button("Remove Level"))
     {
         editor_levels.erase(editor_levels.begin() + level_index);
@@ -525,6 +529,21 @@ static void editor_gui()
         End();
         return;
     }
+    SameLine();
+    if(Button("Move Level Up") && level_index > 0)
+    {
+        std::swap(editor_levels[level_index - 1], editor_levels[level_index]);
+        --level_index;
+    }
+    SameLine();
+    if(Button("Move Level Down") && level_index < (int)editor_levels.size() - 1)
+    {
+        std::swap(editor_levels[level_index + 1], editor_levels[level_index]);
+        ++level_index;
+    }
+
+    auto& level = editor_levels[level_index];
+    int num_boxes = (int)level.boxes.size();
 
     {
         char buf[256];
