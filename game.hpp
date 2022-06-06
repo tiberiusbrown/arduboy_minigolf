@@ -183,14 +183,17 @@ static constexpr int16_t FLAG_RADIUS = 256 * 1.0;
 
 static constexpr uint8_t MAX_VERTS = 128;
 static constexpr uint8_t MAX_FACES = 128;
-struct face_sorting_data
+struct temp_rendering_data
 {
     array<int16_t, MAX_VERTS> vz;     // camera space z
     array<uint16_t, MAX_VERTS> vdist; // world vertex distance
     array<uint16_t, MAX_FACES> fdist; // world face distance
+
+    array<int8_t, MAX_VERTS> cached_vy;
 };
-static_assert(sizeof(face_sorting_data) <= BUF_BYTES, "");
-static face_sorting_data& fd = *((face_sorting_data*)&buf[0]);
+static constexpr size_t SIZEOF_TEMP_RENDERING_DATA = sizeof(temp_rendering_data);
+static_assert(sizeof(temp_rendering_data) <= BUF_BYTES, "");
+static temp_rendering_data& fd = *((temp_rendering_data*)&buf[0]);
 
 #ifdef ARDUINO
 using int24_t = __int24;

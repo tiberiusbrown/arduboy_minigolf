@@ -98,9 +98,17 @@ static uint8_t render_scene(
     for(uint8_t j = nv = 0; nv < num_verts; j += 3)
     {
         dvec3 dv;
-        dv.x = (int8_t)pgm_read_byte(&verts[j + 0]) * 64;
-        dv.y = (int8_t)pgm_read_byte(&verts[j + 1]) * 64;
-        dv.z = (int8_t)pgm_read_byte(&verts[j + 2]) * 64;
+        int8_t tvx, tvy, tvz;
+
+        tvx = (int8_t)pgm_read_byte(&verts[j + 0]);
+        tvy = (int8_t)pgm_read_byte(&verts[j + 1]);
+        tvz = (int8_t)pgm_read_byte(&verts[j + 2]);
+
+        dv.x = tvx * 64;
+        dv.y = tvy * 64;
+        dv.z = tvz * 64;
+
+        fd.cached_vy[nv] = tvy;
 
         nv = add_vertex(m, dv, nv);
     }
@@ -209,9 +217,11 @@ static uint8_t render_scene(
                 break;
 
             uint8_t const* fptr = &faces[i * 3];
-            uint8_t i0 = pgm_read_byte(fptr + 0);
-            uint8_t i1 = pgm_read_byte(fptr + 1);
-            uint8_t i2 = pgm_read_byte(fptr + 2);
+            uint8_t i0, i1, i2;
+
+            i0 = pgm_read_byte(fptr + 0);
+            i1 = pgm_read_byte(fptr + 1);
+            i2 = pgm_read_byte(fptr + 2);
             int16_t z0 = fd.vz[i0];
             int16_t z1 = fd.vz[i1];
             int16_t z2 = fd.vz[i2];
@@ -227,9 +237,9 @@ static uint8_t render_scene(
             // face distance
             uint16_t fdist;
             {
-                int16_t y0 = (int8_t)pgm_read_byte(&verts[i0 * 3 + 1]) * 128;
-                int16_t y1 = (int8_t)pgm_read_byte(&verts[i1 * 3 + 1]) * 128;
-                int16_t y2 = (int8_t)pgm_read_byte(&verts[i2 * 3 + 1]) * 128;
+                int16_t y0 = fd.cached_vy[i0] * 64;
+                int16_t y1 = fd.cached_vy[i1] * 64;
+                int16_t y2 = fd.cached_vy[i2] * 64;
                 fdist = calc_fdist(i0, i1, i2, y0, y1, y2);
             }
 
