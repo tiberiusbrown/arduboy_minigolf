@@ -329,24 +329,31 @@ static void editor_save_header(char const* fname)
         fprintf(f, "    LEVELS_%s_%02d_VERTS,\n", course_name.c_str(), i);
         fprintf(f, "    LEVELS_%s_%02d_FACES,\n", course_name.c_str(), i);
         fprintf(f, "    LEVELS_%s_%02d_BOXES,\n", course_name.c_str(), i);
-        fprintf(f, "    %d,\n", (int)info.verts.size() / 3);
-        fprintf(f, "    { %d, %d, %d, %d, %d, },\n",
+        fprintf(f, "    {\n");
+        fprintf(f, "        %d,\n", (int)info.verts.size() / 3);
+        fprintf(f, "        { %d, %d, %d, %d, %d, },\n",
             (int)info.faces[0].size() / 3,
             (int)info.faces[1].size() / 3,
             (int)info.faces[2].size() / 3,
             (int)info.faces[3].size() / 3,
             (int)info.faces[4].size() / 3);
-        fprintf(f, "    %d,\n", (int)info.boxes.size());
-        fprintf(f, "    { %d, %d, %d },\n",
+        fprintf(f, "        %d,\n",
+            (int)info.faces[0].size() / 3 +
+            (int)info.faces[1].size() / 3 +
+            (int)info.faces[2].size() / 3 +
+            (int)info.faces[3].size() / 3 +
+            (int)info.faces[4].size() / 3);
+        fprintf(f, "        %d,\n", (int)info.boxes.size());
+        fprintf(f, "        { %d, %d, %d },\n",
             (int)info.ball_pos.x,
             (int)info.ball_pos.y,
             (int)info.ball_pos.z);
-        fprintf(f, "    { %d, %d, %d },\n",
+        fprintf(f, "        { %d, %d, %d },\n",
             (int)info.flag_pos.x,
             (int)info.flag_pos.y,
             (int)info.flag_pos.z);
-        fprintf(f, "    %d,\n", info.par);
-        fprintf(f, "},\n\n");
+        fprintf(f, "        %d,\n", info.par);
+        fprintf(f, "    },\n},\n\n");
     }
 
     fprintf(f, "};\n");
@@ -511,6 +518,14 @@ static void editor_gui()
     auto& level = editor_levels[level_index];
     int num_boxes = (int)level.boxes.size();
 
+    if(Button("Remove Level"))
+    {
+        editor_levels.erase(editor_levels.begin() + level_index);
+        level_index = tclamp(level_index, 0, (int)editor_levels.size() - 1);
+        End();
+        return;
+    }
+
     {
         char buf[256];
         strncpy(buf, level.name.c_str(), sizeof(buf));
@@ -534,8 +549,8 @@ static void editor_gui()
         }
     }
 
-    dummy_level.ball_pos = level.ball_pos;
-    dummy_level.flag_pos = level.flag_pos;
+    dummy_level.ext.ball_pos = level.ball_pos;
+    dummy_level.ext.flag_pos = level.flag_pos;
 
     InputInt("Par", &level.par);
     level.par = tclamp(level.par, 1, 8);
@@ -557,7 +572,6 @@ static void editor_gui()
         boxstrs.push_back(fmt::format(
             "Box {:02d}: {:4.1f} {:4.1f} {:4.1f}   {}/{}",
             i,
-            //c2f(box.pos.x), c2f(box.pos.y), c2f(box.pos.z),
             c2f(box.size.x), c2f(box.size.y), c2f(box.size.z),
             box.yaw, box.pitch));
     }
@@ -732,6 +746,10 @@ int main(int, char**)
     cam = { 0, 12 * 256, 32 * 256 };
     ball = { 256 * 16, 256 * 2, 256 * 1 };
 
+    cam = { -3037, 2739, -1124 };
+    yaw = 25292;
+    pitch = 4083;
+
     // Main loop
     bool done = false;
     while(!done)
@@ -813,35 +831,32 @@ int main(int, char**)
         {
             auto const& info = editor_levels[level_index];
             std::vector<uint8_t> faces;
-            uint8_t num_faces[5];
+            uint8_t pat_faces[5];
             for(int i = 0; i < 5; ++i)
             {
-                num_faces[i] = info.faces[i].size() / 3;
+                pat_faces[i] = info.faces[i].size() / 3;
                 faces.insert(faces.end(), info.faces[i].begin(), info.faces[i].end());
             }
             uint8_t nfpat[4];
-            nfpat[0] = num_faces[0];
-            nfpat[1] = nfpat[0] + num_faces[1];
-            nfpat[2] = nfpat[1] + num_faces[2];
-            nfpat[3] = nfpat[2] + num_faces[3];
+            nfpat[0] = pat_faces[0];
+            nfpat[1] = nfpat[0] + pat_faces[1];
+            nfpat[2] = nfpat[1] + pat_faces[2];
+            nfpat[3] = nfpat[2] + pat_faces[3];
             uint8_t nf;
+            dummy_level.verts = info.verts.data();
+            dummy_level.faces = faces.data();
+            dummy_level.ext.num_verts = uint8_t(info.verts.size() / 3);
+            dummy_level.ext.num_faces = 0;
+            for(int i = 0; i < 5; ++i)
+            {
+                dummy_level.ext.pat_faces[i] = pat_faces[i];
+                dummy_level.ext.num_faces += pat_faces[i];
+            }
+            load_level_from_prog();
             if(ortho)
-            {
-                nf = render_scene_ortho(
-                    ortho_zoom,
-                    info.verts.data(),
-                    faces.data(),
-                    uint8_t(info.verts.size() / 3),
-                    num_faces);
-            }
+                nf = render_scene_ortho(ortho_zoom);
             else
-            {
-                nf = render_scene_persp(
-                    info.verts.data(),
-                    faces.data(),
-                    uint8_t(info.verts.size() / 3),
-                    num_faces);
-            }
+                nf = render_scene_persp();
             auto* draw = ImGui::GetBackgroundDrawList();
             for(uint8_t i = 0; i < nf; ++i)
             {

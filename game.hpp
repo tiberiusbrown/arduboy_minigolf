@@ -7,6 +7,10 @@
 static constexpr int FBW = 1 * 128;
 static constexpr int FBH = 1 * 64;
 
+#ifndef ARDUGOLF_FX
+#define ARDUGOLF_FX 0
+#endif
+
 #define USE_AVR_INLINE_ASM 1
 #define AVOID_FMULSU 1
 
@@ -181,20 +185,6 @@ extern array<uint8_t, BUF_BYTES> buf;
 static constexpr int16_t BALL_RADIUS = 256 * 0.5;
 static constexpr int16_t FLAG_RADIUS = 256 * 1.0;
 
-static constexpr uint8_t MAX_VERTS = 128;
-static constexpr uint8_t MAX_FACES = 128;
-struct temp_rendering_data
-{
-    array<int16_t, MAX_VERTS> vz;     // camera space z
-    array<uint16_t, MAX_VERTS> vdist; // world vertex distance
-    array<uint16_t, MAX_FACES> fdist; // world face distance
-
-    array<int8_t, MAX_VERTS> cached_vy;
-};
-static constexpr size_t SIZEOF_TEMP_RENDERING_DATA = sizeof(temp_rendering_data);
-static_assert(sizeof(temp_rendering_data) <= BUF_BYTES, "");
-static temp_rendering_data& fd = *((temp_rendering_data*)&buf[0]);
-
 #ifdef ARDUINO
 using int24_t = __int24;
 using uint24_t = __uint24;
@@ -263,22 +253,71 @@ struct phys_box
     int8_t pitch;
 };
 
+static constexpr uint8_t MAX_BOXES = 32;
+static constexpr uint8_t MAX_VERTS = 120;
+static constexpr uint8_t MAX_FACES = 120;
+
+// max verts/faces for a level (ensures room for ball/flag data)
+static constexpr uint8_t LEVEL_MAX_VERTS = MAX_VERTS - 8;
+static constexpr uint8_t LEVEL_MAX_FACES = MAX_FACES - 4;
+
+struct level_info_ext
+{
+    uint8_t num_verts;
+    uint8_t pat_faces[5];
+    uint8_t num_faces;
+    uint8_t num_boxes;
+    dvec3   ball_pos;
+    dvec3   flag_pos;
+    uint8_t par;
+};
+
 struct level_info
 {
     int8_t const*   verts;
     uint8_t const*  faces;
     phys_box const* boxes;
-    uint8_t         num_verts;
-    uint8_t         num_faces[5];
-    uint8_t         num_boxes;
-    dvec3           ball_pos;
-    dvec3           flag_pos;
-    uint8_t         par;
+    level_info_ext  ext;
 };
 
-// levels.cpp
-extern uint8_t leveli;
-extern level_info const* current_level;
+struct fx_level_info
+{
+    array<int8_t  , MAX_VERTS * 1> vy;
+    array<uint8_t , 8 * 2        > vdist_start;
+    array<int8_t  , MAX_VERTS * 2> vxz;
+    array<uint8_t , 4 * 2        > fdist_start;
+    array<uint8_t , MAX_FACES * 3> faces;
+
+    array<phys_box, MAX_BOXES    > boxes;
+    level_info_ext                 ext;
+
+    array<uint8_t,
+        1024
+        - sizeof(vy)
+        - sizeof(vdist_start)
+        - sizeof(vxz)
+        - sizeof(fdist_start)
+        - sizeof(faces)
+        - sizeof(boxes)
+        - sizeof(ext)
+    > padding;
+};
+static constexpr size_t SIZEOF_FX_LEVEL_INFO = sizeof(fx_level_info);
+static_assert(SIZEOF_FX_LEVEL_INFO <= BUF_BYTES, "");
+static_assert(SIZEOF_FX_LEVEL_INFO == 1024, "");
+static fx_level_info& fxlevel = *((fx_level_info*)&buf[0]);
+
+// reused buffer data
+static array<int8_t  , MAX_VERTS    >& buf_vy    = *reinterpret_cast< array<int8_t  , MAX_VERTS    >* >(&buf[offsetof(fx_level_info, vy)]);
+static array<int8_t  , MAX_VERTS * 2>& buf_vxz   = *reinterpret_cast< array<int8_t  , MAX_VERTS * 2>* >(&buf[offsetof(fx_level_info, vxz)]);
+static array<uint16_t, MAX_VERTS    >& buf_vdist = *reinterpret_cast< array<uint16_t, MAX_VERTS    >* >(&buf[offsetof(fx_level_info, vdist_start)]);
+static array<uint8_t , MAX_FACES * 3>& buf_faces = *reinterpret_cast< array<uint8_t , MAX_FACES * 3>* >(&buf[offsetof(fx_level_info, faces)]);
+static array<uint16_t, MAX_FACES    >& buf_fdist = *reinterpret_cast< array<uint16_t, MAX_FACES    >* >(&buf[offsetof(fx_level_info, fdist_start)]);
+static array<phys_box, MAX_BOXES    >& buf_boxes = *reinterpret_cast< array<phys_box, MAX_BOXES    >* >(&buf[offsetof(fx_level_info, boxes)]);
+static array<int16_t , MAX_VERTS    >& buf_tvz   = *reinterpret_cast< array<int16_t , MAX_VERTS    >* >(&buf_boxes);
+
+// ensure buf_vz fits in buf
+static_assert(offsetof(fx_level_info, boxes) + sizeof(int16_t) * MAX_VERTS <= BUF_BYTES, "");
 
 // game.cpp
 enum class st : uint8_t
@@ -297,6 +336,9 @@ extern uint8_t nframe;
 extern uint16_t yaw_aim;
 extern uint8_t power_aim;
 extern uint8_t shots[18];
+extern uint8_t leveli;
+extern level_info const* current_level;
+extern level_info_ext levelext;
 bool ball_in_hole();
 void set_level(uint8_t index);
 void move_forward(int16_t amount);
@@ -304,6 +346,7 @@ void move_right(int16_t amount);
 void move_up(int16_t amount);
 void look_up(int16_t amount);
 void look_right(int16_t amount);
+void load_level_from_prog(); // loads current_level
 
 // physics.cpp
 extern dvec3 ball;         // position
@@ -346,17 +389,8 @@ extern array<dvec2, MAX_VERTS> vs;
 void clear_buf();
 uint8_t render_scene();
 #ifndef ARDUINO
-uint8_t render_scene_persp(
-    int8_t const* verts,
-    uint8_t const* faces,
-    uint8_t num_verts,
-    uint8_t const* num_faces);
-uint8_t render_scene_ortho(
-    int zoom,
-    int8_t const* verts,
-    uint8_t const* faces,
-    uint8_t num_verts,
-    uint8_t const* num_faces);
+uint8_t render_scene_persp();
+uint8_t render_scene_ortho(int zoom);
 dvec3 transform_point(dvec3 dv, bool ortho, int ortho_zoom);
 #endif
 

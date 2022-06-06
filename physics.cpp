@@ -225,16 +225,9 @@ static void main_step()
     ball.z += int8_t(uint16_t(ball_vel.z + 0x80) >> 8);
 
     // check collision and perform restitution
-    {
-        phys_box const* boxes = pgmptr(&current_level->boxes);
-        uint8_t num_boxes = pgm_read_byte(&current_level->num_boxes);
-        for(uint8_t i = 0; i < num_boxes; ++i)
-        {
-            phys_box b;
-            memcpy_P(&b, &boxes[i], sizeof(b));
-            physics_collision(b);
-        }
-    }
+    uint8_t num_boxes = levelext.num_boxes;
+    for(uint8_t i = 0; i < num_boxes; ++i)
+        physics_collision(buf_boxes[i]);
 }
 
 bool physics_step()

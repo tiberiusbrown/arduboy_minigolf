@@ -15,6 +15,7 @@ static constexpr uint8_t NUM_LEVELS =
 
 uint8_t leveli;
 level_info const* current_level;
+level_info_ext levelext;
 
 #define DEBUG_TITLE_CAM 0
 static constexpr uint8_t TITLE_LEVEL = 0;
@@ -59,7 +60,7 @@ uint8_t shots[18];
 
 static uint8_t get_par(uint8_t i)
 {
-    return pgm_read_byte((uint8_t*)&LEVELS[i] + offsetof(level_info, par));
+    return pgm_read_byte((uint8_t*)&LEVELS[i] + offsetof(level_info, ext.par));
 }
 
 static void draw_nframe_progress(uint8_t oy, uint8_t n)
@@ -87,9 +88,33 @@ static void draw_nframe_progress(uint8_t oy, uint8_t n)
 
 static void reset_ball()
 {
-    memcpy_P(&ball, &current_level->ball_pos, sizeof(ball));
+    ball = levelext.ball_pos;
     ball_vel = {};
     ball_vel_ang = {};
+}
+
+void load_level_from_prog()
+{
+    memcpy_P(&levelext, &current_level->ext, sizeof(levelext));
+    {
+        int8_t* pvy  = &buf_vy [0];
+        int8_t* pvxz = &buf_vxz[0];
+        int8_t const* pv = pgmptr(&current_level->verts);
+        for(uint8_t i = 0; i < levelext.num_verts; ++i)
+        {
+            *pvxz++ = pgm_read_byte(pv++);
+            *pvy++  = pgm_read_byte(pv++);
+            *pvxz++ = pgm_read_byte(pv++);
+        }
+    }
+    memcpy_P(
+        &buf_faces[0],
+        pgmptr(&current_level->faces),
+        levelext.num_faces * 3);
+    memcpy_P(
+        &buf_boxes[0],
+        pgmptr(&current_level->boxes),
+        sizeof(phys_box) * levelext.num_boxes);
 }
 
 void set_level(uint8_t index)
@@ -156,8 +181,7 @@ void look_right(int16_t amount)
 
 bool ball_in_hole()
 {
-    dvec3 flag;
-    memcpy_P(&flag, &current_level->flag_pos, sizeof(flag));
+    dvec3 flag = levelext.flag_pos;
     flag.x = tabs(flag.x - ball.x);
     flag.y = tabs(flag.y - ball.y);
     flag.z = tabs(flag.z - ball.z);
@@ -244,6 +268,10 @@ void game_loop()
     prev_btns = btns;
 
     ++nframe;
+
+#if !ARDUGOLF_FX
+    load_level_from_prog();
+#endif
 
     if(state == st::AIM || state == st::MENU || state == st::PITCH)
     {
@@ -413,8 +441,7 @@ void game_loop()
     }
     else if(state == st::HOLE)
     {
-        dvec3 flag;
-        memcpy_P(&flag, &current_level->flag_pos, sizeof(flag));
+        dvec3 flag = levelext.flag_pos;
         update_camera_look_at_fastangle(flag, yaw_aim, 6000, 256 * 20, 64, 64);
         yaw_aim += 256;
         if(nframe == 255)

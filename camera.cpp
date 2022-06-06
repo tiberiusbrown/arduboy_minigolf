@@ -71,8 +71,7 @@ void update_camera_look_at_fastangle(
 
 uint16_t yaw_to_flag()
 {
-    dvec3 flag;
-    memcpy_P(&flag, &current_level->flag_pos, sizeof(flag));
+    dvec3 flag = levelext.flag_pos;
     return atan2(flag.z - ball.z, flag.x - ball.x) + 16384;
 }
 
