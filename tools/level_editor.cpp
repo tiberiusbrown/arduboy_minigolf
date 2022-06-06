@@ -35,6 +35,7 @@ struct editor_level_info
     std::vector<phys_box> boxes;
     dvec3 ball_pos;
     dvec3 flag_pos;
+    int par;
 };
 
 static std::string course_name;
@@ -141,6 +142,8 @@ static void editor_load_file(char const* fname)
     {
         info.name = read_line(f);
 
+        r = fscanf(f, "%d\n", &info.par);
+        if(r != 1) goto error;
         r = fscanf(f, "%d %d %d\n", &n0, &n1, &n2);
         if(r != 3) goto error;
         info.ball_pos.x = n0;
@@ -217,6 +220,7 @@ static void editor_save_file(char const* fname)
     for(auto const& info : editor_levels)
     {
         fprintf(f, "%s\n", info.name.c_str());
+        fprintf(f, "%d\n", info.par);
         fprintf(f, "%d %d %d\n",
             (int)info.ball_pos.x,
             (int)info.ball_pos.y,
@@ -341,6 +345,7 @@ static void editor_save_header(char const* fname)
             (int)info.flag_pos.x,
             (int)info.flag_pos.y,
             (int)info.flag_pos.z);
+        fprintf(f, "    %d,\n", info.par);
         fprintf(f, "},\n\n");
     }
 
@@ -476,6 +481,15 @@ static void editor_gui()
     SameLine();
     InputInt("Ortho Zoom", &ortho_zoom, 100);
 
+    {
+        char buf[256];
+        strncpy(buf, course_name.c_str(), sizeof(buf));
+        InputText("Course Name", buf, sizeof(buf));
+        course_name = buf;
+        for(auto& c : course_name)
+            if(!isalnum(c)) c = '_';
+    }
+
     std::vector<std::string> levelstrs;
     std::vector<char const*> levelstrs2;
     for(int i = 0; i < (int)editor_levels.size(); ++i)
@@ -523,6 +537,9 @@ static void editor_gui()
     dummy_level.ball_pos = level.ball_pos;
     dummy_level.flag_pos = level.flag_pos;
 
+    InputInt("Par", &level.par);
+    level.par = tclamp(level.par, 1, 8);
+
     AlignTextToFramePadding(); Text("Ball:"); SameLine();
     input_coord16("x##ballx", level.ball_pos.x); SameLine();
     input_coord16("y##bally", level.ball_pos.y); SameLine();
@@ -566,8 +583,6 @@ static void editor_gui()
     }
     SetNextItemWidth(-1);
     ListBox("##Boxes", &editor_boxi, boxstrs2.data(), (int)boxstrs2.size());
-    //SameLine();
-    //BeginGroup();
     if(editor_boxi >= 0 && editor_boxi < num_boxes)
     {
         phys_box& box = boxes[editor_boxi];
@@ -583,7 +598,6 @@ static void editor_gui()
         input_yaw("y##boxyaw", box.yaw); SameLine();
         input_pitch("p##boxpitch", box.pitch);
     }
-    //EndGroup();
     End();
 }
 

@@ -273,6 +273,7 @@ struct level_info
     uint8_t         num_boxes;
     dvec3           ball_pos;
     dvec3           flag_pos;
+    uint8_t         par;
 };
 
 // levels.cpp

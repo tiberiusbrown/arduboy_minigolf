@@ -13,11 +13,6 @@ static auto const* const LEVELS = LEVELS_DEFAULT;
 static constexpr uint8_t NUM_LEVELS =
     sizeof(LEVELS_DEFAULT) / sizeof(LEVELS_DEFAULT[0]);
 
-static uint8_t const PARS[NUM_LEVELS] PROGMEM =
-{
-    2, 3, 3, 4, 4, 4, 5, 4, 4, 3, 4, 4, 5, 5, 4, 5, 6, 6,
-};
-
 uint8_t leveli;
 level_info const* current_level;
 
@@ -61,6 +56,11 @@ static constexpr uint8_t MENU_OFFSET_MAX = 42;
 static uint8_t prev_btns;
 
 uint8_t shots[18];
+
+static uint8_t get_par(uint8_t i)
+{
+    return pgm_read_byte((uint8_t*)&LEVELS[i] + offsetof(level_info, par));
+}
 
 static void draw_nframe_progress(uint8_t oy, uint8_t n)
 {
@@ -188,7 +188,7 @@ static void draw_scorecard(uint8_t r, uint8_t i)
         if(t != 0)
         {
             set_number2(t, r + 2, x);
-            t = pgm_read_byte(&PARS[n + i - 1]);
+            t = get_par(n + i - 1);
             tpar += t;
             set_number2(t, r + 1, x);
         }
@@ -340,7 +340,7 @@ void game_loop()
             render_scene();
             draw_graphic(GFX_INFO_BAR, FBR - 2, 0, 2, 28, GRAPHIC_OVERWRITE);
             set_number2(leveli + 1, FBR - 2, 18);
-            set_number2(pgm_read_byte(&PARS[leveli]), FBR - 1, 18);
+            set_number2(get_par(leveli), FBR - 1, 18);
             return;
         }
         else if(nframe == 255 || (pressed & BTN_B))
@@ -509,7 +509,7 @@ void game_loop()
     {
         uint8_t nx = 18 - graphic_offset;
         set_number2(leveli + 1, FBR - 3, nx);
-        set_number2(pgm_read_byte(&PARS[leveli]), FBR - 2, nx);
+        set_number2(get_par(leveli), FBR - 2, nx);
         set_number2(shots[leveli] + 1, FBR - 1, nx);
     }
 

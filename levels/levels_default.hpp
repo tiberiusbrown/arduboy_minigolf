@@ -2230,6 +2230,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     17,
     { 0, 128, 3968 },
     { 0, -256, -3840 },
+    2,
 },
 
 {
@@ -2241,6 +2242,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     11,
     { 768, 128, 3072 },
     { -2304, -256, -2560 },
+    3,
 },
 
 {
@@ -2252,6 +2254,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     13,
     { 3328, -384, 2048 },
     { -3072, -512, -2048 },
+    3,
 },
 
 {
@@ -2263,6 +2266,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     15,
     { -1792, 128, 4352 },
     { 1792, -256, -4352 },
+    4,
 },
 
 {
@@ -2274,6 +2278,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     14,
     { -3584, 128, 3072 },
     { 3584, -256, -2816 },
+    4,
 },
 
 {
@@ -2285,6 +2290,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     12,
     { -4096, 128, 2304 },
     { 4096, -256, -1792 },
+    4,
 },
 
 {
@@ -2296,6 +2302,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     17,
     { -3072, -1664, 3328 },
     { -256, 1024, 3072 },
+    5,
 },
 
 {
@@ -2307,6 +2314,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     16,
     { 4096, 128, 3072 },
     { -4096, -256, 3072 },
+    4,
 },
 
 {
@@ -2318,6 +2326,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     15,
     { 0, 128, 3840 },
     { 0, -256, -3584 },
+    4,
 },
 
 {
@@ -2329,6 +2338,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     17,
     { -3840, 128, 4352 },
     { -256, -256, 3840 },
+    3,
 },
 
 {
@@ -2340,6 +2350,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     16,
     { -1280, -896, 2944 },
     { -1280, 512, -3328 },
+    4,
 },
 
 {
@@ -2351,6 +2362,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     22,
     { 0, 1408, 3840 },
     { 0, -256, -4096 },
+    4,
 },
 
 {
@@ -2362,6 +2374,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     17,
     { 0, 128, 4352 },
     { -2816, -256, -3840 },
+    5,
 },
 
 {
@@ -2373,6 +2386,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     20,
     { 3840, -128, 1792 },
     { -3840, -1536, 2816 },
+    5,
 },
 
 {
@@ -2384,6 +2398,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     14,
     { 0, 128, 3840 },
     { 0, -256, -3584 },
+    4,
 },
 
 {
@@ -2395,6 +2410,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     18,
     { 0, 640, 4352 },
     { 0, -256, -2560 },
+    5,
 },
 
 {
@@ -2406,6 +2422,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     21,
     { -1280, 128, 4608 },
     { -4352, 512, -3840 },
+    6,
 },
 
 {
@@ -2417,6 +2434,7 @@ static level_info const LEVELS_DEFAULT[18] PROGMEM =
     19,
     { 4096, 128, -2304 },
     { 0, -256, 0 },
+    6,
 },
 
 };
