@@ -39,6 +39,9 @@ struct editor_level_info
 };
 
 static std::string course_name;
+static std::string course_author;
+static std::string course_desc;
+static std::string course_ident;
 static std::vector<editor_level_info> editor_levels;
 static int level_index = 0;
 
@@ -123,6 +126,30 @@ static double c2f(int16_t x)
     return double(x) * BOX_SIZE_FACTOR / 256;
 }
 
+static void ortho_x()
+{
+    yaw = uint16_t(-64 * 256);
+    pitch = 0;
+    ortho = true;
+    cam = { 30 * 256, 0, 0, };
+}
+
+static void ortho_y()
+{
+    yaw = 0;
+    pitch = 0;
+    ortho = true;
+    cam = { 0, 0, 30 * 256, };
+}
+
+static void ortho_z()
+{
+    yaw = 0;
+    pitch = 64 * 256;
+    ortho = true;
+    cam = { 0, 30 * 256, 0, };
+}
+
 static int editor_boxi = 0;
 
 static void editor_load_file(char const* fname)
@@ -131,7 +158,10 @@ static void editor_load_file(char const* fname)
     if(!f) return;
     int r, n0, n1, n2, n3, n4, n5, n6, n7;
 
-    course_name = read_line(f);
+    course_ident  = read_line(f);
+    course_name   = read_line(f);
+    course_author = read_line(f);
+    course_desc   = read_line(f);
 
     r = fscanf(f, "%d\n", &n0);
     if(r != 1) goto error;
@@ -213,7 +243,10 @@ static void editor_save_file(char const* fname)
     FILE* f = fopen(fname, "w");
     if(!f) return;
 
+    fprintf(f, "%s\n", course_ident.c_str());
     fprintf(f, "%s\n", course_name.c_str());
+    fprintf(f, "%s\n", course_author.c_str());
+    fprintf(f, "%s\n", course_desc.c_str());
 
     fprintf(f, "%d\n", (int)editor_levels.size());
 
@@ -277,7 +310,7 @@ static void editor_save_header(char const* fname)
         auto const& info = editor_levels[i];
 
         fprintf(f, "static int8_t const LEVELS_%s_%02d_VERTS[%d * 3] PROGMEM =\n{\n",
-            course_name.c_str(), i, (int)info.verts.size() / 3);
+            course_ident.c_str(), i, (int)info.verts.size() / 3);
         for(int j = 0; j < (int)info.verts.size() / 3; ++j)
         {
             fprintf(f, "    %d, %d, %d,\n",
@@ -292,7 +325,7 @@ static void editor_save_header(char const* fname)
             for(int k = 0; k < 5; ++k)
                 num_faces += (int)info.faces[k].size() / 3;
             fprintf(f, "static uint8_t const LEVELS_%s_%02d_FACES[%d * 3] PROGMEM =\n{\n",
-                course_name.c_str(), i, num_faces);
+                course_ident.c_str(), i, num_faces);
         }
         for(int k = 0; k < 5; ++k)
         {
@@ -307,7 +340,7 @@ static void editor_save_header(char const* fname)
         fprintf(f, "};\n\n");
 
         fprintf(f, "static phys_box const LEVELS_%s_%02d_BOXES[%d] PROGMEM =\n{\n",
-            course_name.c_str(), i, (int)info.boxes.size());
+            course_ident.c_str(), i, (int)info.boxes.size());
         for(auto const& b : info.boxes)
         {
             fprintf(f, "    { { %d, %d, %d }, { %d, %d, %d }, %d, %d },\n",
@@ -319,16 +352,16 @@ static void editor_save_header(char const* fname)
     }
 
     fprintf(f, "static level_info const LEVELS_%s[%d] PROGMEM =\n{\n\n",
-        course_name.c_str(), (int)editor_levels.size());
+        course_ident.c_str(), (int)editor_levels.size());
 
     for(int i = 0; i < (int)editor_levels.size(); ++i)
     {
         auto const& info = editor_levels[i];
 
         fprintf(f, "{\n");
-        fprintf(f, "    LEVELS_%s_%02d_VERTS,\n", course_name.c_str(), i);
-        fprintf(f, "    LEVELS_%s_%02d_FACES,\n", course_name.c_str(), i);
-        fprintf(f, "    LEVELS_%s_%02d_BOXES,\n", course_name.c_str(), i);
+        fprintf(f, "    LEVELS_%s_%02d_VERTS,\n", course_ident.c_str(), i);
+        fprintf(f, "    LEVELS_%s_%02d_FACES,\n", course_ident.c_str(), i);
+        fprintf(f, "    LEVELS_%s_%02d_BOXES,\n", course_ident.c_str(), i);
         fprintf(f, "    {\n");
         fprintf(f, "        %d,\n", (int)info.verts.size() / 3);
         fprintf(f, "        { %d, %d, %d, %d, %d, },\n",
@@ -361,17 +394,10 @@ static void editor_save_header(char const* fname)
     fclose(f);
 }
 
-struct fxbin_header_content
-{
-    uint8_t num_holes;
-    uint8_t pars[18];
-    //char name[32];
-};
-
 struct fxbin_header
 {
-    fxbin_header_content content;
-    uint8_t padding[256 - sizeof(fxbin_header_content)];
+    fx_level_header content;
+    uint8_t padding[256 - sizeof(fx_level_header)];
 };
 
 static void editor_save_fxbin(char const* fname)
@@ -385,6 +411,18 @@ static void editor_save_fxbin(char const* fname)
         for(size_t i = 0; i < 18; ++i)
             if(i < editor_levels.size())
                 header.content.pars[i] = editor_levels[i].par;
+        memcpy(
+            &header.content.name[0],
+            course_name.c_str(),
+            course_name.size());
+        memcpy(
+            &header.content.author[0],
+            course_author.c_str(),
+            course_author.size());
+        memcpy(
+            &header.content.desc[0],
+            course_desc.c_str(),
+            course_desc.size());
         fwrite(&header, sizeof(header), 1, f);
     }
 
@@ -555,14 +593,38 @@ static void editor_gui()
 
     Checkbox("Ortho", &ortho);
     SameLine();
-    InputInt("Ortho Zoom", &ortho_zoom, 100);
+    InputInt("Ortho Zoom", &ortho_zoom, 50);
+    ortho_zoom = tmax(ortho_zoom, 50);
+    if(Button("Ortho X")) ortho_x();
+    SameLine();
+    if(Button("Ortho Y")) ortho_y();
+    SameLine();
+    if(Button("Ortho Z")) ortho_z();
 
     {
-        char buf[256];
+        char buf[sizeof(fx_level_header::name)];
         strncpy(buf, course_name.c_str(), sizeof(buf));
         InputText("Course Name", buf, sizeof(buf));
         course_name = buf;
-        for(auto& c : course_name)
+    }
+    {
+        char buf[sizeof(fx_level_header::author)];
+        strncpy(buf, course_author.c_str(), sizeof(buf));
+        InputText("Course Author", buf, sizeof(buf));
+        course_author = buf;
+    }
+    {
+        char buf[sizeof(fx_level_header::desc)];
+        strncpy(buf, course_desc.c_str(), sizeof(buf));
+        InputText("Course Description", buf, sizeof(buf));
+        course_desc = buf;
+    }
+    {
+        char buf[64];
+        strncpy(buf, course_ident.c_str(), sizeof(buf));
+        InputText("Course Identifier", buf, sizeof(buf));
+        course_ident = buf;
+        for(auto& c : course_ident)
             if(!isalnum(c)) c = '_';
     }
 
@@ -703,7 +765,7 @@ static void editor_gui()
     End();
 }
 
-static void editor_draw_box(phys_box box, ImU32 col)
+static void editor_draw_box(phys_box box, ImU32 col, float thickness)
 {
     static int const CORNERS[8 * 3] =
     {
@@ -743,20 +805,20 @@ static void editor_draw_box(phys_box box, ImU32 col)
         if(p[j].z < 128) return;
     }
 
-    draw->AddLine(dvec2imvec(p[0]), dvec2imvec(p[1]), col, 3.f);
-    draw->AddLine(dvec2imvec(p[0]), dvec2imvec(p[2]), col, 3.f);
-    draw->AddLine(dvec2imvec(p[1]), dvec2imvec(p[3]), col, 3.f);
-    draw->AddLine(dvec2imvec(p[2]), dvec2imvec(p[3]), col, 3.f);
+    draw->AddLine(dvec2imvec(p[0]), dvec2imvec(p[1]), col, thickness);
+    draw->AddLine(dvec2imvec(p[0]), dvec2imvec(p[2]), col, thickness);
+    draw->AddLine(dvec2imvec(p[1]), dvec2imvec(p[3]), col, thickness);
+    draw->AddLine(dvec2imvec(p[2]), dvec2imvec(p[3]), col, thickness);
 
-    draw->AddLine(dvec2imvec(p[4]), dvec2imvec(p[5]), col, 3.f);
-    draw->AddLine(dvec2imvec(p[4]), dvec2imvec(p[6]), col, 3.f);
-    draw->AddLine(dvec2imvec(p[5]), dvec2imvec(p[7]), col, 3.f);
-    draw->AddLine(dvec2imvec(p[6]), dvec2imvec(p[7]), col, 3.f);
+    draw->AddLine(dvec2imvec(p[4]), dvec2imvec(p[5]), col, thickness);
+    draw->AddLine(dvec2imvec(p[4]), dvec2imvec(p[6]), col, thickness);
+    draw->AddLine(dvec2imvec(p[5]), dvec2imvec(p[7]), col, thickness);
+    draw->AddLine(dvec2imvec(p[6]), dvec2imvec(p[7]), col, thickness);
 
-    draw->AddLine(dvec2imvec(p[0]), dvec2imvec(p[4]), col, 3.f);
-    draw->AddLine(dvec2imvec(p[1]), dvec2imvec(p[5]), col, 3.f);
-    draw->AddLine(dvec2imvec(p[2]), dvec2imvec(p[6]), col, 3.f);
-    draw->AddLine(dvec2imvec(p[3]), dvec2imvec(p[7]), col, 3.f);
+    draw->AddLine(dvec2imvec(p[0]), dvec2imvec(p[4]), col, thickness);
+    draw->AddLine(dvec2imvec(p[1]), dvec2imvec(p[5]), col, thickness);
+    draw->AddLine(dvec2imvec(p[2]), dvec2imvec(p[6]), col, thickness);
+    draw->AddLine(dvec2imvec(p[3]), dvec2imvec(p[7]), col, thickness);
 }
 
 static void editor_draw_boxes()
@@ -766,13 +828,15 @@ static void editor_draw_boxes()
     {
         auto const& box = boxes[i];
 
-        ImU32 col;
+        ImU32 col = ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 1, 1));
+        float thickness = 1.f;
         if(i == editor_boxi)
+        {
             col = ImGui::ColorConvertFloat4ToU32(ImVec4(1, 0, 0, 1));
-        else
-            col = ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 1, 1));
+            thickness = 3.f;
+        }
 
-        editor_draw_box(box, col);
+        editor_draw_box(box, col, thickness);
     }
 }
 
@@ -881,30 +945,9 @@ int main(int, char**)
             if(ImGui::IsKeyDown(ImGuiKey_LeftArrow )) move_right(-move_speed);
             if(ImGui::IsKeyDown(ImGuiKey_RightArrow)) move_right(move_speed);
 
-            if(ImGui::IsKeyDown(ImGuiKey_Keypad1))
-            {
-                // x
-                yaw = uint16_t(-64 * 256);
-                pitch = 0;
-                ortho = true;
-                cam = { 30 * 256, 0, 0, };
-            }
-            if(ImGui::IsKeyDown(ImGuiKey_Keypad3))
-            {
-                // z
-                yaw = 0;
-                pitch = 0;
-                ortho = true;
-                cam = { 0, 0, 30 * 256, };
-            }
-            if(ImGui::IsKeyDown(ImGuiKey_Keypad7))
-            {
-                // y
-                yaw = 0;
-                pitch = 64 * 256;
-                ortho = true;
-                cam = { 0, 30 * 256, 0, };
-            }
+            if(ImGui::IsKeyDown(ImGuiKey_Keypad1)) ortho_x();
+            if(ImGui::IsKeyDown(ImGuiKey_Keypad3)) ortho_z();
+            if(ImGui::IsKeyDown(ImGuiKey_Keypad7)) ortho_y();
         }
 
         //ImGui::ShowDemoWindow(nullptr);
@@ -972,7 +1015,8 @@ int main(int, char**)
                 bp.z = ball.z / BOX_POS_FACTOR;
                 editor_draw_box(
                     { { r, r, r }, bp },
-                    ImGui::ColorConvertFloat4ToU32(ImVec4(0.f, 1.f, 0.5f, 1.f)));
+                    ImGui::ColorConvertFloat4ToU32(ImVec4(0.f, 1.f, 0.5f, 1.f)),
+                    3.f);
             }
             {
                 auto flag = info.flag_pos;
@@ -983,7 +1027,8 @@ int main(int, char**)
                 fp.z = flag.z / BOX_POS_FACTOR;
                 editor_draw_box(
                     { { r, r, r }, fp },
-                    ImGui::ColorConvertFloat4ToU32(ImVec4(1.f, 0.f, 1.f, 1.f)));
+                    ImGui::ColorConvertFloat4ToU32(ImVec4(1.f, 0.f, 1.f, 1.f)),
+                    3.f);
             }
         }
 

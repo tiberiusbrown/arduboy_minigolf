@@ -32,6 +32,7 @@ uint8_t leveli;
 level_info_ext levelext;
 
 #define DEBUG_TITLE_CAM 0
+#define TITLE_GRAPHICS 1
 static constexpr uint8_t TITLE_LEVEL = 0;
 
 static constexpr uint8_t STARTING_LEVEL = 0;
@@ -355,7 +356,7 @@ static void state_title(uint8_t btns, uint8_t pressed)
 #if DEBUG_TITLE_CAM
     // enable this block to adjust camera view at title screen
 
-    uint8_t btns = poll_btns();
+    reset_ball();
 
     if(btns & BTN_A)
     {
@@ -396,6 +397,8 @@ static void state_title(uint8_t btns, uint8_t pressed)
         practice ^= 1;
 #endif
     render_scene();
+
+#if TITLE_GRAPHICS
     draw_graphic(GFX_TITLE, 1, 50, 2, 77, GRAPHIC_OVERWRITE);
     draw_graphic(GFX_SUBTITLE, 4, 50, 1, 77, GRAPHIC_OVERWRITE);
 
@@ -413,6 +416,7 @@ static void state_title(uint8_t btns, uint8_t pressed)
         GFX_AUDIO, FBR - 1, FBW - 29 + SHORTEN, 1,
         (audio_enabled() ? 29 : 24) - SHORTEN,
         GRAPHIC_OVERWRITE);
+#endif
 }
 
 static void state_level(uint8_t btns, uint8_t pressed)

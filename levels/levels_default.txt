@@ -1,4 +1,7 @@
 DEFAULT
+Default
+brow1067
+A normal 18-hole course.
 18
 beginner_level
 2

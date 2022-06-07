@@ -284,6 +284,16 @@ struct level_info
     level_info_ext  ext;
 };
 
+struct fx_level_header
+{
+    uint8_t            num_holes;
+    array<uint8_t, 18> pars;
+    array<char, 32>    name;
+    array<char, 32>    author;
+    array<char, 128>   desc;
+};
+static_assert(sizeof(fx_level_header) <= 256, "");
+
 struct fx_level_info
 {
     array<int8_t  , MAX_VERTS * 1> vy;
