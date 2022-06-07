@@ -1,6 +1,8 @@
 #pragma once
 
-// generated file: do not edit
+// Generated file: do not edit.
+
+// This file is used only for the non-FX version of ArduGolf.
 
 static int8_t const LEVELS_DEFAULT_00_VERTS[42 * 3] PROGMEM =
 {

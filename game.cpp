@@ -9,10 +9,10 @@
 
 #if ARDUGOLF_FX
 
-#include "fxdata.h"
+#include "fx_courses.hpp"
 
 static array<uint8_t, 19> fx_header;
-uint24_t fx_course;
+uint8_t fx_course;
 
 #define NUM_LEVELS fx_header[0]
 
@@ -74,10 +74,25 @@ static uint8_t prev_btns;
 uint8_t shots[18];
 
 #if ARDUGOLF_FX
-static void set_course(uint24_t course)
+static uint24_t get_course_fx_addr()
 {
-    fx_course = course + 256; // skip header
-    FX::readDataBytes(course, &fx_header[0], 19);
+    uint8_t const* pcourse = (uint8_t*)&ALL_COURSE_ADDRS[fx_course];
+    uint24_t course_addr =
+        ((uint24_t)pgm_read_byte(pcourse + 0) << 0) |
+        ((uint24_t)pgm_read_byte(pcourse + 1) << 1) |
+        ((uint24_t)pgm_read_byte(pcourse + 2) << 2);
+    return course_addr;
+}
+
+uint24_t get_hole_fx_addr(uint8_t i)
+{
+    return get_course_fx_addr() + i * 1024 + 256; // +256 to skip header
+}
+
+static void set_course(uint8_t course)
+{
+    fx_course = course;
+    FX::readDataBytes(get_course_fx_addr(), &fx_header[0], 19);
     set_level(0);
 }
 #endif
@@ -533,6 +548,9 @@ static void state_hole(uint8_t btns, uint8_t pressed)
         state = st::SCORE;
 
     render_in_game_scene_and_graphics();
+
+    if(shots[leveli] == 1)
+        draw_hole_in_one_overlay();
 }
 
 static void state_score(uint8_t btns, uint8_t pressed)

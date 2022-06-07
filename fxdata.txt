@@ -1,1 +1,10 @@
 raw_t LEVELS_DEFAULT = "levels/levels_default.bin"
+
+/*
+1. Use the editor to export a .bin file for a course.
+2. Declare it here:
+
+    raw_t MY_COURSE = "path/to/course.bin"
+
+3. Add your course to fx_courses.hpp
+*/

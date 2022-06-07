@@ -303,7 +303,8 @@ static void editor_save_header(char const* fname)
     if(!f) return;
 
     fprintf(f, "#pragma once\n\n");
-    fprintf(f, "// generated file: do not edit\n\n");
+    fprintf(f, "// Generated file: do not edit.\n\n");
+    fprintf(f, "// This file is used only for the non-FX version of ArduGolf.\n\n");
 
     for(int i = 0; i < (int)editor_levels.size(); ++i)
     {

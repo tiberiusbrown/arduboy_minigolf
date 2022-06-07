@@ -7,7 +7,7 @@
 #include <Arduino.h>
 
 #if ARDUGOLF_FX
-#include "fxdata.h"
+#include "fx_courses.hpp"
 #endif
 
 #define FPS_SET 1
@@ -145,7 +145,7 @@ void setup()
 #endif
         
 #if ARDUGOLF_FX
-        FX::displayPrefetch(fx_course + leveli * 1024, &buf[0], 1024, false);
+        FX::displayPrefetch(get_hole_fx_addr(leveli), &buf[0], 1024, false);
         levelext = fxlevel.ext;
 #else
         Arduboy2Base::display(true);

@@ -352,7 +352,8 @@ extern uint8_t power_aim;
 extern uint8_t shots[18];
 extern uint8_t leveli;
 #if ARDUGOLF_FX
-extern uint24_t fx_course;
+extern uint8_t fx_course;
+uint24_t get_hole_fx_addr(uint8_t i);
 #else
 extern level_info const* current_level;
 #endif
