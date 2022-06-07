@@ -14,6 +14,8 @@
 static array<uint8_t, 19> fx_header;
 uint8_t fx_course;
 
+static constexpr uint8_t NUM_COURSES =
+    uint8_t(sizeof(ALL_COURSE_ADDRS) / sizeof(uint24_t));
 #define NUM_LEVELS fx_header[0]
 
 #else
@@ -78,9 +80,9 @@ static uint24_t get_course_fx_addr()
 {
     uint8_t const* pcourse = (uint8_t*)&ALL_COURSE_ADDRS[fx_course];
     uint24_t course_addr =
-        ((uint24_t)pgm_read_byte(pcourse + 0) << 0) |
-        ((uint24_t)pgm_read_byte(pcourse + 1) << 1) |
-        ((uint24_t)pgm_read_byte(pcourse + 2) << 2);
+        ((uint24_t)pgm_read_byte(pcourse + 0) <<  0) |
+        ((uint24_t)pgm_read_byte(pcourse + 1) <<  8) |
+        ((uint24_t)pgm_read_byte(pcourse + 2) << 16);
     return course_addr;
 }
 
@@ -93,7 +95,7 @@ static void set_course(uint8_t course)
 {
     fx_course = course;
     FX::readDataBytes(get_course_fx_addr(), &fx_header[0], 19);
-    set_level(0);
+    leveli = 0;
 }
 #endif
 
@@ -181,7 +183,10 @@ void set_level(uint8_t index)
 
 static void reset_to_title()
 {
-    set_level(TITLE_LEVEL);
+#if ARDUGOLF_FX
+    set_course(0);
+#endif
+    set_level(0);
     for(auto& s : shots) s = 0;
     state = st::TITLE;
     cam = { 3331, 1664, -3451 };
@@ -198,6 +203,7 @@ void game_setup()
 #if ARDUGOLF_FX
     set_course(LEVELS_DEFAULT);
 #endif
+    set_level(0);
     reset_to_title();
 }
 
@@ -332,7 +338,7 @@ static void render_in_game_scene_and_graphics()
     {
         uint8_t nx = 18 - graphic_offset;
         set_number2(leveli + 1, FBR - 3, nx);
-        set_number3(get_par(leveli), FBR - 2, nx);
+        set_number2(get_par(leveli), FBR - 2, nx);
         set_number2(shots[leveli] + 1, FBR - 1, nx);
     }
 
@@ -402,8 +408,12 @@ static void state_title(uint8_t btns, uint8_t pressed)
 #else
     if(pressed & BTN_A)
     {
+#if ARDUGOLF_FX
+        state = st::FX_COURSE;
+#else
         ab_btn_wait = 0;
-        set_level(STARTING_LEVEL);
+        set_level(0);
+#endif
         save_audio_on_off();
     }
     else if(pressed & BTN_B)
@@ -633,6 +643,37 @@ static void state_pitch(uint8_t btns, uint8_t pressed)
     render_in_game_scene_and_graphics();
 }
 
+#if ARDUGOLF_FX
+static void state_fx_course(uint8_t btns, uint8_t pressed)
+{
+    reset_ball();
+    update_camera_look_at_fastangle(
+        { 0, 0, 0 }, yaw_level, 6000, 256 * 28, 64, 64);
+    yaw_level += 256;
+
+    if(pressed & BTN_UP)
+        set_course(fx_course == 0 ? NUM_COURSES - 1 : fx_course - 1);
+    if(pressed & BTN_DOWN)
+        set_course(fx_course == NUM_COURSES - 1 ? 0 : fx_course + 1);
+    if(pressed & BTN_LEFT)
+        leveli = (leveli == 0 ? NUM_LEVELS - 1 : leveli - 1);
+    if(pressed & BTN_RIGHT)
+        leveli = (leveli == NUM_LEVELS - 1 ? 0 : leveli + 1);
+
+    if(pressed & BTN_A)
+    {
+        if(leveli == 0)
+            ab_btn_wait = 0, state = st::AIM;
+        else
+            set_level(0);
+    }
+    if(pressed & BTN_B)
+        reset_to_title();
+
+    render_scene();
+}
+#endif
+
 using state_func = void(*)(uint8_t, uint8_t);
 
 static state_func const STATE_FUNCS[] PROGMEM =
@@ -645,6 +686,9 @@ static state_func const STATE_FUNCS[] PROGMEM =
     state_score,
     state_menu,
     state_pitch,
+#if ARDUGOLF_FX
+    state_fx_course,
+#endif
 };
 
 void game_loop()

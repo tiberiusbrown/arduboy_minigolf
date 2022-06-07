@@ -68,11 +68,13 @@ static std::string read_line(FILE* f)
 {
     int c;
     std::string r;
+    bool valid = false;
     while(!feof(f))
     {
         c = fgetc(f);
-        if(c == '\n') break;
-        r += c;
+        if(c == '>') break;
+        if(valid) r += c;
+        else if(c == '<') valid = true;
     }
     return r;
 }
@@ -243,16 +245,16 @@ static void editor_save_file(char const* fname)
     FILE* f = fopen(fname, "w");
     if(!f) return;
 
-    fprintf(f, "%s\n", course_ident.c_str());
-    fprintf(f, "%s\n", course_name.c_str());
-    fprintf(f, "%s\n", course_author.c_str());
-    fprintf(f, "%s\n", course_desc.c_str());
+    fprintf(f, "<%s>\n", course_ident.c_str());
+    fprintf(f, "<%s>\n", course_name.c_str());
+    fprintf(f, "<%s>\n", course_author.c_str());
+    fprintf(f, "<%s>\n", course_desc.c_str());
 
     fprintf(f, "%d\n", (int)editor_levels.size());
 
     for(auto const& info : editor_levels)
     {
-        fprintf(f, "%s\n", info.name.c_str());
+        fprintf(f, "<%s>\n", info.name.c_str());
         fprintf(f, "%d\n", info.par);
         fprintf(f, "%d %d %d\n",
             (int)info.ball_pos.x,
@@ -535,6 +537,12 @@ static void editor_gui()
     using namespace ImGui;
     SetNextWindowSize({ 500, 600 }, ImGuiCond_FirstUseEver);
     Begin("Editor", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    if(Button("New Course"))
+    {
+        editor_levels.clear();
+        editor_levels.push_back({});
+    }
+    SameLine();
     if(Button("Load from file"))
     {
         nfdchar_t* path;
@@ -682,8 +690,6 @@ static void editor_gui()
         strncpy(buf, level.name.c_str(), sizeof(buf));
         InputText("Name", buf, sizeof(buf));
         level.name = buf;
-        for(auto& c : level.name)
-            if(!isalnum(c)) c = '_';
     }
 
     if(Button("Load mesh from file"))

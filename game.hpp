@@ -344,6 +344,7 @@ enum class st : uint8_t
     SCORE,      // viewing score card
     MENU,       // in-game menu
     PITCH,      // pitch adjustment
+    FX_COURSE,  // select course (FX only)
 };
 extern st state;
 extern uint8_t nframe;
