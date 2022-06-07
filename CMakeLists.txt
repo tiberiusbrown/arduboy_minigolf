@@ -43,6 +43,7 @@ set(MINIGOLF_SOURCES
     game.hpp
     camera.cpp
     div.cpp
+    font.cpp
     mul.cpp
     game.hpp
     draw.cpp

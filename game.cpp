@@ -94,7 +94,7 @@ uint24_t get_hole_fx_addr(uint8_t i)
 static void set_course(uint8_t course)
 {
     fx_course = course;
-    FX::readDataBytes(get_course_fx_addr(), &fx_header[0], 19);
+    FX::readDataBytes(get_course_fx_addr(), (uint8_t*)&fx_header[0], 19);
     leveli = 0;
 }
 #endif
@@ -648,7 +648,7 @@ static void state_fx_course(uint8_t btns, uint8_t pressed)
 {
     reset_ball();
     update_camera_look_at_fastangle(
-        { 0, 0, 0 }, yaw_level, 6000, 256 * 28, 64, 64);
+        { 0, -12 * 256, 0 }, yaw_level, 6000, 256 * 40, 64, 64);
     yaw_level += 256;
 
     if(pressed & BTN_UP)
@@ -671,6 +671,39 @@ static void state_fx_course(uint8_t btns, uint8_t pressed)
         reset_to_title();
 
     render_scene();
+
+    // clear bottom half of buffer
+    for(uint16_t i = 0; i < FBW; ++i)
+        buf[FBW * (FBR - 4) + i] = 0x02;
+    for(uint16_t i = 0; i < FBW * 3; ++i)
+        buf[FBW * (FBR - 3) + i] = 0;
+
+    FX::readDataBytes(
+        get_course_fx_addr(),
+        (uint8_t*)&fxcourseinfo,
+        sizeof(fx_level_header));
+    draw_text_nonprog(0, 36, fxcourseinfo.name.data());
+    uint8_t w = text_width_nonprog(fxcourseinfo.author.data());
+    draw_text_nonprog(128 - w, 36, fxcourseinfo.author.data());
+
+    uint8_t y = 47;
+    uint8_t x = 0;
+    uint8_t i = 0;
+    for(;;)
+    {
+        char c;
+        uint8_t j = i;
+        w = 0;
+        while((c = fxcourseinfo.desc[j]) > ' ')
+            w += char_width(c) + 1, ++j;
+        if(x + c > FBW)
+            y += 6, x = 0;
+        while(i < j)
+            x += draw_char(x, y, fxcourseinfo.desc[i++]) + 1;
+        ++i;
+        x += 2;
+        if(c == '\0') break;
+    }
 }
 #endif
 

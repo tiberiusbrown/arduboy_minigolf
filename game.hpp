@@ -406,6 +406,11 @@ void draw_ball_outline(dvec2 c, uint16_t r);
 struct face { uint8_t i0, i1, i2, pt; };
 extern array<face, MAX_FACES> fs;
 extern array<dvec2, MAX_VERTS> vs;
+#if ARDUGOLF_FX
+// used for displaying course info
+#define fxcourseinfo (*(fx_level_header*)&vs)
+static_assert(sizeof(fx_level_header) <= sizeof(vs), "");
+#endif
 void clear_buf();
 uint8_t render_scene();
 #ifndef ARDUINO
@@ -480,6 +485,16 @@ extern uint8_t const GFX_MENU    [] PROGMEM;
 extern uint8_t const GFX_ARROW   [] PROGMEM;
 extern uint8_t const GFX_HIO     [] PROGMEM;
 extern uint8_t const GFX_AUDIO   [] PROGMEM;
+
+#if ARDUGOLF_FX
+// font.cpp
+uint8_t draw_char(uint8_t x, uint8_t y, char c);
+void draw_text(uint8_t x, uint8_t y, char const* p);
+void draw_text_nonprog(uint8_t x, uint8_t y, char const* p);
+uint8_t char_width(char c);
+uint8_t text_width(char const* p);
+uint8_t text_width_nonprog(char const* p);
+#endif
 
 static inline int16_t div_frac_s(int16_t x)
 {
