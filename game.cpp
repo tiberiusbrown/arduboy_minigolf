@@ -384,6 +384,7 @@ void game_loop()
     }
     else if(state == st::LEVEL)
     {
+        reset_ball();
         update_camera_look_at_fastangle(
             { 0, 0, 0 }, yaw_level, 6000, 256 * 28, 64, 64);
         yaw_level += 256;
@@ -487,10 +488,7 @@ void game_loop()
     }
     else if(state == st::SCORE)
     {
-#if ARDUGOLF_FX
-    // need to clear here because buffer gets filled by displayPrefetch
-    clear_buf();
-#endif
+        clear_buf();
         draw_scorecard(0, 0);
         draw_scorecard(4, 9);
         if(btns & (BTN_A | BTN_B))
