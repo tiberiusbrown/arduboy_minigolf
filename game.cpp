@@ -297,274 +297,14 @@ static void draw_hole_in_one_overlay()
     }
 }
 
-void game_loop()
+static void render_in_game_scene_and_graphics()
 {
-    uint8_t btns = poll_btns();
-    uint8_t pressed = btns & ~prev_btns;
-    prev_btns = btns;
-
-    ++nframe;
-
-#if !ARDUGOLF_FX
-    load_level_from_prog();
-#endif
-
-    if(state == st::AIM || state == st::MENU || state == st::PITCH)
-    {
-        dvec3 above_ball = ball;
-        above_ball.y += (256 * 2);
-        update_camera_look_at_fastangle(
-            above_ball, yaw_aim, pitch_aim, DIST_AIM, 64, 64);
-    }
-
-    if(state == st::TITLE)
-    {
-#if DEBUG_TITLE_CAM
-        // enable this block to adjust camera view at title screen
-
-        uint8_t btns = poll_btns();
-
-        if(btns & BTN_A)
-        {
-            // look
-            if(btns & BTN_UP) look_up(256);
-            if(btns & BTN_DOWN) look_up(-256);
-            if(btns & BTN_LEFT) look_right(-256);
-            if(btns & BTN_RIGHT) look_right(256);
-
-            pitch = tclamp<int16_t>(pitch, -64 * 256, 64 * 256);
-        }
-        else if(btns & BTN_B)
-        {
-            // rise and fall
-            if(btns & BTN_UP) move_up(64);
-            if(btns & BTN_DOWN) move_up(-64);
-        }
-        else
-        {
-            // move and strafe
-            int8_t sinA = fsin(yaw) / 4;
-            int8_t cosA = fcos(yaw) / 4;
-            if(btns & BTN_UP) move_forward(64);
-            if(btns & BTN_DOWN) move_forward(-64);
-            if(btns & BTN_LEFT) move_right(-64);
-            if(btns & BTN_RIGHT) move_right(64);
-        }
-#else
-        if(pressed & BTN_A)
-        {
-            ab_btn_wait = 0;
-            set_level(STARTING_LEVEL);
-            save_audio_on_off();
-        }
-        else if(pressed & BTN_B)
-            toggle_audio();
-        else if(pressed & (BTN_LEFT | BTN_RIGHT))
-            practice ^= 1;
-#endif
-        render_scene();
-        draw_graphic(GFX_TITLE, 1, 50, 2, 77, GRAPHIC_OVERWRITE);
-        draw_graphic(GFX_SUBTITLE, 4, 50, 1, 77, GRAPHIC_OVERWRITE);
-
-        uint8_t x0 = 49, x1 = 73;
-        if(practice)
-            x0 = 81, x1 = 127;
-        while(x0 <= x1)
-        {
-            for(uint8_t y = 32; y <= 40; ++y)
-                inv_pixel(x0, y);
-            ++x0;
-        }
-        constexpr uint8_t SHORTEN = SHORTENED_AUDIO_GRAPHIC ? 20 : 0;
-        draw_graphic(
-            GFX_AUDIO, FBR - 1, FBW - 29 + SHORTEN, 1,
-            (audio_enabled() ? 29 : 24) - SHORTEN,
-            GRAPHIC_OVERWRITE);
-        return;
-    }
-    else if(state == st::LEVEL)
-    {
-        reset_ball();
-        update_camera_look_at_fastangle(
-            { 0, 0, 0 }, yaw_level, 6000, 256 * 28, 64, 64);
-        yaw_level += 256;
-        if(practice & 1)
-        {
-            if(pressed & BTN_LEFT)
-                leveli = (leveli == 0 ? NUM_LEVELS - 1 : leveli - 1);
-            if(pressed & BTN_RIGHT)
-                leveli = (leveli == NUM_LEVELS - 1 ? 0 : leveli + 1);
-            if(ab_btn_wait < 8)
-                ++ab_btn_wait;
-            else if(pressed & BTN_A)
-                state = st::AIM, practice = 2, ab_btn_wait = 0;
-            if(pressed & BTN_B)
-                reset_to_title();
-#if !ARDUGOLF_FX
-            current_level = &LEVELS[leveli];
-#endif
-            reset_ball();
-            render_scene();
-            draw_graphic(GFX_INFO_BAR, FBR - 2, 0, 2, 28, GRAPHIC_OVERWRITE);
-            set_number2(leveli + 1, FBR - 2, 18);
-            set_number2(get_par(leveli), FBR - 1, 18);
-            return;
-        }
-        else if(nframe == 255 || (pressed & BTN_B))
-            state = st::AIM, ab_btn_wait = 0;
-    }
-    else if(state == st::AIM)
-    {
-        uint8_t btns = poll_btns();
-
-        {
-            uint16_t ys = yaw_speed;
-            if(btns & (BTN_LEFT | BTN_RIGHT))
-                ys += ys / 4 + 2;
-            else
-                ys -= (ys / 4 + 1);
-            yaw_speed = (uint8_t)tclamp<uint16_t>(ys, 1, 255);
-        }
-
-        if(btns & BTN_LEFT ) yaw_aim -= yaw_speed;
-        if(btns & BTN_RIGHT) yaw_aim += yaw_speed;
-
-        if(btns & BTN_UP  ) power_aim += 2;
-        if(btns & BTN_DOWN) power_aim -= 2;
-        power_aim = tclamp(power_aim, MIN_POWER, MAX_POWER);
-
-        if(graphic_offset > 0)
-            --graphic_offset;
-
-        if(ab_btn_wait < 8)
-            ++ab_btn_wait;
-        else if(pressed & BTN_A)
-        {
-            int16_t ys = fsin16(yaw_aim);
-            int16_t yc = -fcos16(yaw_aim);
-            prev_ball = ball;
-            ball_vel.x = mul_f8_s16(ys, power_aim);
-            ball_vel.z = mul_f8_s16(yc, power_aim);
-            state = st::ROLLING;
-            play_tone(180, 100);
-        }
-
-        if(pressed & BTN_B)
-            state = st::MENU, menui = 0;
-    }
-    else if(state == st::ROLLING)
-    {
-        if(physics_step())
-        {
-            yaw_aim = yaw_to_flag();
-            shots[leveli] += 1;
-            state = st::AIM;
-        }
-        else if(ball.y < (256 * -20))
-        {
-            ball = prev_ball;
-            ball_vel = {};
-            ball_vel_ang = {};
-            shots[leveli] += 2; // penalty
-            state = st::AIM;
-        }
-        else if(ball_in_hole())
-        {
-            shots[leveli] += 1;
-            state = st::HOLE;
-            yaw_aim = yaw;
-            nframe = 0;
-            play_tone(180, 100, 300, 100);
-        }
-        update_camera_follow_ball(DIST_ROLL, 64, 16);
-    }
-    else if(state == st::HOLE)
-    {
-        dvec3 flag = levelext.flag_pos;
-        update_camera_look_at_fastangle(flag, yaw_aim, 6000, 256 * 20, 64, 64);
-        yaw_aim += 256;
-        if(nframe == 255)
-            state = st::SCORE;
-    }
-    else if(state == st::SCORE)
-    {
-        clear_buf();
-        draw_scorecard(0, 0);
-        draw_scorecard(4, 9);
-        if(btns & (BTN_A | BTN_B))
-        {
-            if(nframe == 32)
-            {
-                if(practice || (btns & BTN_B) || leveli == NUM_LEVELS - 1)
-                    practice >>= 1, reset_to_title();
-                else
-                    set_level(leveli + 1);
-            }
-        }
-        else
-            nframe = 0;
-        uint8_t proga = 0, progb = 0;
-        if(     btns & BTN_A) proga = nframe;
-        else if(btns & BTN_B) progb = nframe;
-        if(!practice)
-        {
-            draw_nframe_progress(21, proga);
-            draw_graphic(GFX_NEXT, 2, 110, 1, 15, GRAPHIC_SET);
-        }
-        draw_nframe_progress(21 + 24, progb);
-        draw_graphic(GFX_QUIT, FBR - 3, 110, 1, 15, GRAPHIC_SET);
-        return;
-    }
-    else if(state == st::MENU)
-    {
-        uint8_t n = practice ? 3 : 2;
-        if(menu_offset > 0)
-            menu_offset -= 3;
-        if(pressed & BTN_B)
-            state = st::AIM;
-        if(pressed & BTN_UP)
-            menui = (menui == 0 ? n : menui - 1);
-        if(pressed & BTN_DOWN)
-            menui = (menui == n ? 0 : menui + 1);
-        if(pressed & BTN_A)
-        {
-            uint8_t m = menui;
-            if(practice)
-            {
-                if(m == 0)
-                {
-                    set_level(leveli);
-                    state = st::AIM;
-                    ab_btn_wait = 0;
-                }
-                --m;
-            }
-            if(m == 0)
-                yaw_level = yaw_aim, nframe = 0, state = st::LEVEL;
-            if(m == 1)
-                state = st::PITCH;
-            if(m == 2)
-                reset_to_title();
-        }
-    }
-    else if(state == st::PITCH)
-    {
-        if(btns & BTN_UP  ) pitch_aim -= 64;
-        if(btns & BTN_DOWN) pitch_aim += 64;
-        pitch_aim = tclamp<int16_t>(pitch_aim, 0, 256 * 32);
-        if(pressed & BTN_B)
-            state = st::AIM;
-    }
-
     render_scene();
 
     if(state != st::MENU && menu_offset < MENU_OFFSET_MAX)
         menu_offset += 3;
     if(state != st::AIM && graphic_offset < GRAPHIC_OFFSET_MAX)
         ++graphic_offset;
-
-    if(state == st::HOLE && shots[leveli] == 1)
-        draw_hole_in_one_overlay();
 
     if(practice)
         draw_graphic(GFX_MENU, 0, -menu_offset, 4, 42, GRAPHIC_OVERWRITE);
@@ -596,4 +336,306 @@ void game_loop()
                 set_pixel(x, y);
     }
     draw_graphic(GFX_POWER, FBR - 1, 100 + graphic_offset, 1, 24, GRAPHIC_OVERWRITE);
+}
+
+static void update_camera_behind_ball()
+{
+    dvec3 above_ball = ball;
+    above_ball.y += (256 * 2);
+    update_camera_look_at_fastangle(
+        above_ball, yaw_aim, pitch_aim, DIST_AIM, 64, 64);
+}
+
+/**************************************************************************
+STATE LOGIC
+**************************************************************************/
+
+static void state_title(uint8_t btns, uint8_t pressed)
+{
+#if DEBUG_TITLE_CAM
+    // enable this block to adjust camera view at title screen
+
+    uint8_t btns = poll_btns();
+
+    if(btns & BTN_A)
+    {
+        // look
+        if(btns & BTN_UP) look_up(256);
+        if(btns & BTN_DOWN) look_up(-256);
+        if(btns & BTN_LEFT) look_right(-256);
+        if(btns & BTN_RIGHT) look_right(256);
+
+        pitch = tclamp<int16_t>(pitch, -64 * 256, 64 * 256);
+    }
+    else if(btns & BTN_B)
+    {
+        // rise and fall
+        if(btns & BTN_UP) move_up(64);
+        if(btns & BTN_DOWN) move_up(-64);
+    }
+    else
+    {
+        // move and strafe
+        int8_t sinA = fsin(yaw) / 4;
+        int8_t cosA = fcos(yaw) / 4;
+        if(btns & BTN_UP) move_forward(64);
+        if(btns & BTN_DOWN) move_forward(-64);
+        if(btns & BTN_LEFT) move_right(-64);
+        if(btns & BTN_RIGHT) move_right(64);
+    }
+#else
+    if(pressed & BTN_A)
+    {
+        ab_btn_wait = 0;
+        set_level(STARTING_LEVEL);
+        save_audio_on_off();
+    }
+    else if(pressed & BTN_B)
+        toggle_audio();
+    else if(pressed & (BTN_LEFT | BTN_RIGHT))
+        practice ^= 1;
+#endif
+    render_scene();
+    draw_graphic(GFX_TITLE, 1, 50, 2, 77, GRAPHIC_OVERWRITE);
+    draw_graphic(GFX_SUBTITLE, 4, 50, 1, 77, GRAPHIC_OVERWRITE);
+
+    uint8_t x0 = 49, x1 = 73;
+    if(practice)
+        x0 = 81, x1 = 127;
+    while(x0 <= x1)
+    {
+        for(uint8_t y = 32; y <= 40; ++y)
+            inv_pixel(x0, y);
+        ++x0;
+    }
+    constexpr uint8_t SHORTEN = SHORTENED_AUDIO_GRAPHIC ? 20 : 0;
+    draw_graphic(
+        GFX_AUDIO, FBR - 1, FBW - 29 + SHORTEN, 1,
+        (audio_enabled() ? 29 : 24) - SHORTEN,
+        GRAPHIC_OVERWRITE);
+}
+
+static void state_level(uint8_t btns, uint8_t pressed)
+{
+    reset_ball();
+    update_camera_look_at_fastangle(
+        { 0, 0, 0 }, yaw_level, 6000, 256 * 28, 64, 64);
+    yaw_level += 256;
+    if(practice & 1)
+    {
+        if(pressed & BTN_LEFT)
+            leveli = (leveli == 0 ? NUM_LEVELS - 1 : leveli - 1);
+        if(pressed & BTN_RIGHT)
+            leveli = (leveli == NUM_LEVELS - 1 ? 0 : leveli + 1);
+        if(ab_btn_wait < 8)
+            ++ab_btn_wait;
+        else if(pressed & BTN_A)
+            state = st::AIM, practice = 2, ab_btn_wait = 0;
+        if(pressed & BTN_B)
+            reset_to_title();
+#if !ARDUGOLF_FX
+        current_level = &LEVELS[leveli];
+#endif
+        reset_ball();
+        render_scene();
+        draw_graphic(GFX_INFO_BAR, FBR - 2, 0, 2, 28, GRAPHIC_OVERWRITE);
+        set_number2(leveli + 1, FBR - 2, 18);
+        set_number2(get_par(leveli), FBR - 1, 18);
+        return;
+    }
+    else if(nframe == 255 || (pressed & BTN_B))
+        state = st::AIM, ab_btn_wait = 0;
+
+    render_in_game_scene_and_graphics();
+}
+
+static void state_aim(uint8_t btns, uint8_t pressed)
+{
+    update_camera_behind_ball();
+
+    {
+        uint16_t ys = yaw_speed;
+        if(btns & (BTN_LEFT | BTN_RIGHT))
+            ys += ys / 4 + 2;
+        else
+            ys -= (ys / 4 + 1);
+        yaw_speed = (uint8_t)tclamp<uint16_t>(ys, 1, 255);
+    }
+
+    if(btns & BTN_LEFT) yaw_aim -= yaw_speed;
+    if(btns & BTN_RIGHT) yaw_aim += yaw_speed;
+
+    if(btns & BTN_UP) power_aim += 2;
+    if(btns & BTN_DOWN) power_aim -= 2;
+    power_aim = tclamp(power_aim, MIN_POWER, MAX_POWER);
+
+    if(graphic_offset > 0)
+        --graphic_offset;
+
+    if(ab_btn_wait < 8)
+        ++ab_btn_wait;
+    else if(pressed & BTN_A)
+    {
+        int16_t ys = fsin16(yaw_aim);
+        int16_t yc = -fcos16(yaw_aim);
+        prev_ball = ball;
+        ball_vel.x = mul_f8_s16(ys, power_aim);
+        ball_vel.z = mul_f8_s16(yc, power_aim);
+        state = st::ROLLING;
+        play_tone(180, 100);
+    }
+
+    if(pressed & BTN_B)
+        state = st::MENU, menui = 0;
+
+    render_in_game_scene_and_graphics();
+}
+
+static void state_rolling(uint8_t btns, uint8_t pressed)
+{
+    if(physics_step())
+    {
+        yaw_aim = yaw_to_flag();
+        shots[leveli] += 1;
+        state = st::AIM;
+    }
+    else if(ball.y < (256 * -20))
+    {
+        ball = prev_ball;
+        ball_vel = {};
+        ball_vel_ang = {};
+        shots[leveli] += 2; // penalty
+        state = st::AIM;
+    }
+    else if(ball_in_hole())
+    {
+        shots[leveli] += 1;
+        state = st::HOLE;
+        yaw_aim = yaw;
+        nframe = 0;
+        play_tone(180, 100, 300, 100);
+    }
+    update_camera_follow_ball(DIST_ROLL, 64, 16);
+
+    render_in_game_scene_and_graphics();
+}
+
+static void state_hole(uint8_t btns, uint8_t pressed)
+{
+    dvec3 flag = levelext.flag_pos;
+    update_camera_look_at_fastangle(flag, yaw_aim, 6000, 256 * 20, 64, 64);
+    yaw_aim += 256;
+    if(nframe == 255)
+        state = st::SCORE;
+
+    render_in_game_scene_and_graphics();
+}
+
+static void state_score(uint8_t btns, uint8_t pressed)
+{
+    // need to clear here because buffer gets filled by displayPrefetch
+    clear_buf();
+    draw_scorecard(0, 0);
+    draw_scorecard(4, 9);
+    if(btns & (BTN_A | BTN_B))
+    {
+        if(nframe == 32)
+        {
+            if(practice || (btns & BTN_B) || leveli == NUM_LEVELS - 1)
+                practice >>= 1, reset_to_title();
+            else
+                set_level(leveli + 1);
+        }
+    }
+    else
+        nframe = 0;
+    uint8_t proga = 0, progb = 0;
+    if(btns & BTN_A) proga = nframe;
+    else if(btns & BTN_B) progb = nframe;
+    if(!practice)
+    {
+        draw_nframe_progress(21, proga);
+        draw_graphic(GFX_NEXT, 2, 110, 1, 15, GRAPHIC_SET);
+    }
+    draw_nframe_progress(21 + 24, progb);
+    draw_graphic(GFX_QUIT, FBR - 3, 110, 1, 15, GRAPHIC_SET);
+}
+
+static void state_menu(uint8_t btns, uint8_t pressed)
+{
+    update_camera_behind_ball();
+
+    uint8_t n = practice ? 3 : 2;
+    if(menu_offset > 0)
+        menu_offset -= 3;
+    if(pressed & BTN_B)
+        state = st::AIM;
+    if(pressed & BTN_UP)
+        menui = (menui == 0 ? n : menui - 1);
+    if(pressed & BTN_DOWN)
+        menui = (menui == n ? 0 : menui + 1);
+    if(pressed & BTN_A)
+    {
+        uint8_t m = menui;
+        if(practice)
+        {
+            if(m == 0)
+            {
+                set_level(leveli);
+                state = st::AIM;
+                ab_btn_wait = 0;
+            }
+            --m;
+        }
+        if(m == 0)
+            yaw_level = yaw_aim, nframe = 0, state = st::LEVEL;
+        if(m == 1)
+            state = st::PITCH;
+        if(m == 2)
+            reset_to_title();
+    }
+
+    render_in_game_scene_and_graphics();
+}
+
+static void state_pitch(uint8_t btns, uint8_t pressed)
+{
+    update_camera_behind_ball();
+
+    if(btns & BTN_UP) pitch_aim -= 64;
+    if(btns & BTN_DOWN) pitch_aim += 64;
+    pitch_aim = tclamp<int16_t>(pitch_aim, 0, 256 * 32);
+    if(pressed & BTN_B)
+        state = st::AIM;
+
+    render_in_game_scene_and_graphics();
+}
+
+using state_func = void(*)(uint8_t, uint8_t);
+
+static state_func const STATE_FUNCS[] PROGMEM =
+{
+    state_title,
+    state_level,
+    state_aim,
+    state_rolling,
+    state_hole,
+    state_score,
+    state_menu,
+    state_pitch,
+};
+
+void game_loop()
+{
+    uint8_t btns = poll_btns();
+    uint8_t pressed = btns & ~prev_btns;
+    prev_btns = btns;
+
+    ++nframe;
+
+#if !ARDUGOLF_FX
+    load_level_from_prog();
+#endif
+
+    pgmptr(&STATE_FUNCS[(uint8_t)state])(btns, pressed);
 }
