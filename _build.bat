@@ -27,4 +27,9 @@ rem create _sizes.txt
 rem create _ram.txt
 findstr /c:" b " /c:" B " /c:" d " /c:" D " _sizes.txt > _ram.txt
 
+rem create _map.txt
+"C:\Program Files (x86)\Arduino\hardware\tools\avr\bin\avr-nm.exe" --numeric-sort -C -t x "%dir%/arduboy_minigolf.ino.elf" > _map2.txt
+findstr /c:" b " /c:" B " /c:" d " /c:" D " _map2.txt > _map.txt
+del _map2.txt
+
 pause

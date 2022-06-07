@@ -64,6 +64,10 @@ static constexpr int FBR = FBH / 8;
 extern ArduboyTones sound;
 #define play_tone sound.tone
 
+#if ARDUGOLF_FX
+#include "ArduboyFX.h"
+#endif
+
 #define myassert(...)
 
 #else
@@ -305,16 +309,16 @@ struct fx_level_info
 static constexpr size_t SIZEOF_FX_LEVEL_INFO = sizeof(fx_level_info);
 static_assert(SIZEOF_FX_LEVEL_INFO <= BUF_BYTES, "");
 static_assert(SIZEOF_FX_LEVEL_INFO == 1024, "");
-static fx_level_info& fxlevel = *((fx_level_info*)&buf[0]);
+#define fxlevel (*(fx_level_info*)&buf[0])
 
 // reused buffer data
-static array<int8_t  , MAX_VERTS    >& buf_vy    = *reinterpret_cast< array<int8_t  , MAX_VERTS    >* >(&buf[offsetof(fx_level_info, vy)]);
-static array<int8_t  , MAX_VERTS * 2>& buf_vxz   = *reinterpret_cast< array<int8_t  , MAX_VERTS * 2>* >(&buf[offsetof(fx_level_info, vxz)]);
-static array<uint16_t, MAX_VERTS    >& buf_vdist = *reinterpret_cast< array<uint16_t, MAX_VERTS    >* >(&buf[offsetof(fx_level_info, vdist_start)]);
-static array<uint8_t , MAX_FACES * 3>& buf_faces = *reinterpret_cast< array<uint8_t , MAX_FACES * 3>* >(&buf[offsetof(fx_level_info, faces)]);
-static array<uint16_t, MAX_FACES    >& buf_fdist = *reinterpret_cast< array<uint16_t, MAX_FACES    >* >(&buf[offsetof(fx_level_info, fdist_start)]);
-static array<phys_box, MAX_BOXES    >& buf_boxes = *reinterpret_cast< array<phys_box, MAX_BOXES    >* >(&buf[offsetof(fx_level_info, boxes)]);
-static array<int16_t , MAX_VERTS    >& buf_tvz   = *reinterpret_cast< array<int16_t , MAX_VERTS    >* >(&buf_boxes);
+#define buf_vy    ((int8_t  *)(&buf[offsetof(fx_level_info, vy)]))
+#define buf_vxz   ((int8_t  *)(&buf[offsetof(fx_level_info, vxz)]))
+#define buf_vdist ((uint16_t*)(&buf[offsetof(fx_level_info, vdist_start)]))
+#define buf_faces ((uint8_t *)(&buf[offsetof(fx_level_info, faces)]))
+#define buf_fdist ((uint16_t*)(&buf[offsetof(fx_level_info, fdist_start)]))
+#define buf_boxes ((phys_box*)(&buf[offsetof(fx_level_info, boxes)]))
+#define buf_tvz   ((int16_t *)(buf_boxes))
 
 // ensure buf_vz fits in buf
 static_assert(offsetof(fx_level_info, boxes) + sizeof(int16_t) * MAX_VERTS <= BUF_BYTES, "");
@@ -337,7 +341,11 @@ extern uint16_t yaw_aim;
 extern uint8_t power_aim;
 extern uint8_t shots[18];
 extern uint8_t leveli;
+#if ARDUGOLF_FX
+extern uint24_t fx_course;
+#else
 extern level_info const* current_level;
+#endif
 extern level_info_ext levelext;
 bool ball_in_hole();
 void set_level(uint8_t index);

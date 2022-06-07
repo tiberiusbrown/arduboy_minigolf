@@ -361,6 +361,62 @@ static void editor_save_header(char const* fname)
     fclose(f);
 }
 
+struct fxbin_header_content
+{
+    uint8_t num_holes;
+    uint8_t pars[18];
+    //char name[32];
+};
+
+struct fxbin_header
+{
+    fxbin_header_content content;
+    uint8_t padding[256 - sizeof(fxbin_header_content)];
+};
+
+static void editor_save_fxbin(char const* fname)
+{
+    FILE* f = fopen(fname, "wb");
+    if(!f) return;
+
+    {
+        fxbin_header header{};
+        header.content.num_holes = (uint8_t)editor_levels.size();
+        for(size_t i = 0; i < 18; ++i)
+            if(i < editor_levels.size())
+                header.content.pars[i] = editor_levels[i].par;
+        fwrite(&header, sizeof(header), 1, f);
+    }
+
+    for(auto const& info : editor_levels)
+    {
+        fx_level_info fxinfo{};
+        fxinfo.ext.num_verts = uint8_t(info.verts.size() / 3);
+        for(int i = 0; i < info.verts.size() / 3; ++i)
+        {
+            fxinfo.vxz[i * 2 + 0] = info.verts[i * 3 + 0];
+            fxinfo.vy [i        ] = info.verts[i * 3 + 1];
+            fxinfo.vxz[i * 2 + 1] = info.verts[i * 3 + 2];
+        }
+        for(int i = 0; i < 5; ++i)
+        {
+            for(int j = 0; j < (int)info.faces[i].size(); ++j)
+                fxinfo.faces[fxinfo.ext.num_faces * 3 + j] = info.faces[i][j];
+            fxinfo.ext.pat_faces[i] = (int)info.faces[i].size() / 3;
+            fxinfo.ext.num_faces += fxinfo.ext.pat_faces[i];
+        }
+        fxinfo.ext.num_boxes = (uint8_t)info.boxes.size();
+        for(int i = 0; i < (int)info.boxes.size(); ++i)
+            fxinfo.boxes[i] = info.boxes[i];
+        fxinfo.ext.ball_pos = info.ball_pos;
+        fxinfo.ext.flag_pos = info.flag_pos;
+        fxinfo.ext.par = (uint8_t)info.par;
+        fwrite(&fxinfo, sizeof(fxinfo), 1, f);
+    }
+
+    fclose(f);
+}
+
 static int get_pattern_of_material(char const* mat_name)
 {
     for(;;)
@@ -480,6 +536,19 @@ static void editor_gui()
         if(r == NFD_OKAY)
         {
             editor_save_header(path);
+            free(path);
+        }
+    }
+    SameLine();
+    if(Button("Save to FX bin"))
+    {
+        nfdchar_t* path;
+        auto r = NFD_SaveDialog("bin", BASE_DIR "\\levels", &path);
+        if(r == NFD_ERROR)
+            r = NFD_SaveDialog("bin", nullptr, &path);
+        if(r == NFD_OKAY)
+        {
+            editor_save_fxbin(path);
             free(path);
         }
     }
@@ -764,10 +833,6 @@ int main(int, char**)
     pitch = 4000;
     cam = { 0, 12 * 256, 32 * 256 };
     ball = { 256 * 16, 256 * 2, 256 * 1 };
-
-    cam = { -3037, 2739, -1124 };
-    yaw = 25292;
-    pitch = 4083;
 
     // Main loop
     bool done = false;

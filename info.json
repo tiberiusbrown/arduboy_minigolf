@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 3,
+  "title": "ArduGolf FX",
+  "author": "brow1067",
+  "version": "1.0",
+  "date": "2022-06-01",
+  "genre": "sports",
+  "binaries": [
+    {
+      "title": "ArduGolf FX",
+      "filename": "ardugolf_fx.hex",
+      "flashdata": "fxdata.bin",
+      "device": "ArduboyFX"
+    }
+  ],
+  "buttons": [
+    {
+      "control": "Up",
+      "action": "Increase Power"
+    },
+    {
+      "control": "Down",
+      "action": "Decrease Power"
+    },
+    {
+      "control": "Left",
+      "action": "Aim Left"
+    },
+    {
+      "control": "Right",
+      "action": "Aim Right"
+    },
+    {
+      "control": "A",
+      "action": "Shoot"
+    },
+    {
+      "control": "B",
+      "action": "Menu"
+    }
+  ]
+}

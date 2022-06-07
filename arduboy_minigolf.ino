@@ -6,6 +6,10 @@
 #include <ArduboyTones.h>
 #include <Arduino.h>
 
+#if ARDUGOLF_FX
+#include "fxdata.h"
+#endif
+
 #define FPS_SET 1
 #define SHOW_FPS 0
 
@@ -67,6 +71,10 @@ void setup()
         power_timer0_disable();
         for(;;) Arduboy2Core::idle();
     }
+    
+#if ARDUGOLF_FX
+    FX::begin(FX_DATA_PAGE);
+#endif
     
     game_setup();
 
@@ -136,7 +144,12 @@ void setup()
         a.write('0' + f);
 #endif
         
+#if ARDUGOLF_FX
+        FX::displayPrefetch(fx_course + leveli * 1024, &buf[0], 1024, false);
+        levelext = fxlevel.ext;
+#else
         Arduboy2Base::display(true);
+#endif
     }
   
 #if REMOVE_USB

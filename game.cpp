@@ -7,14 +7,28 @@
 #pragma GCC optimize("no-inline-small-functions")
 #endif
 
+#if ARDUGOLF_FX
+
+#include "fxdata.h"
+
+static array<uint8_t, 19> fx_header;
+uint24_t fx_course;
+
+#define NUM_LEVELS fx_header[0]
+
+#else
+
 #include "levels/levels_default.hpp"
 
 static auto const* const LEVELS = LEVELS_DEFAULT;
 static constexpr uint8_t NUM_LEVELS =
     sizeof(LEVELS_DEFAULT) / sizeof(LEVELS_DEFAULT[0]);
 
-uint8_t leveli;
 level_info const* current_level;
+
+#endif
+
+uint8_t leveli;
 level_info_ext levelext;
 
 #define DEBUG_TITLE_CAM 0
@@ -58,9 +72,22 @@ static uint8_t prev_btns;
 
 uint8_t shots[18];
 
+#if ARDUGOLF_FX
+static void set_course(uint24_t course)
+{
+    fx_course = course + 256; // skip header
+    FX::readDataBytes(course, &fx_header[0], 19);
+    set_level(0);
+}
+#endif
+
 static uint8_t get_par(uint8_t i)
 {
+#if ARDUGOLF_FX
+    return fx_header[i + 1];
+#else
     return pgm_read_byte((uint8_t*)&LEVELS[i] + offsetof(level_info, ext.par));
+#endif
 }
 
 static void draw_nframe_progress(uint8_t oy, uint8_t n)
@@ -95,6 +122,7 @@ static void reset_ball()
 
 void load_level_from_prog()
 {
+#if !ARDUGOLF_FX
     memcpy_P(&levelext, &current_level->ext, sizeof(levelext));
     {
         int8_t* pvy  = &buf_vy [0];
@@ -115,12 +143,17 @@ void load_level_from_prog()
         &buf_boxes[0],
         pgmptr(&current_level->boxes),
         sizeof(phys_box) * levelext.num_boxes);
+#endif
 }
 
 void set_level(uint8_t index)
 {
     leveli = index;
+#if ARDUGOLF_FX
+
+#else
     current_level = &LEVELS[index];
+#endif
     reset_ball();
     nframe = 0;
     yaw_level = 0;
@@ -146,6 +179,9 @@ static void reset_to_title()
 
 void game_setup()
 {
+#if ARDUGOLF_FX
+    set_course(LEVELS_DEFAULT);
+#endif
     reset_to_title();
 }
 
@@ -363,7 +399,9 @@ void game_loop()
                 state = st::AIM, practice = 2, ab_btn_wait = 0;
             if(pressed & BTN_B)
                 reset_to_title();
+#if !ARDUGOLF_FX
             current_level = &LEVELS[leveli];
+#endif
             reset_ball();
             render_scene();
             draw_graphic(GFX_INFO_BAR, FBR - 2, 0, 2, 28, GRAPHIC_OVERWRITE);
@@ -449,13 +487,17 @@ void game_loop()
     }
     else if(state == st::SCORE)
     {
+#if ARDUGOLF_FX
+    // need to clear here because buffer gets filled by displayPrefetch
+    clear_buf();
+#endif
         draw_scorecard(0, 0);
         draw_scorecard(4, 9);
         if(btns & (BTN_A | BTN_B))
         {
             if(nframe == 32)
             {
-                if(practice || (btns & BTN_B) || leveli == sizeof(LEVELS) / sizeof(LEVELS[0]) - 1)
+                if(practice || (btns & BTN_B) || leveli == NUM_LEVELS - 1)
                     practice >>= 1, reset_to_title();
                 else
                     set_level(leveli + 1);
@@ -536,7 +578,7 @@ void game_loop()
     {
         uint8_t nx = 18 - graphic_offset;
         set_number2(leveli + 1, FBR - 3, nx);
-        set_number2(get_par(leveli), FBR - 2, nx);
+        set_number3(get_par(leveli), FBR - 2, nx);
         set_number2(shots[leveli] + 1, FBR - 1, nx);
     }
 
