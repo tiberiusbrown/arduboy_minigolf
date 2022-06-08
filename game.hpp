@@ -8,7 +8,7 @@ static constexpr int FBW = 1 * 128;
 static constexpr int FBH = 1 * 64;
 
 #ifndef ARDUGOLF_FX
-#define ARDUGOLF_FX 0
+#define ARDUGOLF_FX 1
 #endif
 
 #define USE_AVR_INLINE_ASM 1
@@ -195,6 +195,8 @@ using uint24_t = __uint24;
 using s24 = int24_t;
 using u24 = uint24_t;
 #else
+using __int24 = int32_t;
+using __uint24 = uint32_t;
 using int24_t = int32_t;
 using uint24_t = uint32_t;
 
@@ -355,6 +357,7 @@ extern uint8_t leveli;
 #if ARDUGOLF_FX
 extern uint8_t fx_course;
 uint24_t get_hole_fx_addr(uint8_t i);
+void fx_read_data_bytes(uint24_t addr, uint8_t* dst, size_t n);
 #else
 extern level_info const* current_level;
 #endif

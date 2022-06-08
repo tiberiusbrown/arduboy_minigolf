@@ -55,6 +55,15 @@ set(MINIGOLF_SOURCES
     game.cpp
 )
 
+add_executable(bin2c tools/bin2c.c)
+set(FX_DATA_HEADER "${CMAKE_CURRENT_BINARY_DIR}/FX_DATA.hpp")
+add_custom_command(
+    OUTPUT "${FX_DATA_HEADER}"
+    COMMAND bin2c "${CMAKE_CURRENT_SOURCE_DIR}/fxdata.bin" "${FX_DATA_HEADER}"
+    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/fxdata.bin"
+)
+list(APPEND MINIGOLF_SOURCES "${FX_DATA_HEADER}")
+
 add_executable(
     ${PROJECT_NAME} ${WINFLAG}
     README.md
@@ -62,6 +71,9 @@ add_executable(
     main_emscripten.cpp
     main_win32.cpp
     ${MINIGOLF_SOURCES}
+)
+target_include_directories(${PROJECT_NAME} PUBLIC
+    "${CMAKE_CURRENT_BINARY_DIR}"
 )
 
 if(MSVC)
@@ -84,6 +96,7 @@ if(MSVC)
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/imgui"
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/fmt"
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/nativefiledialog/include"
+        "${CMAKE_CURRENT_BINARY_DIR}"
     )
     set_property(TARGET level_editor PROPERTY
         MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -92,7 +105,7 @@ if(MSVC)
         string(REGEX REPLACE "/" "\\\\\\\\" BASE_DIR "${BASE_DIR}")
     endif()
     target_compile_definitions(level_editor PUBLIC
-        -DBASE_DIR="${BASE_DIR}")
+        -DBASE_DIR="${BASE_DIR}" -DARDUGOLF_FX=0)
 
 endif()
 
@@ -102,6 +115,12 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED 11)
 if(NOT EMSCRIPTEN)
     add_executable(gen_math_tables tools/gen_math_tables.cpp)
     add_executable(test_math tools/test_math.cpp ${MINIGOLF_SOURCES})
+    target_include_directories(gen_math_tables PUBLIC
+        "${CMAKE_CURRENT_BINARY_DIR}"
+    )
+    target_include_directories(test_math PUBLIC
+        "${CMAKE_CURRENT_BINARY_DIR}"
+    )
 endif()
 
 if(MSVC)

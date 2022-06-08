@@ -11,6 +11,19 @@
 
 #include "fx_courses.hpp"
 
+#ifndef ARDUINO
+#include <FX_DATA.hpp>
+#endif
+
+void fx_read_data_bytes(uint24_t addr, uint8_t* dst, size_t n)
+{
+#ifdef ARDUINO
+    FX::readDataBytes(addr, dst, n);
+#else
+    memcpy(dst, FX_DATA + addr, n);
+#endif
+}
+
 static array<uint8_t, 19> fx_header;
 uint8_t fx_course;
 
@@ -94,7 +107,7 @@ uint24_t get_hole_fx_addr(uint8_t i)
 static void set_course(uint8_t course)
 {
     fx_course = course;
-    FX::readDataBytes(get_course_fx_addr(), (uint8_t*)&fx_header[0], 19);
+    fx_read_data_bytes(get_course_fx_addr(), (uint8_t*)&fx_header[0], 19);
     leveli = 0;
 }
 #endif
@@ -674,7 +687,7 @@ static void state_fx_course(uint8_t btns, uint8_t pressed)
     for(uint16_t i = 0; i < FBW * 3; ++i)
         buf[FBW * (FBR - 3) + i] = 0;
 
-    FX::readDataBytes(
+    fx_read_data_bytes(
         get_course_fx_addr(),
         (uint8_t*)&fxcourseinfo,
         sizeof(fx_level_header));

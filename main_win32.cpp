@@ -472,6 +472,10 @@ int WINAPI WinMain(
         {
             game_loop();
             paint();
+#if ARDUGOLF_FX
+            fx_read_data_bytes(get_hole_fx_addr(leveli), &buf[0], 1024);
+            levelext = fxlevel.ext;
+#endif
         }
     }
 
