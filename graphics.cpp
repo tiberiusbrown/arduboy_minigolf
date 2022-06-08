@@ -1,5 +1,82 @@
 #include "game.hpp"
 
+void draw_graphic(
+    uint8_t const* p,
+    uint8_t r, uint8_t c,
+    uint8_t h, uint8_t w,
+    uint8_t op)
+{
+    uint8_t* br = &buf[0] + r * FBW;
+    for(uint8_t y = 0; y < h; ++y, br += FBW)
+    {
+        for(uint8_t x = 0; x < w; ++x)
+        {
+            uint8_t t = pgm_read_byte(p++);
+            uint8_t bi = x + c;
+            if(bi >= FBW) continue;
+            uint8_t* bc = br + bi;
+            if(op == GRAPHIC_OVERWRITE)
+                *bc = t;
+            else if(op == GRAPHIC_SET)
+                *bc |= t;
+            else
+                *bc &= ~t;
+        }
+    }
+}
+
+static uint8_t const NUMBERS[3 * 10] PROGMEM =
+{
+    0x70, 0x88, 0x70, 0x90, 0xf8, 0x80, 0xc8, 0xa8,
+    0x90, 0x88, 0xa8, 0x50, 0x38, 0x20, 0xf8, 0xb8,
+    0xa8, 0x48, 0x70, 0xa8, 0x40, 0x08, 0xc8, 0x38,
+    0x50, 0xa8, 0x50, 0x10, 0xa8, 0x70,
+};
+
+void set_number(uint8_t n, uint8_t r, uint8_t c)
+{
+    draw_graphic(&NUMBERS[n * 3], r, c, 1, 3, GRAPHIC_SET);
+}
+
+void set_number2(uint8_t n, uint8_t r, uint8_t c)
+{
+    if(n > 99) n = 99;
+    uint8_t t = 0;
+    while(n >= 10)
+        n -= 10, ++t;
+    if(t != 0)
+    {
+        set_number(t, r, c);
+        set_number(n, r, c + 4);
+    }
+    else
+        set_number(n, r, c + 2);
+}
+
+void set_number3(uint16_t n, uint8_t r, uint8_t c)
+{
+    if(n > 999) n = 999;
+    uint8_t t0 = 0, t1 = 0;
+    while(n >= 100)
+        n -= 100, ++t0;
+    while(n >= 10)
+        n -= 10, ++t1;
+    uint8_t x = c;
+    if(t0 != 0)
+    {
+        set_number(t0, r, c);
+        set_number(t1, r, c + 4);
+        set_number(n, r, c + 8);
+    }
+    else if(t1 != 0)
+    {
+        set_number(t1, r, c + 2);
+        set_number(n, r, c + 6);
+    }
+    else
+        set_number(n, r, c + 4);
+}
+
 uint8_t const GFX_INFO_BAR[] PROGMEM =
 {
     0xfa, 0x22, 0xfa, 0x02, 0x72, 0x8a, 0x72, 0x02,
@@ -140,79 +217,15 @@ uint8_t const GFX_AUDIO[] PROGMEM =
     0x00, 0x24, 0x99, 0x42, 0x3c,
 };
 
-void draw_graphic(
-    uint8_t const* p,
-    uint8_t r, uint8_t c,
-    uint8_t h, uint8_t w,
-    uint8_t op)
+uint8_t const GFX_ARROWS_H[] PROGMEM =
 {
-    uint8_t* br = &buf[0] + r * FBW;
-    for(uint8_t y = 0; y < h; ++y, br += FBW)
-    {
-        for(uint8_t x = 0; x < w; ++x)
-        {
-            uint8_t t = pgm_read_byte(p++);
-            uint8_t bi = x + c;
-            if(bi >= FBW) continue;
-            uint8_t* bc = br + bi;
-            if(op == GRAPHIC_OVERWRITE)
-                *bc = t;
-            else if(op == GRAPHIC_SET)
-                *bc |= t;
-            else
-                *bc &= ~t;
-        }
-    }
-}
-
-static uint8_t const NUMBERS[3 * 10] PROGMEM =
-{
-    0x70, 0x88, 0x70, 0x90, 0xf8, 0x80, 0xc8, 0xa8,
-    0x90, 0x88, 0xa8, 0x50, 0x38, 0x20, 0xf8, 0xb8,
-    0xa8, 0x48, 0x70, 0xa8, 0x40, 0x08, 0xc8, 0x38,
-    0x50, 0xa8, 0x50, 0x10, 0xa8, 0x70,
+    0x02, 0x02, 0x22, 0x72, 0xfa, 0x22, 0x22, 0x02,
+    0x02, 0x22, 0x22, 0xfa, 0x72, 0x22, 0x02, 0xfe,
+    0x00,
 };
 
-void set_number(uint8_t n, uint8_t r, uint8_t c)
+uint8_t const GFX_ARROWS_V[] PROGMEM =
 {
-    draw_graphic(&NUMBERS[n * 3], r, c, 1, 3, GRAPHIC_SET);
-}
-
-void set_number2(uint8_t n, uint8_t r, uint8_t c)
-{
-    if(n > 99) n = 99;
-    uint8_t t = 0;
-    while(n >= 10)
-        n -= 10, ++t;
-    if(t != 0)
-    {
-        set_number(t, r, c);
-        set_number(n, r, c + 4);
-    }
-    else
-        set_number(n, r, c + 2);
-}
-
-void set_number3(uint16_t n, uint8_t r, uint8_t c)
-{
-    if(n > 999) n = 999;
-    uint8_t t0 = 0, t1 = 0;
-    while(n >= 100)
-        n -= 100, ++t0;
-    while(n >= 10)
-        n -= 10, ++t1;
-    uint8_t x = c;
-    if(t0 != 0)
-    {
-        set_number(t0, r, c);
-        set_number(t1, r, c + 4);
-        set_number(n, r, c + 8);
-    }
-    else if(t1 != 0)
-    {
-        set_number(t1, r, c + 2);
-        set_number(n, r, c + 6);
-    }
-    else
-        set_number(n, r, c + 4);
-}
+    0x04, 0x06, 0x9f, 0x06, 0x04, 0x02, 0x06, 0x0f,
+    0x06, 0x02,
+};

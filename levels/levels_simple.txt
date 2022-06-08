@@ -1,7 +1,7 @@
 <SIMPLE>
 <Simple>
 <brow1067>
-<A simple course to demonstrate the process of adding new courses.>
+<A simple course with a single hole to demonstrate the process of adding new courses.>
 1
 <>
 1

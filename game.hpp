@@ -485,6 +485,8 @@ extern uint8_t const GFX_MENU    [] PROGMEM;
 extern uint8_t const GFX_ARROW   [] PROGMEM;
 extern uint8_t const GFX_HIO     [] PROGMEM;
 extern uint8_t const GFX_AUDIO   [] PROGMEM;
+extern uint8_t const GFX_ARROWS_H[] PROGMEM;
+extern uint8_t const GFX_ARROWS_V[] PROGMEM;
 
 #if ARDUGOLF_FX
 // font.cpp

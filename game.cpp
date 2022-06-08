@@ -250,20 +250,24 @@ bool ball_in_hole()
 static void draw_scorecard(uint8_t r, uint8_t i)
 {
     constexpr uint8_t OX = 0;
+    if(i >= NUM_LEVELS) return;
+    uint8_t ni = tmin<uint8_t>(9, NUM_LEVELS - i);
     uint8_t y = r * 8;
-    for(uint8_t x = 0; x <= 104; x += 2)
+    uint8_t bx = ni * 10 + 14;
+    for(uint8_t x = 0; x <= bx; x += 2)
     {
         set_pixel(x + OX, y + 9);
         set_pixel(x + OX, y + 17);
         set_pixel(x + OX, y + 25);
     }
     uint8_t* b = &buf[0] + (r + 1) * FBW + OX;
-    for(uint8_t x = 0; x <= 90; x += 10)
+    bx -= 14;
+    for(uint8_t x = 0; x <= bx; x += 10)
         b[x] = b[x + FBW] = 0xaa;
-    b[104] = b[104 + FBW] = 0xaa;
+    b[bx + 14] = b[bx + 14 + FBW] = 0xaa;
     uint8_t tpar = 0;
     uint16_t tshot = 0;
-    for(uint8_t n = 1, x = OX + 2; n <= 9; ++n, x += 10)
+    for(uint8_t n = 1, x = OX + 2; n <= ni; ++n, x += 10)
     {
         set_number2(n + i, r, x);
         uint8_t t = shots[n + i - 1];
@@ -278,8 +282,8 @@ static void draw_scorecard(uint8_t r, uint8_t i)
     }
     if(tpar != 0)
     {
-        set_number3(tpar, r + 1, OX + 92);
-        set_number3(tshot, r + 2, OX + 92);
+        set_number3(tpar, r + 1, OX + bx + 2);
+        set_number3(tshot, r + 2, OX + bx + 2);
     }
 }
 
@@ -453,6 +457,7 @@ static void state_level(uint8_t btns, uint8_t pressed)
     update_camera_look_at_fastangle(
         { 0, 0, 0 }, yaw_level, 6000, 256 * 28, 64, 64);
     yaw_level += 256;
+#if !ARDUGOLF_FX
     if(practice & 1)
     {
         if(pressed & BTN_LEFT)
@@ -465,9 +470,7 @@ static void state_level(uint8_t btns, uint8_t pressed)
             state = st::AIM, practice = 2, ab_btn_wait = 0;
         if(pressed & BTN_B)
             reset_to_title();
-#if !ARDUGOLF_FX
         current_level = &LEVELS[leveli];
-#endif
         reset_ball();
         render_scene();
         draw_graphic(GFX_INFO_BAR, FBR - 2, 0, 2, 28, GRAPHIC_OVERWRITE);
@@ -475,7 +478,9 @@ static void state_level(uint8_t btns, uint8_t pressed)
         set_number2(get_par(leveli), FBR - 1, 18);
         return;
     }
-    else if(nframe == 255 || (pressed & BTN_B))
+    else
+#endif
+    if(nframe == 255 || (pressed & BTN_B))
         state = st::AIM, ab_btn_wait = 0;
 
     render_in_game_scene_and_graphics();
@@ -557,8 +562,8 @@ static void state_hole(uint8_t btns, uint8_t pressed)
     dvec3 flag = levelext.flag_pos;
     update_camera_look_at_fastangle(flag, yaw_aim, 6000, 256 * 20, 64, 64);
     yaw_aim += 256;
-    if(nframe == 255)
-        state = st::SCORE;
+    if(nframe == 255 || (pressed & BTN_B))
+        state = st::SCORE, ab_btn_wait = 0;
 
     render_in_game_scene_and_graphics();
 
@@ -572,7 +577,9 @@ static void state_score(uint8_t btns, uint8_t pressed)
     clear_buf();
     draw_scorecard(0, 0);
     draw_scorecard(4, 9);
-    if(btns & (BTN_A | BTN_B))
+    if(ab_btn_wait < 16)
+        ++ab_btn_wait, nframe = 0;
+    else if(btns & (BTN_A | BTN_B))
     {
         if(nframe == 32)
         {
@@ -646,6 +653,7 @@ static void state_pitch(uint8_t btns, uint8_t pressed)
     render_in_game_scene_and_graphics();
 }
 
+
 #if ARDUGOLF_FX
 static void state_fx_course(uint8_t btns, uint8_t pressed)
 {
@@ -654,26 +662,11 @@ static void state_fx_course(uint8_t btns, uint8_t pressed)
         { 0, -12 * 256, 0 }, yaw_level, 6000, 256 * 40, 64, 64);
     yaw_level += 256;
 
-    if(pressed & BTN_UP)
-        set_course(fx_course == 0 ? NUM_COURSES - 1 : fx_course - 1);
-    if(pressed & BTN_DOWN)
-        set_course(fx_course == NUM_COURSES - 1 ? 0 : fx_course + 1);
-    if(pressed & BTN_LEFT)
-        leveli = (leveli == 0 ? NUM_LEVELS - 1 : leveli - 1);
-    if(pressed & BTN_RIGHT)
-        leveli = (leveli == NUM_LEVELS - 1 ? 0 : leveli + 1);
-
-    if(pressed & BTN_A)
-    {
-        if(leveli == 0)
-            ab_btn_wait = 0, state = st::AIM;
-        else
-            set_level(0);
-    }
-    if(pressed & BTN_B)
-        reset_to_title();
-
     render_scene();
+
+    draw_graphic(GFX_INFO_BAR, 3, 0, 1, 26, GRAPHIC_OVERWRITE);
+    draw_graphic(GFX_ARROWS_H, 3, 26, 1, 17, GRAPHIC_OVERWRITE);
+    set_number2(leveli + 1, 3, 18);
 
     // clear bottom half of buffer
     for(uint16_t i = 0; i < FBW; ++i)
@@ -690,7 +683,7 @@ static void state_fx_course(uint8_t btns, uint8_t pressed)
     draw_text_nonprog(128 - w, 36, fxcourseinfo.author.data());
 
     uint8_t y = 47;
-    uint8_t x = 0;
+    uint8_t x = 8;
     uint8_t i = 0;
     for(;;)
     {
@@ -700,13 +693,36 @@ static void state_fx_course(uint8_t btns, uint8_t pressed)
         while((c = fxcourseinfo.desc[j]) > ' ')
             w += char_width(c) + 1, ++j;
         if(x + c > FBW)
-            y += 6, x = 0;
+            y += 6, x = 8;
         while(i < j)
             x += draw_char(x, y, fxcourseinfo.desc[i++]) + 1;
         ++i;
         x += 2;
         if(c == '\0') break;
     }
+
+    draw_graphic(GFX_ARROWS_V, 6, 0, 2, 5, GRAPHIC_OVERWRITE);
+
+    if(pressed & BTN_UP)
+        set_course(fx_course == 0 ? NUM_COURSES - 1 : fx_course - 1);
+    if(pressed & BTN_DOWN)
+        set_course(fx_course == NUM_COURSES - 1 ? 0 : fx_course + 1);
+    if(pressed & BTN_LEFT)
+        leveli = (leveli == 0 ? NUM_LEVELS - 1 : leveli - 1);
+    if(pressed & BTN_RIGHT)
+        leveli = (leveli == NUM_LEVELS - 1 ? 0 : leveli + 1);
+
+    if(ab_btn_wait < 8)
+        ++ab_btn_wait;
+    else if(pressed & BTN_A)
+    {
+        if(practice)
+            state = st::AIM, practice = 2, ab_btn_wait = 0;
+        else
+            set_level(0);
+    }
+    else if(pressed & BTN_B)
+        reset_to_title();
 }
 #endif
 
