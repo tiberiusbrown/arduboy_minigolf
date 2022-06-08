@@ -195,6 +195,7 @@ static void reset_to_title()
     practice &= 1;
     graphic_offset = GRAPHIC_OFFSET_MAX;
     menu_offset = MENU_OFFSET_MAX;
+    ab_btn_wait = 0;
     update_camera_reset_velocities();
 }
 
@@ -406,7 +407,9 @@ static void state_title(uint8_t btns, uint8_t pressed)
         if(btns & BTN_RIGHT) move_right(64);
     }
 #else
-    if(pressed & BTN_A)
+    if(ab_btn_wait < 8)
+        ++ab_btn_wait;
+    else if(pressed & BTN_A)
     {
 #if ARDUGOLF_FX
         state = st::FX_COURSE;
