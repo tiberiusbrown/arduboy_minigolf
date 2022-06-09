@@ -464,6 +464,18 @@ static void state_title(uint8_t btns, uint8_t pressed)
 #endif
 }
 
+static void state_overview(uint8_t btns, uint8_t pressed)
+{
+    update_camera_look_at_fastangle(
+        { 0, 0, 0 }, yaw_level, 6000, 256 * 28, 64, 64);
+    yaw_level += 256;
+
+    if(nframe == 255 || (pressed & BTN_B))
+        state = st::AIM, ab_btn_wait = 0;
+
+    render_in_game_scene_and_graphics();
+}
+
 static void state_level(uint8_t btns, uint8_t pressed)
 {
     reset_ball();
@@ -643,7 +655,7 @@ static void state_menu(uint8_t btns, uint8_t pressed)
             --m;
         }
         if(m == 0)
-            yaw_level = yaw_aim, nframe = 0, state = st::LEVEL;
+            yaw_level = yaw_aim, nframe = 0, state = st::OVERVIEW;
         if(m == 1)
             state = st::PITCH;
         if(m == 2)
@@ -750,6 +762,7 @@ static state_func const STATE_FUNCS[] PROGMEM =
     state_hole,
     state_score,
     state_menu,
+    state_overview,
     state_pitch,
 #if ARDUGOLF_FX
     state_fx_course,

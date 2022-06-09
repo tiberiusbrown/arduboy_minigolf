@@ -333,6 +333,7 @@ enum class st : uint8_t
     HOLE,       // ball went into hole
     SCORE,      // viewing score card
     MENU,       // in-game menu
+    OVERVIEW,
     PITCH,      // pitch adjustment
     FX_COURSE,  // select course (FX only)
 };
