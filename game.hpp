@@ -306,21 +306,9 @@ struct fx_level_info
 
     array<phys_box, MAX_BOXES    > boxes;
     level_info_ext                 ext;
-
-    array<uint8_t,
-        1024
-        - sizeof(vy)
-        - sizeof(vdist_start)
-        - sizeof(vxz)
-        - sizeof(fdist_start)
-        - sizeof(faces)
-        - sizeof(boxes)
-        - sizeof(ext)
-    > padding;
 };
 static constexpr size_t SIZEOF_FX_LEVEL_INFO = sizeof(fx_level_info);
 static_assert(SIZEOF_FX_LEVEL_INFO <= BUF_BYTES, "");
-static_assert(SIZEOF_FX_LEVEL_INFO == 1024, "");
 #define fxlevel (*(fx_level_info*)&buf[0])
 
 // reused buffer data
