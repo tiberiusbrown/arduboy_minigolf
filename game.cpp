@@ -718,7 +718,10 @@ static void state_fx_course(uint8_t btns, uint8_t pressed)
         while((c = fxcourseinfo.desc[j]) > ' ')
             w += char_width(c) + 1, ++j;
         if(x + w > FBW)
+        {
             y += 6, x = 8;
+            if(y > 59) break;
+        }
         while(i < j)
             x += draw_char(x, y, fxcourseinfo.desc[i++]) + 1;
         ++i;
