@@ -260,8 +260,8 @@ struct phys_box
 };
 
 static constexpr uint8_t MAX_BOXES = 32;
-static constexpr uint8_t MAX_VERTS = 120;
-static constexpr uint8_t MAX_FACES = 120;
+static constexpr uint8_t MAX_VERTS = 100;
+static constexpr uint8_t MAX_FACES = 100;
 
 // max verts/faces for a level (ensures room for ball/flag data)
 static constexpr uint8_t LEVEL_MAX_VERTS = MAX_VERTS - 8;
@@ -303,7 +303,6 @@ struct fx_level_info
     array<int8_t  , MAX_VERTS * 2> vxz;
     array<uint8_t , 4 * 2        > fdist_start;
     array<uint8_t , MAX_FACES * 3> faces;
-
     array<phys_box, MAX_BOXES    > boxes;
     level_info_ext                 ext;
 };

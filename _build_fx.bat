@@ -43,7 +43,7 @@ findstr /c:" b " /c:" B " /c:" d " /c:" D " _map_fx2.txt > _map_fx.txt
 del _map_fx2.txt
 
 rem create arduboy file
-tar -a -cf ardugolf_fx.zip ardugolf_fx.hex fxdata.bin info.json LICENSE.txt img/banner_700x192.png img/banner_128x64.png
+tar -a -cf ardugolf_fx.zip ardugolf_fx.hex fxdata.bin fxsave.bin info.json LICENSE.txt img/banner_700x192.png img/banner_128x64.png
 move /y ardugolf_fx.zip ardugolf_fx.arduboy > nul
 
 pause

@@ -16,7 +16,7 @@ int main(int argc, char** argv)
     }
     
     fprintf(fo, "#pragma once\n\n");
-    fprintf(fo, "static constexpr uint8_t FX_DATA[] PROGMEM =\n{\n    ");
+    fprintf(fo, "static uint8_t FX_DATA[] =\n{\n    ");
     
     int n = 0;
     while(!feof(fi))

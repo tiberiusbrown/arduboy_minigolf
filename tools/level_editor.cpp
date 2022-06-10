@@ -397,41 +397,46 @@ static void editor_save_header(char const* fname)
     fclose(f);
 }
 
-struct fxbin_header
-{
-    fx_level_header content;
-    uint8_t padding[256 - sizeof(fx_level_header)];
-};
-
 static void editor_save_fxbin(char const* fname)
 {
     FILE* f = fopen(fname, "wb");
     if(!f) return;
 
+    // level header page
     {
-        fxbin_header header{};
-        header.content.num_holes = (uint8_t)editor_levels.size();
+        struct
+        {
+            fx_level_header header;
+            uint8_t padding[256 - sizeof(fx_level_header)];
+        } header_padded{};
+        auto& header = header_padded.header;
+        header.num_holes = (uint8_t)editor_levels.size();
         for(size_t i = 0; i < 18; ++i)
             if(i < editor_levels.size())
-                header.content.pars[i] = editor_levels[i].par;
+                header.pars[i] = editor_levels[i].par;
         memcpy(
-            &header.content.name[0],
+            &header.name[0],
             course_name.c_str(),
             course_name.size());
         memcpy(
-            &header.content.author[0],
+            &header.author[0],
             course_author.c_str(),
             course_author.size());
         memcpy(
-            &header.content.desc[0],
+            &header.desc[0],
             course_desc.c_str(),
             course_desc.size());
-        fwrite(&header, sizeof(header), 1, f);
+        fwrite(&header_padded, sizeof(header_padded), 1, f);
     }
 
     for(auto const& info : editor_levels)
     {
-        fx_level_info fxinfo{};
+        struct
+        {
+            fx_level_info fxinfo{};
+            uint8_t padding[1024 - sizeof(fx_level_info)];
+        } fxinfo_padded{};
+        auto& fxinfo = fxinfo_padded.fxinfo;
         fxinfo.ext.num_verts = uint8_t(info.verts.size() / 3);
         for(int i = 0; i < info.verts.size() / 3; ++i)
         {
@@ -452,7 +457,7 @@ static void editor_save_fxbin(char const* fname)
         fxinfo.ext.ball_pos = info.ball_pos;
         fxinfo.ext.flag_pos = info.flag_pos;
         fxinfo.ext.par = (uint8_t)info.par;
-        fwrite(&fxinfo, sizeof(fxinfo), 1, f);
+        fwrite(&fxinfo_padded, sizeof(fxinfo_padded), 1, f);
     }
 
     fclose(f);
@@ -867,7 +872,7 @@ int main(int, char**)
     //ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("ImGui Example"), NULL };
     ::RegisterClassEx(&wc);
-    HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("Arduboy Minigolf Editor"), WS_OVERLAPPEDWINDOW, 100, 100, WW, WH, NULL, NULL, wc.hInstance, NULL);
+    HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("ArduGolf Editor"), WS_OVERLAPPEDWINDOW, 100, 100, WW, WH, NULL, NULL, wc.hInstance, NULL);
 
     // Initialize Direct3D
     if(!CreateDeviceD3D(hwnd))

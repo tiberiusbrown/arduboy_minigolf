@@ -60,7 +60,7 @@ set(FX_DATA_HEADER "${CMAKE_CURRENT_BINARY_DIR}/FX_DATA.hpp")
 add_custom_command(
     OUTPUT "${FX_DATA_HEADER}"
     COMMAND bin2c "${CMAKE_CURRENT_SOURCE_DIR}/fxdata.bin" "${FX_DATA_HEADER}"
-    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/fxdata.bin"
+    DEPENDS bin2c "${CMAKE_CURRENT_SOURCE_DIR}/fxdata.bin"
 )
 list(APPEND MINIGOLF_SOURCES "${FX_DATA_HEADER}")
 
@@ -79,7 +79,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 if(MSVC)
 
     add_executable(
-        level_editor
+        ardugolf_editor
         tools/level_editor.cpp
         tools/imgui/backends/imgui_impl_win32.cpp
         tools/imgui/backends/imgui_impl_win32.h
@@ -92,19 +92,19 @@ if(MSVC)
         tools/nativefiledialog/include/nfd.h
         ${MINIGOLF_SOURCES}
     )
-    target_include_directories(level_editor PUBLIC
+    target_include_directories(ardugolf_editor PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/imgui"
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/fmt"
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/nativefiledialog/include"
         "${CMAKE_CURRENT_BINARY_DIR}"
     )
-    set_property(TARGET level_editor PROPERTY
+    set_property(TARGET ardugolf_editor PROPERTY
         MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     set(BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
     if(WIN32)
         string(REGEX REPLACE "/" "\\\\\\\\" BASE_DIR "${BASE_DIR}")
     endif()
-    target_compile_definitions(level_editor PUBLIC
+    target_compile_definitions(ardugolf_editor PUBLIC
         -DBASE_DIR="${BASE_DIR}" -DARDUGOLF_FX=0)
 
 endif()
