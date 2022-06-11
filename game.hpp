@@ -20,6 +20,9 @@ static constexpr int FBH = 1 * 64;
 // don't include button "B" icon behind audio graphic in main menu
 #define SHORTENED_AUDIO_GRAPHIC 1
 
+// select optimizations that favor speed over size
+#define OPT_SPEED_DIV_FRAC_S ARDUGOLF_FX
+
 // rasterizer subpixel bits
 #define FB_FRAC_BITS 3
 static constexpr uint8_t FB_FRAC_COEF = 1 << FB_FRAC_BITS;
@@ -489,12 +492,33 @@ uint8_t text_width(char const* p);
 uint8_t text_width_nonprog(char const* p);
 #endif
 
-static inline int16_t div_frac_s(int16_t x)
+static FORCEINLINE int16_t div_frac_s(int16_t x)
 {
-    static constexpr uint16_t MASK = uint16_t(0x0000ffff << (16 - FB_FRAC_BITS));
+#ifdef __AVR__
+#if OPT_SPEED_DIV_FRAC_S && FB_FRAC_BITS >= 3
+    // avr-gcc generates a loop for asr of 3 and up
+    // below costs one extra instruction but saves 9 cycles per invocation
+    asm volatile(
+        "asr  %B[x]      \n\t"
+        "ror  %A[x]      \n\t"
+        "asr  %B[x]      \n\t"
+        "ror  %A[x]      \n\t"
+        "asr  %B[x]      \n\t"
+        "ror  %A[x]      \n\t"
+        : [x] "+r" (x)
+        :
+        :
+    );
+    return x;
+#else
+    return x >> FB_FRAC_BITS;
+#endif
+#else
+    constexpr uint16_t MASK = uint16_t(0xffff << (16 - FB_FRAC_BITS));
     uint16_t r = (uint16_t)x >> FB_FRAC_BITS;
     if(x < 0) r |= MASK;
     return (int16_t)r;
+#endif
 }
 
 static inline int8_t hibyte(int16_t x)
