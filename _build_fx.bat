@@ -1,5 +1,7 @@
 @echo off
 
+cd /d %~dp0
+
 rem compile fxdata
 python fxdata-build.py fxdata.txt
 

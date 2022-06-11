@@ -482,6 +482,20 @@ extern uint8_t const GFX_AUDIO   [] PROGMEM;
 extern uint8_t const GFX_ARROWS_H[] PROGMEM;
 extern uint8_t const GFX_ARROWS_V[] PROGMEM;
 
+// save.cpp
+struct course_save_data
+{
+    array<uint8_t, 18> best_game;
+    array<uint8_t, 18> best_holes;
+    uint16_t           num_played;
+
+    uint8_t padding[64 - 18 - 18 - 2];
+};
+static_assert(sizeof(course_save_data) == 64, "");
+#define savedata (*(course_save_data*)&vs[0])
+void load();
+void save();
+
 #if ARDUGOLF_FX
 // font.cpp
 uint8_t draw_char(uint8_t x, uint8_t y, char c);

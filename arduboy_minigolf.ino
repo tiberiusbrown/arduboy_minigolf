@@ -55,14 +55,7 @@ void setup()
 #endif
 {
     Arduboy2Base::boot();
-    a.audio.begin();
-#if REMOVE_USB
-
-    if(Arduboy2Core::buttonsState() & DOWN_BUTTON)
-    {
-        Arduboy2Core::exitToBootloader();
-    }
-#endif
+#if !REMOVE_USB
     if(Arduboy2Core::buttonsState() & UP_BUTTON)
     {
         Arduboy2Core::sendLCDCommand(OLED_ALL_PIXELS_ON);
@@ -71,9 +64,14 @@ void setup()
         power_timer0_disable();
         for(;;) Arduboy2Core::idle();
     }
+#endif
+    a.audio.begin();
     
 #if ARDUGOLF_FX
-    FX::begin(FX_DATA_PAGE);
+    {
+        constexpr uint16_t FX_SAVE_PAGE = (FX_DATA_PAGE - 32) & 0xfff0;
+        FX::begin(FX_DATA_PAGE, FX_SAVE_PAGE);
+    }
 #endif
     
     game_setup();

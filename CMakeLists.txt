@@ -53,16 +53,24 @@ set(MINIGOLF_SOURCES
     render_scene.cpp
     mat.cpp
     game.cpp
+    save.cpp
 )
 
 add_executable(bin2c tools/bin2c.c)
 set(FX_DATA_HEADER "${CMAKE_CURRENT_BINARY_DIR}/FX_DATA.hpp")
 add_custom_command(
     OUTPUT "${FX_DATA_HEADER}"
-    COMMAND bin2c "${CMAKE_CURRENT_SOURCE_DIR}/fxdata.bin" "${FX_DATA_HEADER}"
+    COMMAND bin2c "${CMAKE_CURRENT_SOURCE_DIR}/fxdata.bin" "${FX_DATA_HEADER}" "FX_DATA"
     DEPENDS bin2c "${CMAKE_CURRENT_SOURCE_DIR}/fxdata.bin"
 )
 list(APPEND MINIGOLF_SOURCES "${FX_DATA_HEADER}")
+set(FX_SAVE_HEADER "${CMAKE_CURRENT_BINARY_DIR}/FX_SAVE.hpp")
+add_custom_command(
+    OUTPUT "${FX_SAVE_HEADER}"
+    COMMAND bin2c "${CMAKE_CURRENT_SOURCE_DIR}/fxsave.bin" "${FX_SAVE_HEADER}" "FX_SAVE"
+    DEPENDS bin2c "${CMAKE_CURRENT_SOURCE_DIR}/fxsave.bin"
+)
+list(APPEND MINIGOLF_SOURCES "${FX_SAVE_HEADER}")
 
 add_executable(
     ${PROJECT_NAME} ${WINFLAG}

@@ -1,5 +1,7 @@
 @echo off
 
+cd /d %~dp0
+
 set dir=%temp%/arduboy_minigolf_build
 arduino-cli.exe compile -v --log-level info ^
     -b arduboy:avr:arduboy . ^

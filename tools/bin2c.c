@@ -3,8 +3,8 @@
 
 int main(int argc, char** argv)
 {
-    // args: <infile> <outfile>
-    if(argc < 3) return 1;
+    // args: <infile> <outfile> <symbol>
+    if(argc < 4) return 1;
     
     FILE* fi = fopen(argv[1], "rb");
     if(!fi) return 1;
@@ -16,7 +16,7 @@ int main(int argc, char** argv)
     }
     
     fprintf(fo, "#pragma once\n\n");
-    fprintf(fo, "static uint8_t FX_DATA[] =\n{\n    ");
+    fprintf(fo, "static uint8_t %s[] =\n{\n    ", argv[3]);
     
     int n = 0;
     while(!feof(fi))
