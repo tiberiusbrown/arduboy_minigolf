@@ -20,6 +20,9 @@ static constexpr int FBH = 1 * 64;
 // don't include button "B" icon behind audio graphic in main menu
 #define SHORTENED_AUDIO_GRAPHIC 1
 
+// save to flash chip instead of EEPROM
+#define SAVE_TO_FLASH_CHIP ARDUGOLF_FX
+
 // select optimizations that favor speed over size
 #define OPT_SPEED_DIV_FRAC_S ARDUGOLF_FX
 
@@ -75,6 +78,7 @@ extern ArduboyTones sound;
 
 #else
 
+#define PSTR(str_) str_
 #define PROGMEM
 inline uint8_t pgm_read_byte(void const* p) { return *(uint8_t*)p; }
 inline uint16_t pgm_read_word(void const* p) { return *(uint16_t*)p; }
@@ -343,7 +347,7 @@ extern st state;
 extern uint8_t nframe;
 extern uint16_t yaw_aim;
 extern uint8_t power_aim;
-extern uint8_t shots[18];
+extern array<uint8_t, 18> shots;
 extern uint8_t leveli;
 #if ARDUGOLF_FX
 extern uint8_t fx_course;
@@ -485,16 +489,24 @@ extern uint8_t const GFX_ARROWS_V[] PROGMEM;
 // save.cpp
 struct course_save_data
 {
+    array<char, 8>     ident; // "ARDUGOLF"
     array<uint8_t, 18> best_game;
     array<uint8_t, 18> best_holes;
     uint16_t           num_played;
 
-    uint8_t padding[64 - 18 - 18 - 2];
+#if SAVE_TO_FLASH_CHIP
+    uint8_t padding[64 - 8 - 18 - 18 - 2 - 2];
+#endif
+
+    uint16_t           checksum;
 };
+#if SAVE_TO_FLASH_CHIP
 static_assert(sizeof(course_save_data) == 64, "");
+#endif
 #define savedata (*(course_save_data*)&vs[0])
 void load();
 void save();
+uint16_t checksum();
 
 #if ARDUGOLF_FX
 // font.cpp

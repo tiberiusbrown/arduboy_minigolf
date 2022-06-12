@@ -1,6 +1,6 @@
 
 cd /d %~dp0
 
-python flashcart-builder.py flashcart-index.csv
+python flashcart-writer.py flashcart-image.bin
 
 pause

@@ -86,7 +86,7 @@ static constexpr uint8_t MENU_OFFSET_MAX = 42;
 
 static uint8_t prev_btns;
 
-uint8_t shots[18];
+array<uint8_t, 18> shots;
 
 #if ARDUGOLF_FX
 static uint24_t get_course_fx_addr()
@@ -577,6 +577,7 @@ static void state_rolling(uint8_t btns, uint8_t pressed)
         nframe = 0;
         play_tone(180, 100, 300, 100);
     }
+    shots[leveli] = tmin<uint8_t>(shots[leveli], 99);
     update_camera_follow_ball(DIST_ROLL, 64, 16);
 
     render_in_game_scene_and_graphics();
@@ -598,6 +599,28 @@ static void state_hole(uint8_t btns, uint8_t pressed)
 
 static void state_score(uint8_t btns, uint8_t pressed)
 {
+    // update save file
+    // save after first rendered frame so any delay isn't noticeable
+    if(ab_btn_wait == 1)
+    {
+        bool need_save = false;
+        load();
+        if(shots[leveli] < savedata.best_holes[leveli])
+            need_save = true, savedata.best_holes[leveli] = shots[leveli];
+        if(leveli == NUM_LEVELS - 1)
+        {
+            need_save = true;
+            savedata.num_played += 1;
+            uint16_t ta = 0, tb = 0;
+            for(uint8_t i = 0; i < NUM_LEVELS; ++i)
+                ta += shots[i], tb += savedata.best_game[i];
+            if(ta < tb)
+                savedata.best_game = shots;
+        }
+        if(need_save)
+            save();
+    }
+
     // need to clear here because buffer gets filled by displayPrefetch
     clear_buf();
     draw_scorecard(0, 0);
@@ -692,6 +715,21 @@ static void state_fx_course(uint8_t btns, uint8_t pressed)
     draw_graphic(GFX_INFO_BAR, 3, 0, 1, 26, GRAPHIC_OVERWRITE);
     draw_graphic(GFX_ARROWS_H, 3, 26, 1, 17, GRAPHIC_OVERWRITE);
     set_number2(leveli + 1, 3, 18);
+
+    {
+        load();
+        uint8_t best = savedata.best_holes[leveli];
+        if(best < 100)
+        {
+            constexpr uint8_t X = 100;
+            buf[FBW * 3 + X + 0] = 0x00;
+            buf[FBW * 3 + X + 1] = 0xfe;
+            for(uint8_t i = X + 2; i < 128; ++i)
+                buf[FBW * 3 + i] = 0x02;
+            draw_text(X + 3, 8 * 3 + 3, PSTR("Best:"));
+            set_number2(best, 3, X + 21);
+        }
+    }
 
     // clear bottom half of buffer
     for(uint16_t i = 0; i < FBW; ++i)

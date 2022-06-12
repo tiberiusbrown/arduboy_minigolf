@@ -1,10 +1,28 @@
 #include "game.hpp"
 
-#if ARDUGOLF_FX
+#if !SAVE_TO_FLASH_CHIP
+
+static constexpr uint16_t EEPROM_START_ADDRESS = 700;
+
+#if defined(ARDUINO)
+#include <avr/eeprom.h>
+static uint8_t eeprom_read(uint16_t i)
+{
+    return eeprom_read_byte((uint8_t const*)(uintptr_t)i);
+}
+static void eeprom_update(uint16_t i, uint8_t d)
+{
+    eeprom_update_byte((uint8_t*)(uintptr_t)i, d);
+}
+#else
+static array<uint8_t, 1024> eeprom_data;
+static uint8_t eeprom_read(uint16_t i) { return eeprom_data[i]; }
+static void eeprom_update(uint16_t i, uint8_t d) { eeprom_data[i] = d; }
+#endif
+#else
 
 #if !defined(ARDUINO)
 #include <FX_SAVE.hpp>
-//static uint8_t save_pages[8192];
 #endif
 
 static void fx_read_save_bytes(uint24_t addr, void* p, size_t n)
@@ -40,18 +58,51 @@ static void fx_write_save_page(uint16_t page, void const* p)
 
 #endif
 
+uint16_t checksum()
+{
+    // CRC16
+    uint8_t x;
+    uint16_t crc = 0xffff;
+    for(uint16_t i = 0; i < sizeof(course_save_data) - 2; ++i)
+    {
+        x = (crc >> 8) ^ ((uint8_t*)&savedata)[i];
+        x ^= x >> 4;
+        crc = (crc << 8) ^
+            (uint16_t(x) << 12) ^
+            (uint16_t(x) << 5) ^
+            (uint16_t(x) << 0);
+    }
+    return crc;
+}
+
 void load()
 {
-#if ARDUGOLF_FX
+#if SAVE_TO_FLASH_CHIP
     fx_read_save_bytes(fx_course * 64, &savedata, 64);
 #else
-    // TODO
+    for(uint8_t i = 0; i < sizeof(course_save_data); ++i)
+        ((uint8_t*)&savedata)[i] = eeprom_read(EEPROM_START_ADDRESS + i);
 #endif
 }
 
 void save()
 {
-#if ARDUGOLF_FX
+    // refuse to save unless ident matches "ARDUGOLF"
+    {
+        static char const IDENT[8] PROGMEM =
+        {
+            'A', 'R', 'D', 'U', 'G', 'O', 'L', 'F'
+        };
+        for(uint8_t i = 0; i < 8; ++i)
+            if(savedata.ident[i] != (char)pgm_read_byte(&IDENT[i]))
+                return;
+    }
+
+    // refuse to save unless checksum matches
+    if(checksum() != savedata.checksum)
+        return;
+
+#if SAVE_TO_FLASH_CHIP
 
     static_assert(sizeof(fs) >= 256, "");
 
@@ -96,6 +147,7 @@ void save()
     }
 
 #else
-    // TODO
+    for(uint8_t i = 0; i < sizeof(course_save_data); ++i)
+         eeprom_update(EEPROM_START_ADDRESS + i, ((uint8_t*)&savedata)[i]);
 #endif
 }
