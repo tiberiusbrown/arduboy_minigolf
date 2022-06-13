@@ -31,6 +31,8 @@ static constexpr int FBH = 1 * 64;
 static constexpr uint8_t FB_FRAC_COEF = 1 << FB_FRAC_BITS;
 static constexpr uint8_t FB_FRAC_MASK = FB_FRAC_COEF - 1;
 
+#define DEBUG_SERIAL 1
+
 // platform functionality
 uint16_t time_ms();
 uint8_t poll_btns();
@@ -62,6 +64,7 @@ static constexpr int FBR = FBH / 8;
 #define CONST_FUNC
 #endif
 
+#define SERIAL_PRINT(...)
 #ifdef ARDUINO
 
 #include <Arduino.h>

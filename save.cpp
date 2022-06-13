@@ -25,10 +25,22 @@ static void eeprom_update(uint16_t i, uint8_t d) { eeprom_data[i] = d; }
 #include <FX_SAVE.hpp>
 #endif
 
-static void fx_read_save_bytes(uint24_t addr, void* p, size_t n)
+#if ARDUINO
+static void fx_wait_until_ready()
+{
+    // wait for device to be ready again after an erase/program
+    FX::enable();
+    FX::writeByte(SFC_READSTATUS1);
+    while(FX::readByte() & 1)
+        ;
+    FX::disable();
+}
+#endif
+
+static void fx_read_save_bytes(uint24_t addr, uint8_t* p, size_t n)
 {
 #ifdef ARDUINO
-    FX::readSaveBytes(addr, (uint8_t*)p, n);
+    FX::readSaveBytes(addr, p, n);
 #else
     memcpy(p, &FX_SAVE[addr], n);
 #endif
@@ -38,21 +50,23 @@ static void fx_erase_save_block(uint16_t page)
 {
 #ifdef ARDUINO
     FX::eraseSaveBlock(page);
+    fx_wait_until_ready();
 #else
-    page &= 0xfff0;
+    myassert((page & 0xf) == 0);
     myassert(page * 256 + 4096 <= sizeof(FX_SAVE));
     memset(&FX_SAVE[page * 256], 0xff, 4096);
 #endif
 }
 
-static void fx_write_save_page(uint16_t page, void const* p)
+static void fx_write_save_page(uint16_t page, uint8_t* p)
 {
 #ifdef ARDUINO
-    FX::writeSavePage(page, (uint8_t const*)p);
+    FX::writeSavePage(page, p);
+    fx_wait_until_ready();
 #else
     myassert(page * 256 + 256 <= sizeof(FX_SAVE));
     for(int i = 0; i < 256; ++i)
-        FX_SAVE[page * 256 + i] &= ((uint8_t const*)p)[i];
+        FX_SAVE[page * 256 + i] &= p[i];
 #endif
 }
 
@@ -75,32 +89,51 @@ uint16_t checksum()
     return crc;
 }
 
+static char const SAVE_IDENT[8] PROGMEM =
+{
+    'A', 'R', 'D', 'U', 'G', 'O', 'L', 'F'
+};
+
 void load()
 {
 #if SAVE_TO_FLASH_CHIP
-    fx_read_save_bytes(fx_course * 64, &savedata, 64);
+    fx_read_save_bytes(fx_course * 64, (uint8_t*)&savedata, 64);
 #else
     for(uint8_t i = 0; i < sizeof(course_save_data); ++i)
         ((uint8_t*)&savedata)[i] = eeprom_read(EEPROM_START_ADDRESS + i);
 #endif
+
+    bool clear = false;
+
+    for(uint8_t i = 0; i < 8; ++i)
+        if(savedata.ident[i] != (char)pgm_read_byte(&SAVE_IDENT[i]))
+            clear = true;
+    if(savedata.checksum != checksum())
+        clear = true;
+
+    if(0 && clear)
+    {
+        // clear everything except identifier and checksum
+        memset((uint8_t*)&savedata + 8, 0xff, sizeof(course_save_data) - 8 - 2);
+        // don't overwrite identifier when saving to flash chip: it serves
+        // as an indicator that we're saving to the correct location and
+        // not erasing something else on the chip. the identifier comes
+        // pre-written in the save bin file
+#if !SAVE_TO_FLASH_CHIP
+        for(uint8_t i = 0; i < 8; ++i)
+            savedata.ident[i] = (char)pgm_read_byte(&SAVE_IDENT[i]);
+#endif
+        savedata.num_played = 0;
+        savedata.checksum = checksum();
+    }
 }
 
 void save()
 {
-    // refuse to save unless ident matches "ARDUGOLF"
-    {
-        static char const IDENT[8] PROGMEM =
-        {
-            'A', 'R', 'D', 'U', 'G', 'O', 'L', 'F'
-        };
-        for(uint8_t i = 0; i < 8; ++i)
-            if(savedata.ident[i] != (char)pgm_read_byte(&IDENT[i]))
-                return;
-    }
-
-    // refuse to save unless checksum matches
-    if(checksum() != savedata.checksum)
-        return;
+    // refuse to save without valid identifier
+    for(uint8_t i = 0; i < 8; ++i)
+        if(savedata.ident[i] != (char)pgm_read_byte(&SAVE_IDENT[i]))
+            return;
 
 #if SAVE_TO_FLASH_CHIP
 
@@ -123,7 +156,7 @@ void save()
         uint8_t* pd = (uint8_t*)&fs[0];
 
         // read page from second block
-        fx_read_save_bytes(4096 + p * 256, pd, 256);
+        fx_read_save_bytes(uint16_t(p) * 256 + 4096, pd, 256);
 
         // overwrite page data if necessary
         if(p == page)
@@ -142,7 +175,7 @@ void save()
         uint8_t* pd = (uint8_t*)&fs[0];
 
         // read page from first block and write to second block
-        fx_read_save_bytes(p * 256, pd, 256);
+        fx_read_save_bytes(uint16_t(p) * 256, pd, 256);
         fx_write_save_page(p + 16, pd);
     }
 

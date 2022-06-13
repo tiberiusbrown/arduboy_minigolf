@@ -219,6 +219,10 @@ void game_setup()
 #endif
     set_level(0);
     reset_to_title();
+
+#if DEBUG_SERIAL && defined(ARDUINO)
+    Serial.begin(9600);
+#endif
 }
 
 void move_forward(int16_t amount)
@@ -599,6 +603,7 @@ static void state_hole(uint8_t btns, uint8_t pressed)
 
 static void state_score(uint8_t btns, uint8_t pressed)
 {
+#if 1
     // update save file
     // save after first rendered frame so any delay isn't noticeable
     if(ab_btn_wait == 1)
@@ -618,8 +623,12 @@ static void state_score(uint8_t btns, uint8_t pressed)
                 savedata.best_game = shots;
         }
         if(need_save)
+        {
+            savedata.checksum = checksum();
             save();
+        }
     }
+#endif
 
     // need to clear here because buffer gets filled by displayPrefetch
     clear_buf();
@@ -716,6 +725,7 @@ static void state_fx_course(uint8_t btns, uint8_t pressed)
     draw_graphic(GFX_ARROWS_H, 3, 26, 1, 17, GRAPHIC_OVERWRITE);
     set_number2(leveli + 1, 3, 18);
 
+#if 1
     {
         load();
         uint8_t best = savedata.best_holes[leveli];
@@ -730,6 +740,7 @@ static void state_fx_course(uint8_t btns, uint8_t pressed)
             set_number2(best, 3, X + 21);
         }
     }
+#endif
 
     // clear bottom half of buffer
     for(uint16_t i = 0; i < FBW; ++i)
@@ -782,6 +793,8 @@ static void state_fx_course(uint8_t btns, uint8_t pressed)
         ++ab_btn_wait;
     else if(pressed & BTN_A)
     {
+        SERIAL_PRINT(F("Prepare!\n"));
+
         if(practice)
             state = st::AIM, practice = 2, ab_btn_wait = 0;
         else
