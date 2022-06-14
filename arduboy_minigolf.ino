@@ -32,7 +32,7 @@ void toggle_audio()
     a.audio.toggle();
 }
 
-bool audio_enabled() 
+bool audio_enabled()
 {
     return a.audio.enabled();
 }
@@ -66,11 +66,11 @@ void setup()
     }
 #endif
     a.audio.begin();
-    
+
 #if ARDUGOLF_FX
     FX::begin(FX_DATA_PAGE, 0);
 #endif
-    
+
     game_setup();
 
     //a.setFrameRate(30);
@@ -90,7 +90,7 @@ void setup()
             *(volatile uint8_t*)0x801 = 0x77;
             for(;;);
         }
-        
+
         //while(!a.nextFrame())
         //    ;
 
@@ -122,11 +122,11 @@ void setup()
             fps = uint32_t(1000) * nf / dt;
             nf = 0;
             dt = 0;
-        } 
+        }
 #else
         pt = time_ms();
 #endif
-        
+
         game_loop();
 
 #if SHOW_FPS
@@ -138,15 +138,20 @@ void setup()
         f %=  10;
         a.write('0' + f);
 #endif
-        
+
 #if ARDUGOLF_FX
+    #ifdef OLED_SH1106
+        FX::display(CLEAR_BUFFER);
+        FX::readDataBytes(get_hole_fx_addr(leveli), &buf[0], 1024);
+    #else
         FX::displayPrefetch(get_hole_fx_addr(leveli), &buf[0], 1024, false);
+    #endif
         levelext = fxlevel.ext;
 #else
         Arduboy2Base::display(true);
 #endif
     }
-  
+
 #if REMOVE_USB
     return 0;
 #endif
