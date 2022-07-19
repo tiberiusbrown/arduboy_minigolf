@@ -83,7 +83,7 @@ void rotation_phys(mat3& m, uint8_t yaw, int8_t pitch)
     m[8] = fmuls8(cosA, cosB);
 }
 
-dvec3 matvec(mat3 m, vec3 v)
+dvec3 matvec(mat3 const& m, vec3 v)
 {
     dvec3 r;
     r.x = v.x * m[0] + v.y * m[1] + v.z * m[2];
@@ -92,7 +92,7 @@ dvec3 matvec(mat3 m, vec3 v)
     return r;
 }
 
-dvec3 matvec_t(mat3 m, vec3 v)
+dvec3 matvec_t(mat3 const& m, vec3 v)
 {
     dvec3 r;
     r.x = v.x * m[0] + v.y * m[3] + v.z * m[6];
@@ -101,7 +101,7 @@ dvec3 matvec_t(mat3 m, vec3 v)
     return r;
 }
 
-dvec3 matvec(mat3 m, dvec3 v)
+dvec3 matvec(mat3 const& m, dvec3 v)
 {
     dvec3 r;
     r.x = mul_f7_s16(v.x, m[0]) + mul_f7_s16(v.y, m[1]) + mul_f7_s16(v.z, m[2]);
@@ -110,7 +110,7 @@ dvec3 matvec(mat3 m, dvec3 v)
     return r;
 }
 
-dvec3 matvec_t(mat3 m, dvec3 v)
+dvec3 matvec_t(mat3 const& m, dvec3 v)
 {
     dvec3 r;
     r.x = mul_f7_s16(v.x, m[0]) + mul_f7_s16(v.y, m[3]) + mul_f7_s16(v.z, m[6]);
@@ -119,7 +119,7 @@ dvec3 matvec_t(mat3 m, dvec3 v)
     return r;
 }
 
-dvec3 matvec(dmat3 m, dvec3 v)
+dvec3 matvec(dmat3 const& m, dvec3 v)
 {
     dvec3 r;
     r.x = mul_f15_s16(v.x, m[0]) + mul_f15_s16(v.y, m[1]) + mul_f15_s16(v.z, m[2]);

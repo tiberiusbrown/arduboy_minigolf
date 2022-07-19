@@ -60,12 +60,13 @@ add_executable(gen_fxsave tools/gen_fxsave.cpp game.hpp save.cpp)
 target_include_directories(gen_fxsave PUBLIC
     "${CMAKE_CURRENT_BINARY_DIR}"
 )
-target_compile_definitions(gen_fxsave PUBLIC -DARDUGOLF_FX=1)
+target_compile_definitions(gen_fxsave PUBLIC -DARDUGOLF_FX=1 -DGEN_FXSAVE=1)
 set(FXSAVE_BIN "${CMAKE_CURRENT_SOURCE_DIR}/fxsave.bin")
 add_custom_command(
     OUTPUT "${FXSAVE_BIN}"
     COMMAND gen_fxsave "${FXSAVE_BIN}"
     DEPENDS gen_fxsave
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 )
 
 add_executable(bin2c tools/bin2c.c)
@@ -74,6 +75,7 @@ add_custom_command(
     OUTPUT "${FX_DATA_HEADER}"
     COMMAND bin2c "${CMAKE_CURRENT_SOURCE_DIR}/fxdata.bin" "${FX_DATA_HEADER}" "FX_DATA"
     DEPENDS bin2c "${CMAKE_CURRENT_SOURCE_DIR}/fxdata.bin"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 )
 list(APPEND MINIGOLF_SOURCES "${FX_DATA_HEADER}")
 set(FX_SAVE_HEADER "${CMAKE_CURRENT_BINARY_DIR}/FX_SAVE.hpp")
@@ -81,6 +83,7 @@ add_custom_command(
     OUTPUT "${FX_SAVE_HEADER}"
     COMMAND bin2c "${FXSAVE_BIN}" "${FX_SAVE_HEADER}" "FX_SAVE"
     DEPENDS bin2c "${FXSAVE_BIN}"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 )
 list(APPEND MINIGOLF_SOURCES "${FX_SAVE_HEADER}")
 

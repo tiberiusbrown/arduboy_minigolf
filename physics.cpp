@@ -101,7 +101,7 @@ static dvec3 cross(dvec3 a, dvec3 b)
     return r;
 }
 
-static void physics_collision(phys_box b)
+static void physics_collision(phys_box const& b)
 {
     mat3 m;
 

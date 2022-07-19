@@ -254,6 +254,8 @@ class FX
     static void eraseSaveBlock(uint16_t page);
 
     static void writeSavePage(uint16_t page, uint8_t* buffer);
+    
+    static void waitWhileBusy(); // wait for outstanding erase or write to finish
 
     static void drawBitmap(int16_t x, int16_t y, uint24_t address, uint8_t frame, uint8_t mode) __attribute__((noinline));
 

@@ -7,7 +7,7 @@ arduino-cli.exe compile -v --log-level info ^
     -b arduboy:avr:arduboy . ^
     --output-dir "%dir%" ^
     --build-property compiler.c.elf.extra_flags="-Wl,--relax" ^
-    --build-property compiler.c.extra_flags="-mcall-prologues -DARDUGOLF_FX=0" ^
+    --build-property compiler.c.extra_flags="-mcall-prologues -mstrict-X -fweb -frename-registers -DARDUGOLF_FX=0" ^
     --build-property compiler.cpp.extra_flags="{compiler.c.extra_flags}"
 
 if %errorlevel%==0 goto postbuild

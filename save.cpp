@@ -22,25 +22,18 @@ static void eeprom_update(uint16_t i, uint8_t d) { eeprom_data[i] = d; }
 #else
 
 #if !defined(ARDUINO)
+#if GEN_FXSAVE
+static uint8_t FX_SAVE[4096 * 2];
+#else
 #include <FX_SAVE.hpp>
 #endif
-
-#if ARDUINO
-static void fx_wait_until_ready()
-{
-    // wait for device to be ready again after an erase/program
-    FX::enable();
-    FX::writeByte(SFC_READSTATUS1);
-    while(FX::readByte() & 1)
-        ;
-    FX::disable();
-}
 #endif
 
 static void fx_read_save_bytes(uint24_t addr, uint8_t* p, size_t n)
 {
 #ifdef ARDUINO
     FX::readSaveBytes(addr, p, n);
+    FX::waitWhileBusy();
 #else
     memcpy(p, &FX_SAVE[addr], n);
 #endif
@@ -50,7 +43,7 @@ static void fx_erase_save_block(uint16_t page)
 {
 #ifdef ARDUINO
     FX::eraseSaveBlock(page);
-    fx_wait_until_ready();
+    FX::waitWhileBusy();
 #else
     myassert((page & 0xf) == 0);
     myassert(page * 256 + 4096 <= sizeof(FX_SAVE));
@@ -62,7 +55,7 @@ static void fx_write_save_page(uint16_t page, uint8_t* p)
 {
 #ifdef ARDUINO
     FX::writeSavePage(page, p);
-    fx_wait_until_ready();
+    FX::waitWhileBusy();
 #else
     myassert(page * 256 + 256 <= sizeof(FX_SAVE));
     for(int i = 0; i < 256; ++i)
@@ -111,7 +104,7 @@ void load()
     if(savedata.checksum != checksum())
         clear = true;
 
-    if(0 && clear)
+    if(clear)
     {
         // clear everything except identifier and checksum
         memset((uint8_t*)&savedata + 8, 0xff, sizeof(course_save_data) - 8 - 2);

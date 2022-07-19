@@ -31,8 +31,6 @@ static constexpr int FBH = 1 * 64;
 static constexpr uint8_t FB_FRAC_COEF = 1 << FB_FRAC_BITS;
 static constexpr uint8_t FB_FRAC_MASK = FB_FRAC_COEF - 1;
 
-#define DEBUG_SERIAL 1
-
 // platform functionality
 uint16_t time_ms();
 uint8_t poll_btns();
@@ -64,7 +62,6 @@ static constexpr int FBR = FBH / 8;
 #define CONST_FUNC
 #endif
 
-#define SERIAL_PRINT(...)
 #ifdef ARDUINO
 
 #include <Arduino.h>
@@ -344,6 +341,7 @@ enum class st : uint8_t
     MENU,       // in-game menu
     OVERVIEW,
     PITCH,      // pitch adjustment
+    HISCORES,   // view scorecards for best games
     FX_COURSE,  // select course (FX only)
 };
 extern st state;
@@ -431,11 +429,11 @@ int16_t atan2(int16_t y, int16_t x);
 void rotation(mat3& m, uint8_t yaw, int8_t pitch);
 void rotation16(dmat3& m, uint16_t yaw, int16_t pitch);
 void rotation_phys(mat3& m, uint8_t yaw, int8_t pitch);
-dvec3 matvec  (mat3 m, vec3  v);
-dvec3 matvec_t(mat3 m, vec3  v); // transpose
-dvec3 matvec  (mat3 m, dvec3 v);
-dvec3 matvec_t(mat3 m, dvec3 v); // transpose
-dvec3 matvec (dmat3 m, dvec3 v);
+dvec3 matvec  (mat3 const& m, vec3  v);
+dvec3 matvec_t(mat3 const& m, vec3  v); // transpose
+dvec3 matvec  (mat3 const& m, dvec3 v);
+dvec3 matvec_t(mat3 const& m, dvec3 v); // transpose
+dvec3 matvec (dmat3 const& m, dvec3 v);
 dvec3 normalized(dvec3 v);       // normalize to 8.8
 int16_t dot(dvec3 a, dvec3 b);
 
@@ -476,18 +474,19 @@ void draw_graphic(
 void set_number(uint8_t n, uint8_t r, uint8_t c);
 void set_number2(uint8_t n, uint8_t r, uint8_t c);
 void set_number3(uint16_t n, uint8_t r, uint8_t c);
-extern uint8_t const GFX_INFO_BAR[] PROGMEM;
-extern uint8_t const GFX_POWER   [] PROGMEM;
-extern uint8_t const GFX_TITLE   [] PROGMEM;
-extern uint8_t const GFX_SUBTITLE[] PROGMEM;
-extern uint8_t const GFX_NEXT    [] PROGMEM;
-extern uint8_t const GFX_QUIT    [] PROGMEM;
-extern uint8_t const GFX_MENU    [] PROGMEM;
-extern uint8_t const GFX_ARROW   [] PROGMEM;
-extern uint8_t const GFX_HIO     [] PROGMEM;
-extern uint8_t const GFX_AUDIO   [] PROGMEM;
-extern uint8_t const GFX_ARROWS_H[] PROGMEM;
-extern uint8_t const GFX_ARROWS_V[] PROGMEM;
+extern uint8_t const GFX_INFO_BAR  [] PROGMEM;
+extern uint8_t const GFX_BES       [] PROGMEM;
+extern uint8_t const GFX_POWER     [] PROGMEM;
+extern uint8_t const GFX_TITLE     [] PROGMEM;
+extern uint8_t const GFX_TITLE_MENU[] PROGMEM;
+extern uint8_t const GFX_NEXT      [] PROGMEM;
+extern uint8_t const GFX_QUIT      [] PROGMEM;
+extern uint8_t const GFX_MENU      [] PROGMEM;
+extern uint8_t const GFX_ARROW     [] PROGMEM;
+extern uint8_t const GFX_HIO       [] PROGMEM;
+extern uint8_t const GFX_AUDIO     [] PROGMEM;
+extern uint8_t const GFX_ARROWS_H  [] PROGMEM;
+extern uint8_t const GFX_ARROWS_V  [] PROGMEM;
 
 // save.cpp
 struct course_save_data
@@ -543,7 +542,7 @@ static FORCEINLINE int16_t div_frac_s(int16_t x)
     return x >> FB_FRAC_BITS;
 #endif
 #else
-    constexpr uint16_t MASK = uint16_t(0xffff << (16 - FB_FRAC_BITS));
+    constexpr uint16_t MASK = ~uint16_t(0xffff >> FB_FRAC_BITS);
     uint16_t r = (uint16_t)x >> FB_FRAC_BITS;
     if(x < 0) r |= MASK;
     return (int16_t)r;
