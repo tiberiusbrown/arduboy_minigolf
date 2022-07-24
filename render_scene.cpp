@@ -148,10 +148,6 @@ static uint8_t render_scene()
     }
 #endif
 
-    // TODO: modify buf_vxz, buf_vy, and buf_faces to add flag
-    // verts: 6 for flag
-    // faces: 3 for flag
-
     // flag vertices and faces
 #if 1
     {
@@ -442,11 +438,6 @@ static uint8_t render_scene()
     // finally, render
     clear_buf(); // buf mem was used during setup
     uint16_t ballr = 0;
-    uint8_t nfpat[4];
-    nfpat[0] =            levelext.pat_faces[0];
-    nfpat[1] = nfpat[0] + levelext.pat_faces[1];
-    nfpat[2] = nfpat[1] + levelext.pat_faces[2];
-    nfpat[3] = nfpat[2] + levelext.pat_faces[3];
     for(uint8_t i = 0; i < nf; ++i)
     {
         face f = fs[i];

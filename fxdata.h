@@ -10,4 +10,4 @@ constexpr uint16_t FX_DATA_PAGE  = 0xffb2;
 constexpr uint24_t FX_DATA_BYTES = 19968;
 
 constexpr uint24_t LEVELS_DEFAULT = 0x000000;
-constexpr uint24_t LEVELS_SIMPLE = 0x004900;
+constexpr uint24_t LEVELS_SERENE = 0x004900;

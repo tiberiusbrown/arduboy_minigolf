@@ -5,6 +5,6 @@
 static constexpr uint24_t ALL_COURSE_ADDRS[] PROGMEM =
 {
     LEVELS_DEFAULT,
-    LEVELS_SIMPLE,
+    LEVELS_SERENE,
     // declare more courses here
 };

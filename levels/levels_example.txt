@@ -1,5 +1,5 @@
-<SIMPLE>
-<Simple>
+<EXAMPLE>
+<Example Course>
 <brow1067>
 <A simple course with a single hole to demonstrate the process of adding new courses.>
 1

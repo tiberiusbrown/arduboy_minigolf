@@ -1,5 +1,6 @@
 raw_t LEVELS_DEFAULT = "levels/levels_default.bin"
-raw_t LEVELS_SIMPLE = "levels/levels_simple.bin"
+raw_t LEVELS_SERENE = "levels/levels_serene.bin"
+//raw_t LEVELS_EXAMPLE = "levels/levels_example.bin"
 
 /*
 1. Use the editor to export a .bin file for a course.

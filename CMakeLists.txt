@@ -69,6 +69,14 @@ add_custom_command(
     WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 )
 
+find_package(Python3 REQUIRED)
+add_custom_command(
+    OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/fxdata.bin"
+    COMMAND "${Python3_EXECUTABLE}" "fxdata-build.py" "fxdata.txt"
+    DEPENDS "fxdata.txt"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+
 add_executable(bin2c tools/bin2c.c)
 set(FX_DATA_HEADER "${CMAKE_CURRENT_BINARY_DIR}/FX_DATA.hpp")
 add_custom_command(
