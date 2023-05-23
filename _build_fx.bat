@@ -30,6 +30,10 @@ exit /b 1
 rem copy hex file to dir
 echo F|xcopy /S /Q /Y /F "%dir%/arduboy_minigolf.ino.hex" "ardugolf_fx.hex" > nul
 
+rem copy elf file to dir
+echo F|xcopy /S /Q /Y /F "%dir%/arduboy_minigolf.ino.elf" "_elf_fx.elf" > nul
+if NOT %errorlevel%==0 goto error
+
 rem create _asm.txt file
 "C:\Program Files (x86)\Arduino\hardware\tools\avr\bin\avr-objdump.exe" -S "%dir%/arduboy_minigolf.ino.elf" > _asm_fx.txt
 

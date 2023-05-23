@@ -20,6 +20,10 @@ exit /b 1
 rem copy hex file to dir
 echo F|xcopy /S /Q /Y /F "%dir%/arduboy_minigolf.ino.hex" "ardugolf.hex" > nul
 
+rem copy elf file to dir
+echo F|xcopy /S /Q /Y /F "%dir%/arduboy_minigolf.ino.elf" "_elf.elf" > nul
+if NOT %errorlevel%==0 goto error
+
 rem create _asm.txt file
 "C:\Program Files (x86)\Arduino\hardware\tools\avr\bin\avr-objdump.exe" -S "%dir%/arduboy_minigolf.ino.elf" > _asm.txt
 
@@ -28,6 +32,9 @@ rem create _sizes.txt
 
 rem create _ram.txt
 findstr /c:" b " /c:" B " /c:" d " /c:" D " _sizes.txt > _ram.txt
+
+rem create _debug.txt
+"C:\Program Files (x86)\Arduino\hardware\tools\avr\bin\avr-readelf.exe" -w "%dir%/arduboy_minigolf.ino.elf" > _debug.txt
 
 rem create _map.txt
 "C:\Program Files (x86)\Arduino\hardware\tools\avr\bin\avr-nm.exe" --numeric-sort -C -t x "%dir%/arduboy_minigolf.ino.elf" > _map2.txt
