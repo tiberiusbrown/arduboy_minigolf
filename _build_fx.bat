@@ -14,7 +14,7 @@ exit /b 1
 
 set dir=%temp%/arduboy_minigolf_build
 arduino-cli.exe compile -v --log-level info ^
-    -b arduboy:avr:arduboy . ^
+    -b arduboy-homemade:avr:arduboy-fx . ^
     --output-dir "%dir%" ^
     --build-property compiler.c.elf.extra_flags="-Wl,--relax" ^
     --build-property compiler.c.extra_flags="-mcall-prologues -DARDUGOLF_FX=1" ^

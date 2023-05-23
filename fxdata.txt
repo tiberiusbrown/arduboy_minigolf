@@ -1,5 +1,5 @@
 raw_t LEVELS_DEFAULT = "levels/levels_default.bin"
-raw_t LEVELS_SERENE = "levels/levels_serene.bin"
+//raw_t LEVELS_SERENE = "levels/levels_serene.bin"
 //raw_t LEVELS_EXAMPLE = "levels/levels_example.bin"
 
 /*

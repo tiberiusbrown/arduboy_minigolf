@@ -68,7 +68,8 @@ void setup()
     a.audio.begin();
 
 #if ARDUGOLF_FX
-    FX::begin(FX_DATA_PAGE, 0);
+    constexpr uint16_t FX_SAVE_PAGE = (FX_DATA_PAGE - 16) & ~15;
+    FX::begin(FX_DATA_PAGE, FX_SAVE_PAGE);
 #endif
 
     game_setup();
