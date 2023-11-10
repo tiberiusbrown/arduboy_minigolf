@@ -606,6 +606,7 @@ static void state_rolling(uint8_t btns, uint8_t pressed)
         ball_vel_ang = {};
         shots[leveli] += 2; // penalty
         state = st::AIM;
+        play_tone(300, 100, 180, 100, 120, 100);
     }
     else if(ball_in_hole())
     {
@@ -937,4 +938,10 @@ void game_loop()
 #endif
 
     pgmptr(&STATE_FUNCS[(uint8_t)state])(btns, pressed);
+}
+
+void reset_forder()
+{
+    for(uint8_t i = 0; i < MAX_FACES; ++i)
+        forder[i] = i;
 }

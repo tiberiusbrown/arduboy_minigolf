@@ -1,3 +1,5 @@
+build/*
+.vscode/c_cpp_properties.json
 git.hpp
 _asm.txt
 _sizes.txt
@@ -7,3 +9,4 @@ _asm_fx.txt
 _sizes_fx.txt
 _ram_fx.txt
 _map_fx.txt
+*.elf

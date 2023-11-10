@@ -366,6 +366,7 @@ void move_up(int16_t amount);
 void look_up(int16_t amount);
 void look_right(int16_t amount);
 void load_level_from_prog(); // loads current_level
+void reset_forder();
 
 // physics.cpp
 extern dvec3 ball;         // position
@@ -404,6 +405,7 @@ void draw_ball_outline(dvec2 c, uint16_t r);
 // render_scene.cpp
 struct face { uint8_t i0, i1, i2, pt; };
 extern array<face, MAX_FACES> fs;
+extern array<uint8_t, MAX_FACES> forder;
 extern array<dvec2, MAX_VERTS> vs;
 #if ARDUGOLF_FX
 // used for displaying course info

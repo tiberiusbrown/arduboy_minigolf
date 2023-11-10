@@ -14,6 +14,7 @@ static constexpr uint8_t FLAG_PAT = 3;
 static uint8_t flag_anim = 0;
 
 array<face, MAX_FACES> fs;
+array<uint8_t, MAX_FACES> forder;
 array<dvec2, MAX_VERTS> vs;
 
 static dvec2 interpz(dvec2 a, int16_t az, dvec2 b, int16_t bz)
@@ -415,11 +416,29 @@ static uint8_t render_scene()
 
     // order faces
 #if 1
+    reset_forder();
     {
         uint8_t i = 1;
         while(i < nf)
         {
-            int16_t d = buf_fdist[i];
+            uint8_t x = forder[i];
+            uint16_t d = buf_fdist[x];
+            uint8_t j = i;
+            while(j > 0 && buf_fdist[forder[j - 1]] < d)
+            {
+                forder[j] = forder[j - 1];
+                j -= 1;
+            }
+            forder[j] = x;
+            i += 1;
+        }
+    }
+#else
+    {
+        uint8_t i = 1;
+        while(i < nf)
+        {
+            uint16_t d = buf_fdist[i];
             face f = fs[i];
             uint8_t j = i;
             while(j > 0 && buf_fdist[j - 1] < d)
@@ -440,7 +459,8 @@ static uint8_t render_scene()
     uint16_t ballr = 0;
     for(uint8_t i = 0; i < nf; ++i)
     {
-        face f = fs[i];
+        face f = fs[forder[i]];
+        //face f = fs[i];
         if(f.pt == 255)
         {
             // ball

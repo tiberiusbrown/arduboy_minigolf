@@ -1,0 +1,12 @@
+{
+    "configuration": "core=arduboy-core,boot=cathy3k",
+    "board": "arduboy-homemade:avr:arduboy-fx",
+    "sketch": "arduboy_minigolf.ino",
+    "output": "build/",
+    "buildPreferences": [
+        [
+            "compiler.c.elf.extra_flags",
+            "-Wl,--relax"
+        ]
+    ]
+}
