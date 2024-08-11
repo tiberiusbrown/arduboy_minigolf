@@ -17,8 +17,8 @@
     {
       "title": "ArduGolf FX",
       "filename": "ardugolf_fx.hex",
-      "flashdata": "fxdata.bin",
-      "flashsave": "fxsave.bin",
+      "flashdata": "fxdata-data.bin",
+      "flashsave": "fxdata-save.bin",
       "device": "ArduboyFX"
     }
   ]
