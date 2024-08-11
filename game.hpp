@@ -4,6 +4,12 @@
 #include <stddef.h>
 #include <stdarg.h>
 
+#ifdef ARDUINO
+#include <Arduboy2.h>
+#define SPRITESU_FX
+#include "SpritesU.hpp"
+#endif
+
 static constexpr int FBW = 1 * 128;
 static constexpr int FBH = 1 * 64;
 
@@ -71,7 +77,7 @@ extern ArduboyTones sound;
 #define play_tone sound.tone
 
 #if ARDUGOLF_FX
-#include "ArduboyFX.h"
+#include <ArduboyFX.h>
 #endif
 
 #define myassert(...)

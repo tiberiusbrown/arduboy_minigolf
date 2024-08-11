@@ -2,6 +2,8 @@
 
 cd /d %~dp0
 
+python convert_sprite.py
+
 rem compile fxdata
 python fxdata-build.py fxdata.txt
 

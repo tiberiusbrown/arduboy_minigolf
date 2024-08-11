@@ -1,3 +1,9 @@
+raw_t IMG_MOVE = "fxdata/img_move.bin"
+raw_t IMG_ROTATE = "fxdata/img_rotate.bin"
+//raw_t IMG_ZOOM = "fxdata/img_zoom.bin"
+raw_t IMG_UPDOWN = "fxdata/img_updown.bin"
+raw_t IMG_RETURN = "fxdata/img_return.bin"
+
 raw_t LEVELS_DEFAULT = "levels/levels_default.bin"
 //raw_t LEVELS_SERENE = "levels/levels_serene.bin"
 //raw_t LEVELS_EXAMPLE = "levels/levels_example.bin"

@@ -77,7 +77,12 @@ static uint8_t title_menu_index = 0;
 
 st state;
 uint8_t nframe;
-static uint16_t yaw_level;
+
+static uint16_t yaw_overview;
+static int16_t pitch_overview;
+static dvec3 pos_overview;
+static uint8_t overview_a_frames;
+static uint8_t overview_b_frames;
 
 static uint8_t info_offset;
 static constexpr uint8_t INFO_OFFSET_MAX = 32;
@@ -191,7 +196,7 @@ void set_level(uint8_t index)
 #endif
     reset_ball();
     nframe = 0;
-    yaw_level = 0;
+    yaw_overview = 0;
     yaw_aim = 0;
     power_aim = 32;
     pitch_aim = DEFAULT_PITCH_AIM;
@@ -450,6 +455,7 @@ static void state_title(uint8_t btns, uint8_t pressed)
         ++ab_btn_wait;
     else if(pressed & BTN_A)
     {
+        play_tone(300, 30);
         if(title_menu_index == 2)
         {
             state = st::HISCORES;
@@ -473,6 +479,8 @@ static void state_title(uint8_t btns, uint8_t pressed)
         title_menu_index = (title_menu_index == 0 ? 2 : title_menu_index - 1);
     else if(pressed & BTN_DOWN)
         title_menu_index = (title_menu_index == 2 ? 0 : title_menu_index + 1);
+    if(pressed & (BTN_UP | BTN_DOWN))
+        play_tone(100, 30);
 #endif
     render_scene();
 
@@ -503,22 +511,81 @@ static void state_title(uint8_t btns, uint8_t pressed)
 
 static void state_overview(uint8_t btns, uint8_t pressed)
 {
-    update_camera_look_at_fastangle(
-        { 0, 0, 0 }, yaw_level, 6000, 256 * 28, 64, 64);
-    yaw_level += 256;
+    update_camera(
+        pos_overview, yaw_overview, pitch_overview, 64, 64);
+    //yaw_overview += 256;
 
-    if(nframe == 255 || (pressed & BTN_B))
-        state = st::AIM, ab_btn_wait = 0;
+    int16_t dx = fcos16(yaw_overview) >> 8;
+    int16_t dy = fsin16(yaw_overview) >> 8;
+
+    if((btns & (BTN_A | BTN_B)) == BTN_A)
+    {
+        if(btns & BTN_UP   ) pitch_overview -= 256;
+        if(btns & BTN_DOWN ) pitch_overview += 256;
+        if(btns & BTN_LEFT ) yaw_overview -= 256;
+        if(btns & BTN_RIGHT) yaw_overview += 256;
+        pitch_overview = tclamp<int16_t>(pitch_overview, 256 * -56, 256 * 56);
+    }
+    else if((btns & (BTN_A | BTN_B)) == BTN_B)
+    {
+        if(btns & BTN_UP   ) pos_overview.y += 128;
+        if(btns & BTN_DOWN ) pos_overview.y -= 128;
+    }
+    else if((btns & (BTN_A | BTN_B)) == 0)
+    {
+        if(btns & BTN_UP   ) pos_overview.x += dy, pos_overview.z -= dx;
+        if(btns & BTN_DOWN ) pos_overview.x -= dy, pos_overview.z += dx;
+        if(btns & BTN_LEFT ) pos_overview.x -= dx, pos_overview.z -= dy;
+        if(btns & BTN_RIGHT) pos_overview.x += dx, pos_overview.z += dy;
+    }
+    constexpr int16_t POS_MAX = 256 * 50;
+    pos_overview.x = tclamp<int16_t>(pos_overview.x, -POS_MAX, +POS_MAX);
+    pos_overview.y = tclamp<int16_t>(pos_overview.y, -POS_MAX, +POS_MAX);
+    pos_overview.z = tclamp<int16_t>(pos_overview.z, -POS_MAX, +POS_MAX);
+
+    if(overview_b_frames < 255)
+        ++overview_b_frames;
+
+    if(pressed & BTN_B)
+    {
+        if(overview_b_frames < 20)
+        {
+            state = st::AIM;
+            ab_btn_wait = 0;
+        }
+        else
+        {
+            overview_b_frames = 0;
+        };
+    }
+
+    if(pressed & BTN_A)
+        overview_a_frames = 0;
+    else if(overview_a_frames < 255)
+        ++overview_a_frames;
 
     render_in_game_scene_and_graphics();
+
+#ifdef ARDUINO
+    if(overview_a_frames < 150 && overview_a_frames < overview_b_frames)
+    {
+        SpritesU::drawPlusMaskFX(0, 0, IMG_MOVE, 0);
+        SpritesU::drawPlusMaskFX(94, 0, IMG_ROTATE, 0);
+    }
+    else if(overview_b_frames < 150)
+    {
+        SpritesU::drawPlusMaskFX(0, 0, IMG_UPDOWN, 0);
+        SpritesU::drawPlusMaskFX(100, 0, IMG_RETURN, 0);
+    }
+#endif
 }
 
 static void state_level(uint8_t btns, uint8_t pressed)
 {
     reset_ball();
     update_camera_look_at_fastangle(
-        { 0, 0, 0 }, yaw_level, 6000, 256 * 28, 64, 64);
-    yaw_level += 256;
+        { 0, 0, 0 }, yaw_overview, 6000, 256 * 28, 64, 64);
+    yaw_overview += 256;
     if(info_offset > 0)
         --info_offset;
 #if !ARDUGOLF_FX
@@ -726,7 +793,14 @@ static void state_menu(uint8_t btns, uint8_t pressed)
             --m;
         }
         if(m == 0)
-            yaw_level = yaw_aim, nframe = 0, state = st::OVERVIEW;
+        {
+            pos_overview = cam;
+            yaw_overview = yaw_aim;
+            pitch_overview = pitch_aim;
+            overview_a_frames = 0;
+            overview_b_frames = 255;
+            state = st::OVERVIEW;
+        }
         if(m == 1)
             state = st::PITCH;
         if(m == 2)
@@ -810,8 +884,8 @@ static void state_fx_course(uint8_t btns, uint8_t pressed)
 {
     reset_ball();
     update_camera_look_at_fastangle(
-        { 0, -12 * 256, 0 }, yaw_level, 6000, 256 * 40, 64, 64);
-    yaw_level += 256;
+        { 0, -12 * 256, 0 }, yaw_overview, 6000, 256 * 40, 64, 64);
+    yaw_overview += 256;
 
     render_scene();
 
@@ -892,6 +966,11 @@ static void state_fx_course(uint8_t btns, uint8_t pressed)
     if(practice && (pressed & BTN_RIGHT) || !practice && (nframe & 0x3f) == 0x3f)
         leveli = (leveli == NUM_LEVELS - 1 ? 0 : leveli + 1);
 
+    if(practice && (pressed & (BTN_LEFT | BTN_RIGHT)))
+        play_tone(100, 30);
+    if(pressed & (BTN_UP | BTN_DOWN))
+        play_tone(150, 30);
+
     if(ab_btn_wait < 8)
         ++ab_btn_wait;
     else if(pressed & BTN_A)
@@ -900,9 +979,13 @@ static void state_fx_course(uint8_t btns, uint8_t pressed)
             state = st::AIM, practice = 2, ab_btn_wait = 0;
         else
             set_level(0);
+        play_tone(300, 30);
     }
     else if(pressed & BTN_B)
+    {
+        play_tone(200, 30);
         reset_to_title();
+    }
 }
 #endif
 

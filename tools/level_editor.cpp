@@ -999,7 +999,7 @@ int main(int, char**)
             auto* draw = ImGui::GetBackgroundDrawList();
             for(uint8_t i = 0; i < nf; ++i)
             {
-                auto f = fs[i];
+                auto f = fs[forder[i]];
                 if(f.pt == 255) continue;
                 static ImU32 const COLORS[5] =
                 {

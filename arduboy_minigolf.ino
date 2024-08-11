@@ -1,3 +1,4 @@
+#define SPRITESU_IMPLEMENTATION
 #include "game.hpp"
 
 #include <SPI.h>

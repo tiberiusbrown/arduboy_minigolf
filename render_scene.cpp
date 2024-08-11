@@ -64,6 +64,7 @@ static uint16_t calc_fdist(
 {
     uint16_t fdist = buf_vdist[i0] + buf_vdist[i1] + buf_vdist[i2];
 #if FDIST_CAMY_MOD
+    //fdist += tmax(y0, y1, y2) * 8;
     int16_t a0 = tabs(cam.y - y0);
     int16_t a1 = tabs(cam.y - y1);
     int16_t a2 = tabs(cam.y - y2);
